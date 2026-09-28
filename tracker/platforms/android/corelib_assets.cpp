@@ -64,6 +64,44 @@ void androidSaveDocument(const char* path, const char* mimeType) {
     env->DeleteLocalRef(activity);
 }
 
+void androidPickWorkingFolder(void) {
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    jobject activity = (jobject)SDL_AndroidGetActivity();
+    if (!env || !activity) return;
+    jclass cls = env->GetObjectClass(activity);
+    jmethodID method = env->GetMethodID(cls, "pickWorkingFolder", "()V");
+    if (method) env->CallVoidMethod(activity, method);
+    env->DeleteLocalRef(cls);
+    env->DeleteLocalRef(activity);
+}
+
+void androidClearWorkingFolder(void) {
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    jobject activity = (jobject)SDL_AndroidGetActivity();
+    if (!env || !activity) return;
+    jclass cls = env->GetObjectClass(activity);
+    jmethodID method = env->GetMethodID(cls, "clearWorkingFolder", "()V");
+    if (method) env->CallVoidMethod(activity, method);
+    env->DeleteLocalRef(cls);
+    env->DeleteLocalRef(activity);
+}
+
+int androidGetWorkingFolderStatus(char* buffer, int bufferSize) {
+    JNIEnv* env = (JNIEnv*)SDL_AndroidGetJNIEnv();
+    jobject activity = (jobject)SDL_AndroidGetActivity();
+    if (!env || !activity) return 1;
+    jclass cls = env->GetObjectClass(activity);
+    jmethodID method = env->GetMethodID(cls, "getWorkingFolderStatus", "()Ljava/lang/String;");
+    jstring status = method ? (jstring)env->CallObjectMethod(activity, method) : NULL;
+    const char* value = status ? env->GetStringUTFChars(status, NULL) : NULL;
+    if (value) snprintf(buffer, bufferSize, "%s", value);
+    if (value) env->ReleaseStringUTFChars(status, value);
+    if (status) env->DeleteLocalRef(status);
+    env->DeleteLocalRef(cls);
+    env->DeleteLocalRef(activity);
+    return value ? 0 : 1;
+}
+
 static AAssetManager* getAssetManager(void) {
     if (assetManager) return assetManager;
 

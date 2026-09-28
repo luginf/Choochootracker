@@ -31,6 +31,14 @@ The browser version refreshes its display at about 30 FPS and uses a fixed
 buffer settings are adjusted automatically; projects and other settings are
 preserved. Input polling and app timers keep their usual cadence.
 
+### Android
+
+The app uses private storage by default. **Settings > Working folder** lets
+you sync with a folder you can reach otherwise (file manager, Syncthing...),
+e.g. to edit projects from a computer. It's a sync, not a live-mounted
+drive: pulled in on full app restart, pushed out on background. Files are
+only ever added/overwritten, never deleted, in either direction.
+
 ### Directory configuration
 
 | Folder | What it contains |

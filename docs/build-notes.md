@@ -177,6 +177,18 @@ and artwork in `docs/play-store-listing.md` before submission.
 For audio traces and the separately installed debug APK, see
 [Android audio diagnosis](android-audio-debugging.md).
 
+The optional working-folder sync (`ChooChooTrackerActivity.java`, `Settings >
+Working folder`) uses `ACTION_OPEN_DOCUMENT_TREE` + `DocumentsContract`, not
+`MANAGE_EXTERNAL_STORAGE`, to keep the "no storage permissions" property
+above. A `fopen()` on a path derived from the tree URI was tried first and
+confirmed broken on a real device (`EPERM`, scoped storage) even with a
+granted permission - don't reintroduce that approach.
+
+Sync skips re-copying a file above `SYNC_SIZE_SKIP_THRESHOLD` (128 KB) only
+if its size is unchanged. Below that, files (project files included) are
+always copied - a `.cct` edit can leave the byte size identical, so size
+alone isn't a safe change check for small text files.
+
 ## Validation
 
 ```sh

@@ -31,6 +31,17 @@ int fileGetDefaultDirectory(char* buffer, int bufferSize);
 void fileImportDocument(const char* mimeType, const char* relativeDirectory);
 void fileExportDocument(const char* path, const char* mimeType);
 
+// Android only: lets the user pick a folder (Storage Access Framework) to use
+// as the working directory instead of the app's private storage, with a
+// persisted, revocable grant. Other targets intentionally do nothing.
+void filePickWorkingFolder(void);
+// Reverts to the app's private storage. Other targets intentionally do nothing.
+void fileClearWorkingFolder(void);
+// Fills buffer with a short human-readable status (active custom path, the
+// last pick attempt's outcome, or "Default (app storage)"). Returns 0 on
+// success. Other targets report "Default" without querying anything.
+int fileGetWorkingFolderStatus(char* buffer, int bufferSize);
+
 // Check if a directory exists
 // Returns 1 if exists, 0 if not
 int fileDirectoryExists(const char* path);

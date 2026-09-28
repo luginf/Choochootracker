@@ -10,6 +10,16 @@
 #include "screens.h"
 #include <string.h>
 
+// Row layout differs on Android only, which gets an extra "Working folder" row.
+#ifdef ANDROID_BUILD
+#define SETTINGS_WORKING_FOLDER_ROW 12
+#define SETTINGS_QUIT_ROW 13
+#define SETTINGS_TOTAL_ROWS 14
+#else
+#define SETTINGS_QUIT_ROW 12
+#define SETTINGS_TOTAL_ROWS 13
+#endif
+
 // Forward declarations
 static int settingsColumnCount(int row);
 static void settingsDrawStatic(void);
@@ -19,8 +29,12 @@ static void settingsDrawColHeader(int col, CellState state);
 static void settingsDrawField(int col, int row, CellState state);
 static int settingsOnEdit(int col, int row, CellEditAction action);
 
+#ifdef ANDROID_BUILD
+static char workingFolderStatus[256];
+#endif
+
 static ScreenData screenSettingsData = {
-  .rows = 13,
+  .rows = SETTINGS_TOTAL_ROWS,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
@@ -45,6 +59,12 @@ static ScreenData screenSettingsData = {
 };
 
 static void setup(int input) {
+#ifdef ANDROID_BUILD
+  fileGetWorkingFolderStatus(workingFolderStatus, sizeof(workingFolderStatus));
+  if (strcmp(workingFolderStatus, "Default (app storage)") != 0) {
+    screenMessage(MESSAGE_TIME, "%s", workingFolderStatus);
+  }
+#endif
 }
 
 static void fontLoadCallback(const char* path) {
@@ -81,6 +101,25 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
+#ifdef ANDROID_BUILD
+  // The Settings screen doesn't get a callback when the system folder picker
+  // (a separate Activity) returns, so poll for a status change instead of
+  // only refreshing on setup() (screen entry).
+  static int pollCounter = 0;
+  if (++pollCounter >= 30) {
+    pollCounter = 0;
+    char freshStatus[256];
+    fileGetWorkingFolderStatus(freshStatus, sizeof(freshStatus));
+    if (strcmp(freshStatus, workingFolderStatus) != 0) {
+      strncpy(workingFolderStatus, freshStatus, sizeof(workingFolderStatus) - 1);
+      workingFolderStatus[sizeof(workingFolderStatus) - 1] = '\0';
+      if (strcmp(workingFolderStatus, "Default (app storage)") != 0) {
+        screenMessage(MESSAGE_TIME, "%s", workingFolderStatus);
+      }
+      screenFullRedraw(&screenSettingsData);
+    }
+  }
+#endif
 }
 
 int settingsColumnCount(int row) {
@@ -113,7 +152,11 @@ void settingsDrawCursor(int col, int row) {
     gfxCursor(0, 12, 9);
   } else if (row == 11 && col == 0) {
     gfxCursor(0, 13, 16);
-  } else if (row == 12 && col == 0) {
+#ifdef ANDROID_BUILD
+  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0) {
+    gfxCursor(0, 14, 15);
+#endif
+  } else if (row == SETTINGS_QUIT_ROW && col == 0) {
     gfxCursor(0, 17, 19);
   }
 }
@@ -184,7 +227,13 @@ void settingsDrawField(int col, int row, CellState state) {
   } else if (row == 11 && col == 0) {
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 13, "Edit color theme");
-  } else if (row == 12 && col == 0) {
+#ifdef ANDROID_BUILD
+  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0) {
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 14, "Working folder");
+    gfxPrint(23, 14, strncmp(workingFolderStatus, "Syncing:", 8) == 0 ? "SYNC   " : "DEFAULT");
+#endif
+  } else if (row == SETTINGS_QUIT_ROW && col == 0) {
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 17, "Quit ChooChooTracker");
   }
@@ -256,7 +305,17 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
   } else if (row == 11 && col == 0 && action == CellEditAction::tap) {
     screenSetup(&screenColorTheme, 0);
     return 0;
-  } else if (row == 12 && col == 0 && action == CellEditAction::tap) {
+#ifdef ANDROID_BUILD
+  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0 && action == CellEditAction::tap) {
+    filePickWorkingFolder();
+    return 0;
+  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0 && action == CellEditAction::clear) {
+    fileClearWorkingFolder();
+    fileGetWorkingFolderStatus(workingFolderStatus, sizeof(workingFolderStatus));
+    screenMessage(MESSAGE_TIME, "%s", workingFolderStatus);
+    return 1;
+#endif
+  } else if (row == SETTINGS_QUIT_ROW && col == 0 && action == CellEditAction::tap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;
