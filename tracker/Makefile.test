@@ -32,6 +32,8 @@ TEST_SOURCES = $(filter-out $(TEST_SOURCES_EXCLUDED),$(TEST_SOURCES_ALL))
 CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
                         $(wildcard ../chipnomad_lib/chips/*.cpp) \
                         $(wildcard ../chipnomad_lib/synth/*.cpp) \
+                        $(wildcard ../chipnomad_lib/export/*.cpp) \
+                        $(wildcard ../chipnomad_lib/midi/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/open303/Source/DSPCode/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/ayumi/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/mutable/braids/*.cc) \
@@ -70,7 +72,8 @@ TRACKER_SRC_SOURCES = src/app.cpp \
                       src/import/import_common.cpp \
                       src/import/import_vt2.cpp \
                       src/import/import_vts.cpp \
-                      src/import/pt3_tables.cpp
+                      src/import/pt3_tables.cpp \
+                      src/import/import_midi.cpp
 
 # Mock sources
 MOCK_SOURCES = $(wildcard tests/mocks/*.cpp)
