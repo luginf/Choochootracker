@@ -5,4 +5,16 @@
 # the plain tar.gz release already makes.
 HERE="$(dirname "$(readlink -f "${0}")")"
 export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+
+# The AppImage itself mounts read-only, so the bonus content (themes,
+# instruments, sample projects...) bundled under usr/share/choochootracker
+# can be read from there but never saved into. Seed a writable copy into
+# the same per-user directory corelib_file.cpp's APPIMAGE handling already
+# uses for settings/autosave, once, the first time this AppImage runs.
+DATA_DIR="${HOME}/.local/share/ChooChooTracker"
+if [ ! -d "${DATA_DIR}/projects" ]; then
+  mkdir -p "${DATA_DIR}"
+  cp -rn "${HERE}/usr/share/choochootracker/common/." "${DATA_DIR}/" 2>/dev/null || true
+fi
+
 exec "${HERE}/usr/bin/choochootracker" "$@"

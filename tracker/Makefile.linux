@@ -86,6 +86,8 @@ appimage: linux
 		if [ ! -f "$$lib" ]; then echo "Error: $$lib not found - install libsdl2-2.0-0" && exit 1; fi; \
 		cp -L "$$(readlink -f "$$lib")" $(BUILD)/$(APPNAME).AppDir/usr/lib/ || exit 1; \
 	done
+	@mkdir -p $(BUILD)/$(APPNAME).AppDir/usr/share/choochootracker/common
+	@cp -r packaging/common/* $(BUILD)/$(APPNAME).AppDir/usr/share/choochootracker/common/
 	@cp packaging/linux-appimage/AppRun $(BUILD)/$(APPNAME).AppDir/
 	@chmod +x $(BUILD)/$(APPNAME).AppDir/AppRun
 	@cp packaging/linux-appimage/choochootracker.desktop $(BUILD)/$(APPNAME).AppDir/

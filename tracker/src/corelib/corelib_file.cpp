@@ -71,6 +71,14 @@ static int fileGetExecutableDirectory(char* buffer, int bufferSize) {
 }
 #endif
 
+int fileIsRunningFromAppImage(void) {
+#if defined(ANDROID_BUILD) || defined(MACOS_BUILD) || defined(_WIN32)
+  return 0;
+#else
+  return getenv("APPIMAGE") != NULL;
+#endif
+}
+
 int fileGetDefaultDirectory(char* buffer, int bufferSize) {
 #ifdef ANDROID_BUILD
   extern int androidGetWorkspacePath(char*, int);
@@ -87,11 +95,9 @@ int fileGetDefaultDirectory(char* buffer, int bufferSize) {
 #else
   // AppImages run from a read-only squashfs mount, so resolving next to the
   // executable (below) would put settings.txt/autosave.cct somewhere that
-  // can't be written to. The AppImage runtime always sets APPIMAGE for the
-  // process it launches, so use that to detect this case and fall back to
-  // a normal writable per-user directory instead.
-  const char* appImagePath = getenv("APPIMAGE");
-  if (appImagePath) {
+  // can't be written to. Fall back to a normal writable per-user directory
+  // instead.
+  if (fileIsRunningFromAppImage()) {
     const char* home = getenv("HOME");
     if (home) {
       snprintf(buffer, bufferSize, "%s/.local/share/ChooChooTracker", home);
