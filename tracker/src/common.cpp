@@ -73,11 +73,27 @@ void initDefaultAppSettings(void) {
   snprintf(appSettings.scwfPath, sizeof(appSettings.scwfPath), "%s/waveforms", workspace);
   snprintf(appSettings.srWavetablePath, sizeof(appSettings.srWavetablePath), "%s/SR_wavetables", workspace);
 #else
-  strncpy(appSettings.projectPath, "projects", PATH_LENGTH);
-  strncpy(appSettings.samplePath, "samples", PATH_LENGTH);
-  strncpy(appSettings.ayWavetablePath, "AY_wavetables", PATH_LENGTH);
-  strncpy(appSettings.scwfPath, "waveforms", PATH_LENGTH);
-  strncpy(appSettings.srWavetablePath, "SR_wavetables", PATH_LENGTH);
+  // Normally these stay relative: the tar.gz/Windows releases' launcher
+  // scripts cd into the install directory first, so "projects" etc.
+  // resolve next to the bundled packaging/common/ content. An AppImage
+  // mounts read-only, so anchor to the writable per-user directory instead
+  // (see fileGetDefaultDirectory()'s own APPIMAGE handling) - AppRun seeds
+  // that directory with the same bundled content once on first launch.
+  if (fileIsRunningFromAppImage()) {
+    char workspace[PATH_LENGTH];
+    if (fileGetDefaultDirectory(workspace, sizeof(workspace)) != 0) strncpy(workspace, ".", sizeof(workspace));
+    snprintf(appSettings.projectPath, sizeof(appSettings.projectPath), "%s/projects", workspace);
+    snprintf(appSettings.samplePath, sizeof(appSettings.samplePath), "%s/samples", workspace);
+    snprintf(appSettings.ayWavetablePath, sizeof(appSettings.ayWavetablePath), "%s/AY_wavetables", workspace);
+    snprintf(appSettings.scwfPath, sizeof(appSettings.scwfPath), "%s/waveforms", workspace);
+    snprintf(appSettings.srWavetablePath, sizeof(appSettings.srWavetablePath), "%s/SR_wavetables", workspace);
+  } else {
+    strncpy(appSettings.projectPath, "projects", PATH_LENGTH);
+    strncpy(appSettings.samplePath, "samples", PATH_LENGTH);
+    strncpy(appSettings.ayWavetablePath, "AY_wavetables", PATH_LENGTH);
+    strncpy(appSettings.scwfPath, "waveforms", PATH_LENGTH);
+    strncpy(appSettings.srWavetablePath, "SR_wavetables", PATH_LENGTH);
+  }
 #endif
   appSettings.projectPath[PATH_LENGTH] = '\0';
   appSettings.samplePath[PATH_LENGTH] = '\0';
@@ -90,10 +106,19 @@ void initDefaultAppSettings(void) {
   snprintf(appSettings.themePath, sizeof(appSettings.themePath), "%s/themes", workspace);
   snprintf(appSettings.fontFolderPath, sizeof(appSettings.fontFolderPath), "%s/fonts", workspace);
 #else
-  strncpy(appSettings.pitchTablePath, "pitch-tables", PATH_LENGTH);
-  strncpy(appSettings.instrumentPath, "instruments", PATH_LENGTH);
-  strncpy(appSettings.themePath, "themes", PATH_LENGTH);
-  strncpy(appSettings.fontFolderPath, "fonts", PATH_LENGTH);
+  if (fileIsRunningFromAppImage()) {
+    char workspace[PATH_LENGTH];
+    if (fileGetDefaultDirectory(workspace, sizeof(workspace)) != 0) strncpy(workspace, ".", sizeof(workspace));
+    snprintf(appSettings.pitchTablePath, sizeof(appSettings.pitchTablePath), "%s/pitch-tables", workspace);
+    snprintf(appSettings.instrumentPath, sizeof(appSettings.instrumentPath), "%s/instruments", workspace);
+    snprintf(appSettings.themePath, sizeof(appSettings.themePath), "%s/themes", workspace);
+    snprintf(appSettings.fontFolderPath, sizeof(appSettings.fontFolderPath), "%s/fonts", workspace);
+  } else {
+    strncpy(appSettings.pitchTablePath, "pitch-tables", PATH_LENGTH);
+    strncpy(appSettings.instrumentPath, "instruments", PATH_LENGTH);
+    strncpy(appSettings.themePath, "themes", PATH_LENGTH);
+    strncpy(appSettings.fontFolderPath, "fonts", PATH_LENGTH);
+  }
 #endif
   appSettings.pitchTablePath[PATH_LENGTH] = '\0';
   appSettings.instrumentPath[PATH_LENGTH] = '\0';

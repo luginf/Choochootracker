@@ -77,10 +77,18 @@ the produced AppImage under Xvfb with an isolated `$HOME` and checking that
 `settings.txt`/`autosave.cct` land there rather than inside the
 `/tmp/.mount_*` squashfs mount.
 
-This first pass does not bundle `packaging/common/*` (bonus themes,
-instruments, title art) the tar.gz release includes - out of scope for a
-single self-contained executable; revisit if that content turns out to be
-wanted from the AppImage too.
+`packaging/common/*` (bonus themes, instruments, sample projects, title art)
+is bundled read-only under `usr/share/choochootracker/common`. Since the
+AppImage itself can't be written to, `AppRun` seeds a writable copy into
+`~/.local/share/ChooChooTracker/` the first time it runs (checked via the
+`projects` subfolder's presence), and `initDefaultAppSettings()`
+(`src/common.cpp`) points `projectPath`/`samplePath`/`themePath`/etc at that
+same directory when `fileIsRunningFromAppImage()` is true - normal desktop
+builds keep their existing behavior (relative paths, resolved via the
+launcher script's `cd`) untouched. Confirmed under Xvfb with a fresh `$HOME`:
+first launch populates every subfolder, the files are writable, and the
+Project screen's Load browser lists the bundled example songs from the
+seeded (not the read-only) copy.
 
 ## Web
 
