@@ -10,7 +10,7 @@
 #include <windows.h>
 #endif
 
-#if defined(ANDROID_BUILD) || defined(MACOS_BUILD)
+#ifndef ANDROID_BUILD
 // Helper: Create directory recursively
 static void createDirectoryRecursive(const char* path) {
   char tmp[4096];
@@ -38,7 +38,7 @@ static void createDirectoryRecursive(const char* path) {
   mkdir(tmp, 0755);
   #endif
 }
-#endif
+#endif // !ANDROID_BUILD
 
 // Windows and Linux desktop builds are meant to be portable (see
 // docs/build-notes.md: a Windows release ships as the exe alongside its
@@ -85,6 +85,20 @@ int fileGetDefaultDirectory(char* buffer, int bufferSize) {
   }
   return 0;
 #else
+  // AppImages run from a read-only squashfs mount, so resolving next to the
+  // executable (below) would put settings.txt/autosave.cct somewhere that
+  // can't be written to. The AppImage runtime always sets APPIMAGE for the
+  // process it launches, so use that to detect this case and fall back to
+  // a normal writable per-user directory instead.
+  const char* appImagePath = getenv("APPIMAGE");
+  if (appImagePath) {
+    const char* home = getenv("HOME");
+    if (home) {
+      snprintf(buffer, bufferSize, "%s/.local/share/ChooChooTracker", home);
+      createDirectoryRecursive(buffer);
+      return 0;
+    }
+  }
   // Fall back to cwd only if the executable's own path can't be resolved
   // (e.g. an unsupported OS/filesystem) - better than failing outright.
   if (fileGetExecutableDirectory(buffer, bufferSize) == 0) return 0;
