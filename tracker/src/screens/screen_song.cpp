@@ -608,6 +608,35 @@ int songKeyJazzHandleRawKey(InputCode input, int isDown) {
     return 0; // Let normal cursor movement happen (and extend/render the selection)
   }
 
+  if (inputIsCtrlHeld()) {
+    if (inputIsCopyKey(input) || inputIsCutKey(input)) {
+      if (isDown) {
+        int startCol, startRow, endCol, endRow;
+        keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
+        int isCut = inputIsCutKey(input);
+        copySong(startCol, startRow, endCol, endRow, isCut);
+        int count = endRow - startRow + 1;
+        screenMessage(MESSAGE_TIME, "KEY JAZZ: %s %d row%s", isCut ? "cut" : "copied", count, count == 1 ? "" : "s");
+        if (isCut) {
+          screen.selectMode = 0;
+          fullRedraw();
+        }
+      }
+      return 1;
+    }
+    if (inputIsPasteKey(input)) {
+      if (isDown) {
+        int rowsPasted = pasteSong(screen.cursorCol, screen.cursorRow);
+        if (rowsPasted > 0) {
+          screenMessage(MESSAGE_TIME, "KEY JAZZ: pasted %d row%s", rowsPasted, rowsPasted == 1 ? "" : "s");
+          fullRedraw();
+        }
+      }
+      return 1;
+    }
+    return 0; // Other Ctrl+key combos: not our concern
+  }
+
   if (inputIsDeleteKey(input)) {
     // Whole row(s), every track column - the song-row equivalent of
     // Phrase's Delete.
