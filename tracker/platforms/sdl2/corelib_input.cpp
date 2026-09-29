@@ -266,8 +266,11 @@ int inputIsPasteKey(InputCode input) { return inputToScancode(input) == SDL_SCAN
 int inputIsSaveKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_S; }
 
 int inputIsDeleteKey(InputCode input) {
-  SDL_Scancode scancode = inputToScancode(input);
-  return scancode == SDL_SCANCODE_DELETE || scancode == SDL_SCANCODE_BACKSPACE;
+  return inputToScancode(input) == SDL_SCANCODE_DELETE;
+}
+
+int inputIsBackspaceKey(InputCode input) {
+  return inputToScancode(input) == SDL_SCANCODE_BACKSPACE;
 }
 
 int inputIsInsertKey(InputCode input) {
