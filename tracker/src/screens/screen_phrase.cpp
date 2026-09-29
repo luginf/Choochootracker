@@ -700,6 +700,8 @@ int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
     // removes the element(s) at the cursor/selection itself (not the row
     // above) and shifts whatever is below, in that same column, up to
     // fill the gap - the column equivalent of what Delete does per row.
+    // Like a text editor, it also steps the cursor back one row as it
+    // erases (the reverse of typing a note advancing to the next row).
     if (isDown) {
       int startCol, startRow, endCol, endRow;
       if (screen.selectMode) {
@@ -710,7 +712,7 @@ int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
       }
       int count = endRow - startRow + 1;
       for (int c = startCol; c <= endCol; c++) keyJazzShiftColumnUp(c, startRow, count);
-      screen.cursorRow = startRow;
+      screen.cursorRow = startRow > 0 ? startRow - 1 : 0;
       screen.selectMode = 0;
       fullRedraw();
     }
