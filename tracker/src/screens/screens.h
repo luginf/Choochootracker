@@ -175,6 +175,13 @@ int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable
 int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX);
 void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx, int isTable);
 
+// Key jazz (desktop): lets screen_phrase.cpp own its toggle/note-entry state
+// while app.cpp only needs to route raw keyboard events to it. Returns 1 if
+// the key was consumed by key jazz, 0 to let normal input processing continue.
+#ifdef DESKTOP_BUILD
+int phraseKeyJazzHandleRawKey(InputCode input, int isDown);
+#endif
+
 // Manage screen functions
 // TODO: Remove this
 int manageColumnCount(int row);
