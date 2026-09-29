@@ -68,12 +68,15 @@ int inputIsShiftHeld(void);
 int inputIsShiftKey(InputCode input);
 
 // Key jazz (desktop): physical-key checks for the clipboard/save shortcuts
-// (combine with inputIsCtrlHeld) and for Delete/Backspace/Insert.
+// (combine with inputIsCtrlHeld) and for Delete/Backspace/Insert. Delete and
+// Backspace are deliberately distinct (Delete removes the whole row and
+// shifts the rest up; Backspace steps back and clears just one column).
 int inputIsCopyKey(InputCode input);
 int inputIsCutKey(InputCode input);
 int inputIsPasteKey(InputCode input);
 int inputIsSaveKey(InputCode input);
 int inputIsDeleteKey(InputCode input);
+int inputIsBackspaceKey(InputCode input);
 int inputIsInsertKey(InputCode input);
 
 // Key jazz (desktop): arrow key direction as a Key bitmask value

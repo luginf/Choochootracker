@@ -536,14 +536,25 @@ static uint8_t keyJazzClampNote(int note) {
   return (uint8_t)note;
 }
 
-// Note column only: the selection if one is active, else just the cursor row.
-static void keyJazzGetActiveRowRange(int* startRow, int* endRow) {
+// The selection's column/row bounds if one is active, else the note+
+// instrument+volume "bundle" (columns 0-2) at the cursor row - copy/cut
+// treat a single note as those 3 columns together, matching how typing
+// and Delete/Backspace already fill/clear them as one unit.
+static void keyJazzGetActiveRange(int* startCol, int* startRow, int* endCol, int* endRow) {
   if (screen.selectMode) {
-    int startCol, endCol;
-    getSelectionBounds(&screen, &startCol, startRow, &endCol, endRow);
+    getSelectionBounds(&screen, startCol, startRow, endCol, endRow);
   } else {
+    *startCol = 0;
+    *endCol = 2;
     *startRow = *endRow = screen.cursorRow;
   }
+}
+
+static void keyJazzClearColumn(int row, int col) {
+  if (col == 0) phraseRows[row].note = EMPTY_VALUE_8;
+  else if (col == 1) phraseRows[row].instrument = EMPTY_VALUE_8;
+  else if (col == 2) phraseRows[row].volume = EMPTY_VALUE_8;
+  // FX columns are out of scope for key jazz.
 }
 
 static void keyJazzClearRow(int row, int includeFx) {
@@ -614,12 +625,12 @@ int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
     }
     if (inputIsCopyKey(input) || inputIsCutKey(input)) {
       if (isDown) {
-        int startRow, endRow;
-        keyJazzGetActiveRowRange(&startRow, &endRow);
+        int startCol, startRow, endCol, endRow;
+        keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
         int isCut = inputIsCutKey(input);
-        copyPhrase(phraseIdx, 0, startRow, 0, endRow, isCut);
+        copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, isCut);
         int count = endRow - startRow + 1;
-        screenMessage(MESSAGE_TIME, "KEY JAZZ: %s %d note%s", isCut ? "cut" : "copied", count, count == 1 ? "" : "s");
+        screenMessage(MESSAGE_TIME, "KEY JAZZ: %s %d row%s", isCut ? "cut" : "copied", count, count == 1 ? "" : "s");
         if (isCut) {
           screen.selectMode = 0;
           fullRedraw();
@@ -629,9 +640,9 @@ int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
     }
     if (inputIsPasteKey(input)) {
       if (isDown) {
-        int rowsPasted = pastePhrase(phraseIdx, 0, screen.cursorRow);
+        int rowsPasted = pastePhrase(phraseIdx, screen.cursorCol, screen.cursorRow);
         if (rowsPasted > 0) {
-          screenMessage(MESSAGE_TIME, "KEY JAZZ: pasted %d note%s", rowsPasted, rowsPasted == 1 ? "" : "s");
+          screenMessage(MESSAGE_TIME, "KEY JAZZ: pasted %d row%s", rowsPasted, rowsPasted == 1 ? "" : "s");
           fullRedraw();
         }
       }
@@ -641,11 +652,42 @@ int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
   }
 
   if (inputIsDeleteKey(input)) {
+    // Delete removes the whole row(s) (every column, not just the
+    // selection's columns) and shifts the rest of the phrase up to fill
+    // the gap; the cursor stays on the same row index.
     if (isDown) {
       int startRow, endRow;
-      keyJazzGetActiveRowRange(&startRow, &endRow);
-      for (int r = startRow; r <= endRow; r++) keyJazzClearRow(r, 0);
+      if (screen.selectMode) {
+        int startCol, endCol;
+        getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+      } else {
+        startRow = endRow = screen.cursorRow;
+      }
+      int count = endRow - startRow + 1;
+      for (int r = startRow; r <= 15 - count; r++) phraseRows[r] = phraseRows[r + count];
+      for (int r = 16 - count; r <= 15; r++) keyJazzClearRow(r, 1);
+      screen.cursorRow = startRow;
       screen.selectMode = 0;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (inputIsBackspaceKey(input)) {
+    // Backspace is narrower than Delete: it only touches one column (the
+    // one under the cursor, or the selection's actual columns), not the
+    // whole row, and steps the cursor back first like a text editor.
+    if (isDown) {
+      if (screen.selectMode) {
+        int startCol, startRow, endCol, endRow;
+        getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+        for (int r = startRow; r <= endRow; r++)
+          for (int c = startCol; c <= endCol; c++) keyJazzClearColumn(r, c);
+        screen.selectMode = 0;
+      } else if (screen.cursorRow > 0) {
+        screen.cursorRow--;
+        keyJazzClearColumn(screen.cursorRow, screen.cursorCol);
+      }
       fullRedraw();
     }
     return 1;
