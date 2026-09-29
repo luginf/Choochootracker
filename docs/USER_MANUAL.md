@@ -174,6 +174,10 @@ Select one Song row across several columns to queue or stop those tracks togethe
 - **OPT + PLAY**: solo the current track or selected columns (release **OPT** first to keep the solo active)
 - **OPT + [LEFT/RIGHT]**: solo every track to the left or right of the current track
 
+On desktop, key jazz also brings direct hex-index typing plus Phrase-style
+Shift+arrows selection, Delete/Backspace/Insert and Ctrl+C/X/V here — see
+[Key jazz](#key-jazz-desktop-only).
+
 ### Chain
 
 A chain is an ordered list of 16-step phrases with optional transposition. It can contain up to 16 phrases, and the same phrase can appear more than once. The 2nd column sets the transposition in semitones.
@@ -185,6 +189,9 @@ An asterisk (`*`) appears next to a chain that is reused in the project. You can
 - **OPT + [LEFT/RIGHT]**: move between tracks
 - **OPT + [UP/DOWN]**: move between chains in the current track
 - Select a range, then use **SHIFT + EDIT**: clone phrases
+
+On desktop, key jazz also brings direct hex-index typing here — see
+[Key jazz](#key-jazz-desktop-only).
 
 ### Phrase
 
@@ -924,6 +931,8 @@ The 1st repeat follows the stereo input. Later feedback crosses between the left
 ## 11. Project screen
 
 The Project screen provides **Load**, **Save**, **New**, **Export**, **Manage** and **Scale** commands, along with filename, title and author metadata.
+
+On desktop, key jazz lets you type the filename, title and author directly on the keyboard instead of using the on-screen virtual keyboard — see [Key jazz](#key-jazz-desktop-only).
 
 ### Scale / Quantize
 
