@@ -285,3 +285,24 @@ int inputArrowKeyDirection(InputCode input) {
   if (input.code == SDLK_RIGHT) return keyRight;
   return 0;
 }
+
+int inputHexDigitValue(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return -1;
+  if (input.code >= SDLK_0 && input.code <= SDLK_9) return (int)(input.code - SDLK_0);
+  if (input.code >= SDLK_a && input.code <= SDLK_f) return 10 + (int)(input.code - SDLK_a);
+  return -1;
+}
+
+char inputTypedCharacter(InputCode input, int shiftHeld) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+  if (input.code >= SDLK_a && input.code <= SDLK_z) {
+    char c = (char)input.code;
+    return shiftHeld ? (char)(c - 'a' + 'A') : c;
+  }
+  if (input.code >= SDLK_0 && input.code <= SDLK_9) return (char)input.code;
+  if (input.code == SDLK_SPACE) return ' ';
+  if (input.code == SDLK_MINUS) return '-';
+  if (input.code == SDLK_PERIOD) return '.';
+  if (input.code == SDLK_UNDERSCORE) return '_';
+  return 0;
+}

@@ -180,6 +180,9 @@ void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx, int isTable);
 // the key was consumed by key jazz, 0 to let normal input processing continue.
 #ifdef DESKTOP_BUILD
 int phraseKeyJazzHandleRawKey(InputCode input, int isDown);
+int songKeyJazzHandleRawKey(InputCode input, int isDown);
+int chainKeyJazzHandleRawKey(InputCode input, int isDown);
+int projectKeyJazzHandleRawKey(InputCode input, int isDown);
 #endif
 
 // Manage screen functions

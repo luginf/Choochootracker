@@ -421,9 +421,6 @@ void appOnEvent(MainLoopEventData eventData) {
 
   switch (eventData.type) {
   case MainLoopEvent::keyDown: {
-#ifdef DESKTOP_BUILD
-    if (currentScreen == &screenPhrase && phraseKeyJazzHandleRawKey(eventData.data.input, 1)) break;
-#endif
     int value = inputCodeToKey(eventData.data.input);
     int rawInputActive = inputRawCallback != NULL;
 
@@ -433,6 +430,17 @@ void appOnEvent(MainLoopEventData eventData) {
     }
 
     if (quickHelpSelectHeld && !rawInputActive && value != keyShift) quickHelpSelectAlone = 0;
+
+#ifdef DESKTOP_BUILD
+    // After the quick-help-alone bookkeeping above (it must see every key,
+    // even ones key jazz fully consumes below - otherwise releasing Shift
+    // after e.g. Shift+S to type an uppercase S would wrongly open Quick
+    // Help, since that key never reached the normal pipeline to cancel it).
+    if (currentScreen == &screenPhrase && phraseKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+    if (currentScreen == &screenSong && songKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+    if (currentScreen == &screenChain && chainKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+    if (currentScreen == &screenProject && projectKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+#endif
 
     if (!rawInputActive && (isMotionRecordTrigger(eventData.data.input) ||
         (eventData.data.input.deviceType == InputDeviceType::logical && eventData.data.input.code == keyMotionRecord))) {
@@ -509,6 +517,9 @@ void appOnEvent(MainLoopEventData eventData) {
   case MainLoopEvent::keyUp: {
 #ifdef DESKTOP_BUILD
     if (currentScreen == &screenPhrase && phraseKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+    if (currentScreen == &screenSong && songKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+    if (currentScreen == &screenChain && chainKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+    if (currentScreen == &screenProject && projectKeyJazzHandleRawKey(eventData.data.input, 0)) break;
 #endif
     int value = inputCodeToKey(eventData.data.input);
     int rawInputActive = inputRawCallback != NULL;

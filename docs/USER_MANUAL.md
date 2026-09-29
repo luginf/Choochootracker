@@ -238,6 +238,17 @@ While key jazz is on, it takes over the note keys entirely on the Phrase
 screen, including Edit/Opt/Motion shortcuts that share those keys — turn it
 off with Esc to use them again.
 
+Key jazz also works, independently toggled with Esc, on:
+
+- **Song** and **Chain**: type a chain's or phrase's hex index directly
+  (`0-9`, `A-F`) instead of incrementing with Up/Down. The first digit typed
+  on a cell replaces its value; further digits typed without moving shift
+  into it (typing "3" then "F" sets 3F).
+- **Project**: type the file name, title and author directly on the
+  keyboard instead of using the on-screen virtual keyboard. Backspace works
+  like a normal text field; Shift types uppercase letters. The virtual
+  keyboard still opens normally when key jazz is off here.
+
 ## 5. Instruments
 
 All instruments have a few common parameters:
