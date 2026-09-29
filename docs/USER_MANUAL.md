@@ -219,6 +219,14 @@ note entry mode (like [m8c](https://github.com/laamaa/m8c)):
   so the layout is the same on AZERTY, QWERTY and QWERTZ keyboards.
 - Each keypress writes the note on the current row and moves to the next row.
 - `[` / `]` shift the octave.
+- **Shift + arrows** select a range of rows; a plain arrow afterwards clears
+  the selection.
+- **Ctrl+C** / **Ctrl+X** / **Ctrl+V** copy, cut and paste the selection (or
+  just the current row if nothing is selected).
+- **Delete** / **Backspace** clear the note(s) on the current row or
+  selection.
+- **Insert** inserts a blank row, pushing the rest of the phrase down.
+- **Ctrl+S** saves the project. Outside key jazz, Ctrl+S does nothing.
 - Esc again turns key jazz off.
 
 While key jazz is on, it takes over the note keys entirely on the Phrase

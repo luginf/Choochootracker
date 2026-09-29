@@ -241,3 +241,44 @@ int inputKeyJazzOctaveDelta(InputCode input) {
   if (input.code == SDLK_RIGHTBRACKET) return 1;
   return 0;
 }
+
+int inputIsCtrlHeld(void) {
+  return (SDL_GetModState() & KMOD_CTRL) != 0;
+}
+
+int inputIsShiftHeld(void) {
+  return (SDL_GetModState() & KMOD_SHIFT) != 0;
+}
+
+int inputIsShiftKey(InputCode input) {
+  return input.deviceType == InputDeviceType::keyboard &&
+         (input.code == SDLK_LSHIFT || input.code == SDLK_RSHIFT);
+}
+
+static SDL_Scancode inputToScancode(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return SDL_SCANCODE_UNKNOWN;
+  return SDL_GetScancodeFromKey((SDL_Keycode)input.code);
+}
+
+int inputIsCopyKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_C; }
+int inputIsCutKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_X; }
+int inputIsPasteKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_V; }
+int inputIsSaveKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_S; }
+
+int inputIsDeleteKey(InputCode input) {
+  SDL_Scancode scancode = inputToScancode(input);
+  return scancode == SDL_SCANCODE_DELETE || scancode == SDL_SCANCODE_BACKSPACE;
+}
+
+int inputIsInsertKey(InputCode input) {
+  return inputToScancode(input) == SDL_SCANCODE_INSERT;
+}
+
+int inputArrowKeyDirection(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+  if (input.code == SDLK_UP) return keyUp;
+  if (input.code == SDLK_DOWN) return keyDown;
+  if (input.code == SDLK_LEFT) return keyLeft;
+  if (input.code == SDLK_RIGHT) return keyRight;
+  return 0;
+}
