@@ -191,3 +191,53 @@ const char* inputGetKeyName(InputCode input) {
 
   return "???";
 }
+
+int inputKeyJazzNoteOffset(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return -1;
+
+  SDL_Scancode scancode = SDL_GetScancodeFromKey((SDL_Keycode)input.code);
+
+  switch (scancode) {
+    case SDL_SCANCODE_Z: return 0;
+    case SDL_SCANCODE_S: return 1;
+    case SDL_SCANCODE_X: return 2;
+    case SDL_SCANCODE_D: return 3;
+    case SDL_SCANCODE_C: return 4;
+    case SDL_SCANCODE_V: return 5;
+    case SDL_SCANCODE_G: return 6;
+    case SDL_SCANCODE_B: return 7;
+    case SDL_SCANCODE_H: return 8;
+    case SDL_SCANCODE_N: return 9;
+    case SDL_SCANCODE_J: return 10;
+    case SDL_SCANCODE_M: return 11;
+    case SDL_SCANCODE_Q: return 12;
+    case SDL_SCANCODE_2: return 13;
+    case SDL_SCANCODE_W: return 14;
+    case SDL_SCANCODE_3: return 15;
+    case SDL_SCANCODE_E: return 16;
+    case SDL_SCANCODE_R: return 17;
+    case SDL_SCANCODE_5: return 18;
+    case SDL_SCANCODE_T: return 19;
+    case SDL_SCANCODE_6: return 20;
+    case SDL_SCANCODE_Y: return 21;
+    case SDL_SCANCODE_7: return 22;
+    case SDL_SCANCODE_U: return 23;
+    case SDL_SCANCODE_I: return 24;
+    case SDL_SCANCODE_9: return 25;
+    case SDL_SCANCODE_O: return 26;
+    case SDL_SCANCODE_0: return 27;
+    case SDL_SCANCODE_P: return 28;
+    default: return -1;
+  }
+}
+
+int inputIsKeyJazzToggle(InputCode input) {
+  return input.deviceType == InputDeviceType::keyboard && input.code == SDLK_ESCAPE;
+}
+
+int inputKeyJazzOctaveDelta(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+  if (input.code == SDLK_LEFTBRACKET) return -1;
+  if (input.code == SDLK_RIGHTBRACKET) return 1;
+  return 0;
+}

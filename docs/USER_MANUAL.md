@@ -209,6 +209,22 @@ The FX selector shows common commands plus those supported by the instrument on 
 - Select a range in the instrument column, then use **SHIFT + EDIT**: clone instruments
 - Select a range, then use **EDIT + [UP/DOWN]**: rotate the phrase rows
 
+### Key jazz (desktop only)
+
+Press **Esc** on the Phrase screen to toggle key jazz, a QWERTY piano-style
+note entry mode (like [m8c](https://github.com/laamaa/m8c)):
+
+- `Z S X D C V G B H N J M` and `Q 2 W 3 E R 5 T 6 Y 7 U I 9 O 0 P` type notes
+  chromatically across two-plus octaves, using each key's physical position
+  so the layout is the same on AZERTY, QWERTY and QWERTZ keyboards.
+- Each keypress writes the note on the current row and moves to the next row.
+- `[` / `]` shift the octave.
+- Esc again turns key jazz off.
+
+While key jazz is on, it takes over the note keys entirely on the Phrase
+screen, including Edit/Opt/Motion shortcuts that share those keys — turn it
+off with Esc to use them again.
+
 ## 5. Instruments
 
 All instruments have a few common parameters:

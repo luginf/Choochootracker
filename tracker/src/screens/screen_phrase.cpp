@@ -207,6 +207,22 @@ static void draw(void) {
 // Input handling
 //
 
+// Preview a row's note through the audio engine, same as any note edit does.
+static void triggerRowPreview(int row) {
+  if (chipnomadGetPlaybackStatus(chipnomadState)->isPlaying &&
+      chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode != PlaybackMode::phraseRow) {
+    return;
+  }
+  PhraseRow* previewSource = &phraseRows[row];
+  if (previewSource->note != EMPTY_VALUE_8 && previewSource->note != NOTE_OFF && previewSource->instrument == EMPTY_VALUE_8) {
+    PhraseRow previewRow = *previewSource;
+    previewRow.instrument = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
+    chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, &previewRow);
+  } else {
+    chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, previewSource);
+  }
+}
+
 static int editCell(int col, int row, CellEditAction action) {
   int handled = 0;
   uint8_t maxVolume = 15;
@@ -280,16 +296,7 @@ static int editCell(int col, int row, CellEditAction action) {
     }
   }
 
-  if (handled && (!chipnomadGetPlaybackStatus(chipnomadState)->isPlaying || chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode == PlaybackMode::phraseRow)) {
-    PhraseRow* row = &phraseRows[screen.cursorRow];
-    if (row->note != EMPTY_VALUE_8 && row->note != NOTE_OFF && row->instrument == EMPTY_VALUE_8) {
-      PhraseRow previewRow = *row;
-      previewRow.instrument = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
-      chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, &previewRow);
-    } else {
-      chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, row);
-    }
-  }
+  if (handled) triggerRowPreview(screen.cursorRow);
 
   return handled;
 }
@@ -508,6 +515,80 @@ static LoopRange getLoopRange(void) {
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::phrase;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type notes directly on the QWERTY keyboard,
+// like m8c (https://github.com/laamaa/m8c). Toggled with Esc. While active,
+// this takes over the note keys entirely (they overlap with Edit/Opt/Motion
+// on this screen), so Esc again is needed to get those back.
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+static uint8_t keyJazzBaseNote = 48;
+
+static uint8_t keyJazzClampNote(int note) {
+  int maxNote = chipnomadState->project.pitchTable.length - 1;
+  if (note < 0) return 0;
+  if (note > maxNote) return (uint8_t)maxNote;
+  return (uint8_t)note;
+}
+
+int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown && !isFxEdit) {
+      keyJazzEnabled = !keyJazzEnabled;
+      if (keyJazzEnabled) {
+        uint8_t currentNote = phraseRows[screen.cursorRow].note;
+        uint16_t octaveSize = chipnomadState->project.pitchTable.octaveSize;
+        uint8_t reference = (currentNote != EMPTY_VALUE_8 && currentNote != NOTE_OFF) ? currentNote : lastNote;
+        keyJazzBaseNote = octaveSize > 0 ? (reference / octaveSize) * octaveSize : reference;
+        screenMessage(MESSAGE_TIME, "KEY JAZZ ON (Esc to exit)");
+      } else {
+        screenMessage(MESSAGE_TIME, "KEY JAZZ OFF");
+      }
+    }
+    return 1;
+  }
+
+  if (!keyJazzEnabled) return 0;
+
+  int octaveDelta = inputKeyJazzOctaveDelta(input);
+  if (octaveDelta != 0) {
+    if (isDown) {
+      uint16_t octaveSize = chipnomadState->project.pitchTable.octaveSize;
+      keyJazzBaseNote = keyJazzClampNote(keyJazzBaseNote + octaveDelta * (int)octaveSize);
+      screenMessage(MESSAGE_TIME, "KEY JAZZ octave: %s", chipnomadState->project.pitchTable.noteNames[keyJazzBaseNote]);
+    }
+    return 1;
+  }
+
+  int offset = inputKeyJazzNoteOffset(input);
+  if (offset < 0) return 0; // Not a note key: let normal input handle it (arrows, Shift, Play...)
+
+  if (isDown) {
+    int row = screen.cursorRow;
+    phraseRows[row].note = keyJazzClampNote(keyJazzBaseNote + offset);
+    if (phraseRows[row].instrument == EMPTY_VALUE_8) phraseRows[row].instrument = lastInstrument;
+    if (phraseRows[row].volume == EMPTY_VALUE_8) phraseRows[row].volume = lastVolume;
+    lastNote = phraseRows[row].note;
+    triggerRowPreview(row);
+    drawField(0, row, CellState::normal);
+    drawField(1, row, CellState::normal);
+    drawField(2, row, CellState::normal);
+    if (row < 15) {
+      screen.cursorRow = row + 1;
+      fullRedraw();
+    }
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
 
 const AppScreen screenPhrase = {
   .init = init,

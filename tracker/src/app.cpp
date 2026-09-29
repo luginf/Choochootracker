@@ -421,6 +421,9 @@ void appOnEvent(MainLoopEventData eventData) {
 
   switch (eventData.type) {
   case MainLoopEvent::keyDown: {
+#ifdef DESKTOP_BUILD
+    if (currentScreen == &screenPhrase && phraseKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+#endif
     int value = inputCodeToKey(eventData.data.input);
     int rawInputActive = inputRawCallback != NULL;
 
@@ -504,6 +507,9 @@ void appOnEvent(MainLoopEventData eventData) {
     break;
   }
   case MainLoopEvent::keyUp: {
+#ifdef DESKTOP_BUILD
+    if (currentScreen == &screenPhrase && phraseKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+#endif
     int value = inputCodeToKey(eventData.data.input);
     int rawInputActive = inputRawCallback != NULL;
 
