@@ -1,0 +1,8 @@
+#!/bin/bash
+# Bundled SDL2/libsamplerate live in usr/lib since they aren't guaranteed
+# present on the host (see Makefile.linux's `appimage` target) - everything
+# else (X11, ALSA, glibc...) resolves from the host system, same assumption
+# the plain tar.gz release already makes.
+HERE="$(dirname "$(readlink -f "${0}")")"
+export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+exec "${HERE}/usr/bin/choochootracker" "$@"
