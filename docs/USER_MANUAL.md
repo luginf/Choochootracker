@@ -227,8 +227,9 @@ note entry mode (like [m8c](https://github.com/laamaa/m8c)):
 - **Delete** removes the whole row(s) (every column) and shifts the rest of
   the phrase up to fill the gap; the cursor stays on the same row.
 - **Backspace** removes the element under the cursor in the current column
-  only (or the selection's columns, if one is active) and shifts whatever
-  is below it, in that same column, up to fill the gap.
+  only (or the selection's columns, if one is active), shifts whatever is
+  below it up to fill the gap, and steps the cursor back one row, like a
+  text editor.
 - **Insert** inserts a blank row, pushing the rest of the phrase down.
 - **Ctrl+S** saves the project. Outside key jazz, Ctrl+S does nothing.
 - Esc again turns key jazz off.
