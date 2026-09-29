@@ -549,7 +549,11 @@ static LoopRange getLoopRange(void) {
 // Key jazz (desktop only): type a chain's hex index directly instead of
 // incrementing with Up/Down. Toggled with Esc, independent of the Phrase
 // screen's key jazz (see screen_phrase.cpp for the note-entry version of
-// this same pattern).
+// this same pattern). Also brings Phrase's structure-editing shortcuts
+// here: Shift+arrows select rows/columns, Delete/Backspace/Insert edit the
+// song structure the same way. While key jazz is active this takes over
+// Shift (so Shift+Right/Up no longer navigate to Chain/Project - Esc to
+// get those back), same tradeoff as Phrase already makes.
 //
 
 #ifdef DESKTOP_BUILD
@@ -558,21 +562,97 @@ static int keyJazzEnabled = 0;
 static int keyJazzEditRow = -1;
 static int keyJazzEditCol = -1;
 
+// The selection's row/column bounds if one is active, else just the
+// cursor's single cell.
+static void keyJazzGetActiveRange(int* startCol, int* startRow, int* endCol, int* endRow) {
+  if (screen.selectMode) {
+    getSelectionBounds(&screen, startCol, startRow, endCol, endRow);
+  } else {
+    *startCol = *endCol = screen.cursorCol;
+    *startRow = *endRow = screen.cursorRow;
+  }
+}
+
 int songKeyJazzHandleRawKey(InputCode input, int isDown) {
   if (input.deviceType != InputDeviceType::keyboard) return 0;
 
   if (inputIsKeyJazzToggle(input)) {
     if (isDown) {
       keyJazzEnabled = !keyJazzEnabled;
+      if (!keyJazzEnabled) screen.selectMode = 0;
       screenMessage(MESSAGE_TIME, keyJazzEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+      fullRedraw();
     }
     return 1;
   }
 
-  // Unlike Phrase/Project, hex digits aren't affected by Shift, and Song
-  // has no Shift-modified key jazz behavior - Shift must keep reaching the
-  // normal pipeline so Shift+Right/Left (screen navigation) still works.
   if (!keyJazzEnabled) return 0;
+  if (inputIsShiftKey(input)) return 1; // Swallow: see screen_phrase.cpp's inputIsShiftKey comment
+
+  int arrowDir = inputArrowKeyDirection(input);
+  if (arrowDir != 0) {
+    if (inputIsShiftHeld()) {
+      if (isDown && !screen.selectMode) {
+        screen.selectStartRow = screen.cursorRow;
+        screen.selectStartCol = screen.cursorCol;
+        screen.selectAnchorRow = screen.cursorRow;
+        screen.selectAnchorCol = screen.cursorCol;
+        screen.selectMode = 1;
+      }
+    } else if (screen.selectMode) {
+      if (isDown) {
+        screen.selectMode = 0;
+        fullRedraw();
+      }
+    }
+    return 0; // Let normal cursor movement happen (and extend/render the selection)
+  }
+
+  if (inputIsDeleteKey(input)) {
+    // Whole row(s), every track column - the song-row equivalent of
+    // Phrase's Delete.
+    if (isDown) {
+      int startCol, startRow, endCol, endRow;
+      keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
+      int count = endRow - startRow + 1;
+      int tracksCount = chipnomadState->project.tracksCount;
+      for (int c = 0; c < tracksCount; c++)
+        for (int i = 0; i < count; i++) shiftSongColumnUp(c, startRow);
+      screen.cursorRow = startRow;
+      screen.selectMode = 0;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (inputIsBackspaceKey(input)) {
+    // Just the current/selected column(s), like Phrase's Backspace.
+    if (isDown) {
+      int startCol, startRow, endCol, endRow;
+      keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
+      int count = endRow - startRow + 1;
+      for (int c = startCol; c <= endCol; c++)
+        for (int i = 0; i < count; i++) shiftSongColumnUp(c, startRow);
+      screen.cursorRow = startRow > 0 ? startRow - 1 : 0;
+      screen.selectMode = 0;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (inputIsInsertKey(input)) {
+    if (isDown) {
+      int row = screen.cursorRow;
+      int lastRow = screen.rows - 1;
+      int tracksCount = chipnomadState->project.tracksCount;
+      for (int r = lastRow; r > row; r--)
+        for (int c = 0; c < tracksCount; c++)
+          chipnomadState->project.song[r][c] = chipnomadState->project.song[r - 1][c];
+      for (int c = 0; c < tracksCount; c++) chipnomadState->project.song[row][c] = EMPTY_VALUE_16;
+      fullRedraw();
+    }
+    return 1;
+  }
 
   int digit = inputHexDigitValue(input);
   if (digit < 0) return 0;
