@@ -246,10 +246,11 @@ Key jazz also works, independently toggled with Esc, on:
   into it (typing "3" then "F" sets 3F). On Song, **Shift+arrows** select a
   range, **Delete** removes whole row(s) and shifts the rest up, **Backspace**
   removes the current/selected column(s) and shifts what's below them up,
-  and **Insert** inserts a blank row - the same structure-editing shortcuts
-  as the Phrase screen. This takes over Shift, so Shift+Right/Up no longer
-  jump to Chain/Project while key jazz is active here - Esc to get those
-  shortcuts back.
+  **Insert** inserts a blank row, and **Ctrl+C**/**Ctrl+X**/**Ctrl+V**
+  copy/cut/paste the selected rows (or the current row if nothing is
+  selected) - the same structure-editing shortcuts as the Phrase screen.
+  This takes over Shift, so Shift+Right/Up no longer jump to Chain/Project
+  while key jazz is active here - Esc to get those shortcuts back.
 - **Project**: type the file name, title and author directly on the
   keyboard instead of using the on-screen virtual keyboard. Backspace works
   like a normal text field; Shift types uppercase letters. The virtual
