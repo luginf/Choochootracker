@@ -10,6 +10,7 @@
 #include "audio_manager.h"
 #include "file_browser.h"
 #include "import/import_vt2.h"
+#include "string_utils.h"
 #include <string.h>
 #include <strings.h>
 
@@ -457,6 +458,87 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   }
   return 0;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type the filename/title/author directly on the
+// keyboard instead of using the on-screen virtual keyboard popup. Toggled
+// with Esc, independent of the other screens' key jazz modes. The popup
+// (isCharEdit) still works normally when this is off.
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+
+static void keyJazzTextField(int row, char** str, int* maxLen) {
+  if (row == 1) { *str = appSettings.projectFilename; *maxLen = FILENAME_LENGTH; }
+  else if (row == 2) { *str = chipnomadState->project.title; *maxLen = PROJECT_TITLE_LENGTH; }
+  else { *str = chipnomadState->project.author; *maxLen = PROJECT_TITLE_LENGTH; }
+}
+
+int projectKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown && !isCharEdit) {
+      keyJazzEnabled = !keyJazzEnabled;
+      screenMessage(MESSAGE_TIME, keyJazzEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+    }
+    return 1;
+  }
+
+  // Shift is read live via inputIsShiftHeld() for uppercase below, but its
+  // own keydown/keyup are NOT swallowed here (unlike Phrase): Shift+Down
+  // navigates to the Song screen (inputScreenNavigation) and must keep
+  // working while key jazz is active on these rows.
+  ScreenData* screen = projectScreen();
+  if (!keyJazzEnabled || screen->cursorRow < 1 || screen->cursorRow > 3) return 0;
+
+  char* str;
+  int maxLen;
+  keyJazzTextField(screen->cursorRow, &str, &maxLen);
+
+  if (inputIsBackspaceKey(input)) {
+    // Text fields rest the cursor one past the last typed character
+    // (unlike a grid cell), so Backspace deletes the character BEFORE the
+    // cursor - classic text editor behavior - not "at" it.
+    if (isDown) {
+      int col = screen->cursorCol;
+      int len = (int)strlen(str);
+      if (col > 0) {
+        if (col - 1 < len) {
+          memmove(&str[col - 1], &str[col], len - col + 1);
+          trimString(str);
+          projectModified = 1;
+        }
+        screen->cursorCol = col - 1;
+      }
+      screen->drawField(0, screen->cursorRow, CellState::normal);
+    }
+    return 1;
+  }
+
+  char c = inputTypedCharacter(input, inputIsShiftHeld());
+  if (c == 0) return 0;
+
+  if (isDown) {
+    int col = screen->cursorCol;
+    int len = (int)strlen(str);
+    if (col >= len) {
+      for (int i = len; i < col; i++) str[i] = ' ';
+      str[col + 1] = 0;
+    }
+    str[col] = c;
+    trimString(str);
+    projectModified = 1;
+    if (col < maxLen - 1) screen->cursorCol = col + 1;
+    screen->drawField(0, screen->cursorRow, CellState::normal);
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
 
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::song;

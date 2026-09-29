@@ -545,6 +545,57 @@ static LoopRange getLoopRange(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type a chain's hex index directly instead of
+// incrementing with Up/Down. Toggled with Esc, independent of the Phrase
+// screen's key jazz (see screen_phrase.cpp for the note-entry version of
+// this same pattern).
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+static int keyJazzEditRow = -1;
+static int keyJazzEditCol = -1;
+
+int songKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown) {
+      keyJazzEnabled = !keyJazzEnabled;
+      screenMessage(MESSAGE_TIME, keyJazzEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+    }
+    return 1;
+  }
+
+  // Unlike Phrase/Project, hex digits aren't affected by Shift, and Song
+  // has no Shift-modified key jazz behavior - Shift must keep reaching the
+  // normal pipeline so Shift+Right/Left (screen navigation) still works.
+  if (!keyJazzEnabled) return 0;
+
+  int digit = inputHexDigitValue(input);
+  if (digit < 0) return 0;
+
+  if (isDown) {
+    int row = screen.cursorRow;
+    int col = screen.cursorCol;
+    uint16_t current = chipnomadState->project.song[row][col];
+    // A cursor move since the last digit starts a fresh value; consecutive
+    // digits on the same cell shift into the existing one (typing "3F").
+    uint16_t base = (row == keyJazzEditRow && col == keyJazzEditCol && current != EMPTY_VALUE_16) ? current : 0;
+    int value = base * 16 + digit;
+    if (value > PROJECT_MAX_CHAINS - 1) value = PROJECT_MAX_CHAINS - 1;
+    chipnomadState->project.song[row][col] = (uint16_t)value;
+    lastChainValue = (uint16_t)value;
+    keyJazzEditRow = row;
+    keyJazzEditCol = col;
+    drawField(col, row, CellState::normal);
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
 
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::song;

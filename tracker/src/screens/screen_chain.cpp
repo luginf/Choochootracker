@@ -320,6 +320,53 @@ static LoopRange getLoopRange(void) {
   return range;
 }
 
+///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type a phrase's hex index directly instead of
+// incrementing with Up/Down (column 0 only - the transpose column is
+// untouched). Same pattern as screen_song.cpp's chain index entry.
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+static int keyJazzEditRow = -1;
+
+int chainKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown) {
+      keyJazzEnabled = !keyJazzEnabled;
+      screenMessage(MESSAGE_TIME, keyJazzEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+    }
+    return 1;
+  }
+
+  // Unlike Phrase/Project, hex digits aren't affected by Shift, and Chain
+  // has no Shift-modified key jazz behavior - Shift must keep reaching the
+  // normal pipeline so Shift+Right/Left (screen navigation) still works.
+  if (!keyJazzEnabled || screen.cursorCol != 0) return 0;
+
+  int digit = inputHexDigitValue(input);
+  if (digit < 0) return 0;
+
+  if (isDown) {
+    int row = screen.cursorRow;
+    uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
+    uint16_t base = (row == keyJazzEditRow && current != EMPTY_VALUE_16) ? current : 0;
+    int value = base * 16 + digit;
+    if (value > PROJECT_MAX_PHRASES - 1) value = PROJECT_MAX_PHRASES - 1;
+    chipnomadState->project.chains[chain].rows[row].phrase = (uint16_t)value;
+    lastPhraseValue = (uint16_t)value;
+    keyJazzEditRow = row;
+    drawField(0, row, CellState::normal);
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
+
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::chain;
 }

@@ -83,4 +83,14 @@ int inputIsInsertKey(InputCode input);
 // (keyUp/keyDown/keyLeft/keyRight), or 0 if this isn't an arrow key.
 int inputArrowKeyDirection(InputCode input);
 
+// Key jazz (desktop, Song/Chain): hex digit (0-15) for this input, or -1.
+// Uses the typed character (keysym), not physical position - typing "3"
+// should type 3 regardless of keyboard layout, unlike the note table.
+int inputHexDigitValue(InputCode input);
+
+// Key jazz (desktop, Project): typed character for this input (letters,
+// digits, space, - _ .), or 0 if not typable. Also keysym-based; shiftHeld
+// selects the uppercase letter.
+char inputTypedCharacter(InputCode input, int shiftHeld);
+
 #endif
