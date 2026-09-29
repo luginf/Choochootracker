@@ -243,7 +243,13 @@ Key jazz also works, independently toggled with Esc, on:
 - **Song** and **Chain**: type a chain's or phrase's hex index directly
   (`0-9`, `A-F`) instead of incrementing with Up/Down. The first digit typed
   on a cell replaces its value; further digits typed without moving shift
-  into it (typing "3" then "F" sets 3F).
+  into it (typing "3" then "F" sets 3F). On Song, **Shift+arrows** select a
+  range, **Delete** removes whole row(s) and shifts the rest up, **Backspace**
+  removes the current/selected column(s) and shifts what's below them up,
+  and **Insert** inserts a blank row - the same structure-editing shortcuts
+  as the Phrase screen. This takes over Shift, so Shift+Right/Up no longer
+  jump to Chain/Project while key jazz is active here - Esc to get those
+  shortcuts back.
 - **Project**: type the file name, title and author directly on the
   keyboard instead of using the on-screen virtual keyboard. Backspace works
   like a normal text field; Shift types uppercase letters. The virtual
