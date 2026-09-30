@@ -60,6 +60,22 @@ void appMidiInResetHeldNotes(void) {
   midiHeldCount = 0;
 }
 
+// Port indices aren't saved (see common.h's AppSettings comment): this
+// resolves the saved device name back to whatever live port currently has
+// that name, or leaves it unresolved (index -1, name kept as-is so this
+// keeps retrying on future launches) if none matches - never silently picks
+// a different port just because one happens to be available.
+static int findMidiPortByName(int isInput, const char* name) {
+  if (!name || !name[0]) return -1;
+  int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
+  char portName[MIDI_DEVICE_NAME_LENGTH + 1];
+  for (int i = 0; i < count; i++) {
+    int ok = isInput ? midiIoInputPortName(i, portName, sizeof(portName)) : midiIoOutputPortName(i, portName, sizeof(portName));
+    if (ok == 0 && strcmp(portName, name) == 0) return i;
+  }
+  return -1;
+}
+
 static int applyMotionRecordEvent(const MotionRecordEvent& event) {
   if (event.phrase >= PROJECT_MAX_PHRASES || event.row >= 16 || event.fx >= fxTotalCount) return 0;
   PhraseRow* row = &chipnomadState->project.phrases[event.phrase].rows[event.row];
@@ -339,6 +355,11 @@ void appSetup(void) {
     appSettings.braidsSignatureSeed);
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
   audioManager.resume();
+
+  int savedInputPort = findMidiPortByName(1, appSettings.midiInputDeviceName);
+  if (savedInputPort >= 0 && midiIoOpenInput(savedInputPort) == 0) appSettings.midiInputDevice = savedInputPort;
+  int savedOutputPort = findMidiPortByName(0, appSettings.midiOutputDeviceName);
+  if (savedOutputPort >= 0 && midiIoOpenOutput(savedOutputPort) == 0) appSettings.midiOutputDevice = savedOutputPort;
 
   screenSetup(&screenTitle, 0);
 }

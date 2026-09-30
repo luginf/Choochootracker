@@ -7,6 +7,7 @@
 #include "project_utils.h"
 
 #include <chrono>
+#include <cstring>
 #include <filesystem>
 #include <fstream>
 #include <string>
@@ -365,6 +366,29 @@ TEST_CASE_FIXTURE(StickLiveFixture, "screenMidi shows device rows and links to c
   currentScreen = &screenMidi;
   CHECK(screenMidi.onInput(1, keyOpt, 0) == 1);
   CHECK(currentScreen == &screenSettings);
+}
+
+TEST_CASE_FIXTURE(StickLiveFixture, "screenMidi shows NOT FOUND for a configured device that isn't currently available") {
+  strncpy(appSettings.midiInputDeviceName, "Some USB Keyboard", MIDI_DEVICE_NAME_LENGTH);
+  appSettings.midiInputDevice = -1; // Not resolved to a live port (none attached under test).
+
+  screenMidi.fullRedraw();
+  REQUIRE(mockScreenData != nullptr);
+  mockScreenData->drawField(0, 0, CellState::focus);
+  CHECK(std::string(mockGfxCells[2] + 23, 9) == "NOT FOUND");
+}
+
+TEST_CASE_FIXTURE(StickLiveFixture, "MIDI device names round-trip through settings save/load") {
+  strncpy(appSettings.midiInputDeviceName, "Keystation Mini", MIDI_DEVICE_NAME_LENGTH);
+  strncpy(appSettings.midiOutputDeviceName, "FluidSynth virtual port", MIDI_DEVICE_NAME_LENGTH);
+  REQUIRE(settingsSave() == 0);
+
+  initDefaultAppSettings();
+  CHECK(appSettings.midiInputDeviceName[0] == '\0');
+
+  REQUIRE(settingsLoad() == 0);
+  CHECK(std::string(appSettings.midiInputDeviceName) == "Keystation Mini");
+  CHECK(std::string(appSettings.midiOutputDeviceName) == "FluidSynth virtual port");
 }
 
 TEST_CASE_FIXTURE(StickLiveFixture, "screenMidiChannelMap cycles channel-to-instrument assignment") {

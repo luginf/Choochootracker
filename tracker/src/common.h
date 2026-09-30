@@ -18,6 +18,7 @@ extern "C" {
 #define PATH_LENGTH (4096)
 #define THEME_NAME_LENGTH (16)
 #define MIDI_CHANNEL_COUNT (16)
+#define MIDI_DEVICE_NAME_LENGTH (127)
 
 struct ColorScheme {
   int background;
@@ -67,10 +68,16 @@ struct AppSettings {
   int pitchConflictWarning;
   int quickHelpReleaseSeen;
   int ayWavetableLfoView;
-  // Runtime-only (not saved to settings.txt): MIDI port indices are not
-  // stable across reboots/replugging, so re-select each launch. -1 = off.
+  // Port indices are runtime-only (not saved): enumeration order isn't
+  // stable across reboots/replugging. -1 = off. What IS saved is each
+  // device's name (below); appSetup() resolves it back to a live index on
+  // launch, or leaves the device off (with the name kept) if not found -
+  // see midiDeviceLabel() in screen_midi.cpp for the "not found" status
+  // that produces instead of silently picking a different port.
   int midiInputDevice;
   int midiOutputDevice;
+  char midiInputDeviceName[MIDI_DEVICE_NAME_LENGTH + 1];
+  char midiOutputDeviceName[MIDI_DEVICE_NAME_LENGTH + 1];
   // Saved to settings.txt: which instrument a MIDI-in note on a given
   // channel (0-15) plays during preview, e.g. channel 0 -> instrument 5.
   // -1 = channel not assigned (falls back to the currently selected

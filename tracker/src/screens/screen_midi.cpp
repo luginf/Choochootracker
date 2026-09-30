@@ -37,15 +37,17 @@ static void truncateWithEllipsis(const char* src, char* dst, int maxLen) {
 }
 
 // isInput selects which port list to look up (input ports for MIDI In,
-// output ports for MIDI Out). deviceIndex < 0, or out of range because a
-// device was unplugged since it was selected, both show as "OFF". The
-// result is already clipped to DEVICE_FIELD_WIDTH.
-static void midiDeviceLabel(int isInput, int deviceIndex, char* buffer, int bufferSize) {
+// output ports for MIDI Out). deviceIndex < 0 with no savedName shows "OFF";
+// deviceIndex < 0 with a savedName (a configured device that couldn't be
+// resolved to a live port at startup, or was unplugged since) shows "NOT
+// FOUND" instead, rather than silently leaving no indication anything is
+// misconfigured. The result is already clipped to DEVICE_FIELD_WIDTH.
+static void midiDeviceLabel(int isInput, int deviceIndex, const char* savedName, char* buffer, int bufferSize) {
   int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
   char fullName[128];
   if (deviceIndex < 0 || deviceIndex >= count ||
       (isInput ? midiIoInputPortName(deviceIndex, fullName, sizeof(fullName)) : midiIoOutputPortName(deviceIndex, fullName, sizeof(fullName))) != 0) {
-    snprintf(buffer, bufferSize, "OFF");
+    snprintf(buffer, bufferSize, savedName && savedName[0] ? "NOT FOUND" : "OFF");
     return;
   }
   truncateWithEllipsis(fullName, buffer, bufferSize - 1 < DEVICE_FIELD_WIDTH ? bufferSize - 1 : DEVICE_FIELD_WIDTH);
@@ -76,7 +78,7 @@ static void drawField(int col, int row, CellState state) {
     gfxPrint(0, 2, "MIDI In");
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     char name[DEVICE_FIELD_WIDTH + 1];
-    midiDeviceLabel(1, appSettings.midiInputDevice, name, sizeof(name));
+    midiDeviceLabel(1, appSettings.midiInputDevice, appSettings.midiInputDeviceName, name, sizeof(name));
     gfxClearRect(DEVICE_FIELD_X, 2, DEVICE_FIELD_WIDTH, 1);
     gfxPrint(DEVICE_FIELD_X, 2, name);
   } else if (row == 1 && col == 0) {
@@ -84,7 +86,7 @@ static void drawField(int col, int row, CellState state) {
     gfxPrint(0, 3, "MIDI Out");
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     char name[DEVICE_FIELD_WIDTH + 1];
-    midiDeviceLabel(0, appSettings.midiOutputDevice, name, sizeof(name));
+    midiDeviceLabel(0, appSettings.midiOutputDevice, appSettings.midiOutputDeviceName, name, sizeof(name));
     gfxClearRect(DEVICE_FIELD_X, 3, DEVICE_FIELD_WIDTH, 1);
     gfxPrint(DEVICE_FIELD_X, 3, name);
   } else if (row == 2 && col == 0) {
@@ -109,12 +111,26 @@ static int onEdit(int col, int row, CellEditAction action) {
       // A note held across the switch must not leave a phantom entry in the
       // legato held-note stack once the (possibly different) device resumes.
       appMidiInResetHeldNotes();
-      if (*device < 0) midiIoCloseInput(); else if (midiIoOpenInput(*device) != 0) *device = -1;
+      if (*device < 0) {
+        midiIoCloseInput();
+        appSettings.midiInputDeviceName[0] = '\0';
+      } else if (midiIoOpenInput(*device) != 0) {
+        *device = -1; // Transient failure to open - leave any saved name alone.
+      } else {
+        midiIoInputPortName(*device, appSettings.midiInputDeviceName, sizeof(appSettings.midiInputDeviceName));
+      }
     } else {
       // Flush any still-sounding notes on the port we're about to leave -
       // once it's closed/switched, a Note Off can no longer reach it.
       chipnomadMidiPanic(chipnomadState);
-      if (*device < 0) midiIoCloseOutput(); else if (midiIoOpenOutput(*device) != 0) *device = -1;
+      if (*device < 0) {
+        midiIoCloseOutput();
+        appSettings.midiOutputDeviceName[0] = '\0';
+      } else if (midiIoOpenOutput(*device) != 0) {
+        *device = -1;
+      } else {
+        midiIoOutputPortName(*device, appSettings.midiOutputDeviceName, sizeof(appSettings.midiOutputDeviceName));
+      }
     }
     return 1;
   } else if (row == 2 && col == 0 && action == CellEditAction::tap) {
