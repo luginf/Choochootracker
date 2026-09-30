@@ -41,6 +41,27 @@ int midiIoPollInput(uint8_t* outStatus, uint8_t* outData1, uint8_t* outData2);
 int midiIoOpenOutput(int portIndex);
 void midiIoCloseOutput(void);
 int midiIoIsOutputOpen(void);
+// Sends immediately, bypassing the scheduling queue below. Fine for one-off
+// use; the audio thread should use midiIoScheduleMessage instead (see it for
+// why).
 void midiIoSendMessage(uint8_t status, uint8_t data1, uint8_t data2);
+
+// Monotonic microsecond clock shared by producers (the audio thread, see
+// below) and midiIoScheduleMessage's drain thread, so "due" comparisons use
+// one consistent clock. Returns 0 outside desktop builds.
+uint64_t midiIoNowMicros(void);
+
+// Queues a MIDI message to be sent at dueMicros (midiIoNowMicros() scale),
+// returned immediately without touching the OS/driver. One audio callback
+// can compute several tracker rows' worth of events for what will actually
+// play out over tens of milliseconds; sending them with midiIoSendMessage()
+// right away from the audio thread would fire them all in a burst (however
+// many rows landed in that callback) and then send nothing until the next
+// callback - audibly irregular timing on the receiving device. A dedicated
+// low-latency thread (started when the output port opens) drains this queue
+// and calls midiIoSendMessage() only once each entry's due time arrives, so
+// the audio thread only ever enqueues (cheap, no blocking OS call) and MIDI
+// pacing is decoupled from the audio buffer size.
+void midiIoScheduleMessage(uint8_t status, uint8_t data1, uint8_t data2, uint64_t dueMicros);
 
 #endif // __CHIPNOMAD_LIB__MIDI_IO_H__
