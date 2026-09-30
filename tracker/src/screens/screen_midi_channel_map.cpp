@@ -5,6 +5,7 @@
 #include "corelib_input.h"
 #include "project_utils.h"
 #include "screens.h"
+#include "midi/midi_router.h"
 #include <string.h>
 
 static int columnCount(int row) {
@@ -50,6 +51,7 @@ static int onEdit(int col, int row, CellEditAction action) {
   if (value < -1) value = PROJECT_MAX_INSTRUMENTS - 1;
   if (value >= PROJECT_MAX_INSTRUMENTS) value = -1;
   appSettings.midiChannelInstrument[row] = (int8_t)value;
+  midiRouterSetChannelInstrumentMap(chipnomadState->midiRouter, appSettings.midiChannelInstrument);
   return 1;
 }
 

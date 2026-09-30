@@ -13,7 +13,6 @@
 #include "corelib_keymap.h"
 #include "screens/screen_quick_help.h"
 #include "screens/screen_instrument.h"
-#include "midi_io.h"
 #include "midi/midi_router.h"
 #include "midi/midi_backend_desktop.h"
 
@@ -46,22 +45,6 @@ static int quickHelpSelectHeld;
 static int quickHelpSelectAlone;
 static int audioProjectDirty;
 
-// MIDI-in held-note stack for last-note-priority monophonic preview (see the
-// MainLoopEvent::tick handling below). Index 0..midiHeldCount-1, most
-// recently pressed (and still held) note last. midiHeldInstrument stores the
-// instrument each note was triggered with, so resuming an older held note
-// after the current one releases uses the right instrument even if it was
-// pressed on a different (channel-mapped) instrument than the one just
-// released.
-#define MIDI_HELD_NOTES_MAX (16)
-static uint8_t midiHeldNotes[MIDI_HELD_NOTES_MAX];
-static int midiHeldInstrument[MIDI_HELD_NOTES_MAX];
-static int midiHeldCount = 0;
-
-void appMidiInResetHeldNotes(void) {
-  midiHeldCount = 0;
-}
-
 // Port indices aren't saved (see common.h's AppSettings comment): this
 // resolves the saved device name back to whatever live port currently has
 // that name, or leaves it unresolved (index -1, name kept as-is so this
@@ -69,10 +52,10 @@ void appMidiInResetHeldNotes(void) {
 // a different port just because one happens to be available.
 static int findMidiPortByName(int isInput, const char* name) {
   if (!name || !name[0]) return -1;
-  int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
+  int count = isInput ? midiRouterInputPortCount() : midiRouterOutputPortCount();
   char portName[MIDI_DEVICE_NAME_LENGTH + 1];
   for (int i = 0; i < count; i++) {
-    int ok = isInput ? midiIoInputPortName(i, portName, sizeof(portName)) : midiIoOutputPortName(i, portName, sizeof(portName));
+    int ok = isInput ? midiRouterInputPortName(i, portName, sizeof(portName)) : midiRouterOutputPortName(i, portName, sizeof(portName));
     if (ok == 0 && strcmp(portName, name) == 0) return i;
   }
   return -1;
@@ -364,9 +347,10 @@ void appSetup(void) {
   audioManager.resume();
 
   int savedInputPort = findMidiPortByName(1, appSettings.midiInputDeviceName);
-  if (savedInputPort >= 0 && midiIoOpenInput(savedInputPort) == 0) appSettings.midiInputDevice = savedInputPort;
+  if (savedInputPort >= 0 && midiRouterOpenInput(savedInputPort) == 0) appSettings.midiInputDevice = savedInputPort;
   int savedOutputPort = findMidiPortByName(0, appSettings.midiOutputDeviceName);
-  if (savedOutputPort >= 0 && midiIoOpenOutput(savedOutputPort) == 0) appSettings.midiOutputDevice = savedOutputPort;
+  if (savedOutputPort >= 0 && midiRouterOpenOutput(savedOutputPort) == 0) appSettings.midiOutputDevice = savedOutputPort;
+  midiRouterSetChannelInstrumentMap(chipnomadState->midiRouter, appSettings.midiChannelInstrument);
 
   screenSetup(&screenTitle, 0);
 }
@@ -388,9 +372,9 @@ void appCleanup(void) {
   // cleanly, and any still-sounding note must get a Note Off while the port
   // is still open.
   chipnomadMidiPanic(chipnomadState);
-  midiIoCloseInput();
-  midiIoCloseOutput();
-  appMidiInResetHeldNotes();
+  midiRouterCloseInput();
+  midiRouterCloseOutput();
+  midiRouterResetHeldNotes(chipnomadState->midiRouter);
   chipnomadDestroy(chipnomadState);
   chipnomadState = NULL;
 }
@@ -646,74 +630,32 @@ void appOnEvent(MainLoopEventData eventData) {
     // MIDI-in sound preview: an external MIDI keyboard auditions a sound on
     // the current track - not note entry into the song - the same way the
     // on-screen Edit+Play preview shortcut does on the Instrument screen.
-    // Available on every screen so a multi-channel keyboard (see channel
-    // mapping below) can be played live regardless of what's on screen. No-op
-    // when no MIDI input device is open (midiIoPollInput always returns 0
-    // then).
+    // Available on every screen so a multi-channel keyboard (channel mapping
+    // is Settings > MIDI > Channel mapping) can be played live regardless of
+    // what's on screen. Channel routing, last-note-priority legato and the
+    // held-note stack all live in the router now (see midi/midi_router.h);
+    // this just applies the resulting intents to the current track.
     //
-    // Always drain the poll queue even when we won't act on it (below), so
-    // a keyboard held/played while the song is actually playing doesn't
-    // back up in RtMidi's own queue and then dump a burst of stale notes
-    // once the song stops. Previewing itself puts the track in
-    // PlaybackMode::phraseRow, which must stay "safe" here - gating on the
-    // track being merely "not stopped" (e.g. chipnomadGetPlaybackStatus's
-    // isPlaying) would block every note after the first, since the first
-    // note's own preview never fully lets go of the track between key
-    // presses.
+    // midiRouterTick always drains the backend's poll queue even when we
+    // won't act on the result (below), so a keyboard held/played while the
+    // song is actually playing doesn't back up in the backend's own queue
+    // and dump a burst of stale notes once the song stops. Previewing itself
+    // puts the track in PlaybackMode::phraseRow, which must stay "safe"
+    // here - gating on the track being merely "not stopped" (e.g.
+    // chipnomadGetPlaybackStatus's isPlaying) would block every note after
+    // the first, since the first note's own preview never fully lets go of
+    // the track between key presses.
     {
       PlaybackMode trackMode = chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode;
       int previewSafe = trackMode == PlaybackMode::stopped || trackMode == PlaybackMode::phraseRow;
-      uint8_t status, data1, data2;
-      while (midiIoPollInput(&status, &data1, &data2)) {
-        if (!previewSafe) continue;
-        uint8_t messageType = status & 0xf0;
-        // Settings > MIDI > Channel mapping lets a channel play a specific
-        // instrument regardless of what's selected on the Instrument screen
-        // (-1 = channel not assigned, falls back to cInstrument as before).
-        uint8_t channel = status & 0x0f;
-        int8_t mappedInstrument = appSettings.midiChannelInstrument[channel];
-        int instrument = mappedInstrument >= 0 ? mappedInstrument : cInstrument;
-        // Last-note priority (legato): releasing a note that isn't the one
-        // currently sounding must not cut the preview - only resume the
-        // next most recently held note (or stop if none remain) when the
-        // *current* note is released. A velocity-0 Note On is a Note Off by
-        // MIDI convention, handled by the messageType==0x90&&data2==0 leg.
-        if (messageType == 0x90 && data2 > 0) {
-          int note = (int)data1 - 12;
-          if (note >= 0 && note < 128) {
-            int alreadyHeld = 0;
-            for (int i = 0; i < midiHeldCount; i++) if (midiHeldNotes[i] == (uint8_t)note) { alreadyHeld = 1; break; }
-            if (!alreadyHeld && midiHeldCount < MIDI_HELD_NOTES_MAX) {
-              midiHeldNotes[midiHeldCount] = (uint8_t)note;
-              midiHeldInstrument[midiHeldCount] = instrument;
-              midiHeldCount++;
-            }
-            if (!instrumentIsEmpty(&chipnomadState->project, instrument)) {
-              chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, (uint8_t)note, instrument);
-            }
-          }
-        } else if (messageType == 0x80 || (messageType == 0x90 && data2 == 0)) {
-          int note = (int)data1 - 12;
-          int foundIdx = -1;
-          for (int i = 0; i < midiHeldCount; i++) if (midiHeldNotes[i] == (uint8_t)note) { foundIdx = i; break; }
-          if (foundIdx >= 0) {
-            int wasCurrent = foundIdx == midiHeldCount - 1;
-            for (int i = foundIdx; i < midiHeldCount - 1; i++) {
-              midiHeldNotes[i] = midiHeldNotes[i + 1];
-              midiHeldInstrument[i] = midiHeldInstrument[i + 1];
-            }
-            midiHeldCount--;
-            if (wasCurrent) {
-              if (midiHeldCount > 0) {
-                uint8_t resumeNote = midiHeldNotes[midiHeldCount - 1];
-                int resumeInstrument = midiHeldInstrument[midiHeldCount - 1];
-                if (!instrumentIsEmpty(&chipnomadState->project, resumeInstrument)) {
-                  chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, resumeNote, resumeInstrument);
-                }
-              } else {
-                chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
-              }
-            }
+      MidiPreviewIntent intents[16];
+      int intentCount = midiRouterTick(chipnomadState->midiRouter, cInstrument, intents, 16);
+      if (previewSafe) {
+        for (int i = 0; i < intentCount; i++) {
+          if (intents[i].stop) {
+            chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
+          } else if (!instrumentIsEmpty(&chipnomadState->project, intents[i].instrument)) {
+            chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, intents[i].note, intents[i].instrument);
           }
         }
       }

@@ -2,11 +2,10 @@
 #include "screen_settings.h"
 #include "screen_midi_channel_map.h"
 #include "common.h"
-#include "app.h"
 #include "corelib_gfx.h"
 #include "corelib_input.h"
 #include "screens.h"
-#include "midi_io.h"
+#include "midi/midi_router.h"
 #include <string.h>
 
 static int columnCount(int row) {
@@ -43,10 +42,10 @@ static void truncateWithEllipsis(const char* src, char* dst, int maxLen) {
 // FOUND" instead, rather than silently leaving no indication anything is
 // misconfigured. The result is already clipped to DEVICE_FIELD_WIDTH.
 static void midiDeviceLabel(int isInput, int deviceIndex, const char* savedName, char* buffer, int bufferSize) {
-  int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
+  int count = isInput ? midiRouterInputPortCount() : midiRouterOutputPortCount();
   char fullName[128];
   if (deviceIndex < 0 || deviceIndex >= count ||
-      (isInput ? midiIoInputPortName(deviceIndex, fullName, sizeof(fullName)) : midiIoOutputPortName(deviceIndex, fullName, sizeof(fullName))) != 0) {
+      (isInput ? midiRouterInputPortName(deviceIndex, fullName, sizeof(fullName)) : midiRouterOutputPortName(deviceIndex, fullName, sizeof(fullName))) != 0) {
     snprintf(buffer, bufferSize, savedName && savedName[0] ? "NOT FOUND" : "OFF");
     return;
   }
@@ -102,7 +101,7 @@ static int onEdit(int col, int row, CellEditAction action) {
                     (action == CellEditAction::decrease || action == CellEditAction::decreaseBig) ? -1 : 0;
     if (!direction) return 0;
     int isInput = row == 0;
-    int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
+    int count = isInput ? midiRouterInputPortCount() : midiRouterOutputPortCount();
     int* device = isInput ? &appSettings.midiInputDevice : &appSettings.midiOutputDevice;
     *device += direction;
     if (*device < -1) *device = count - 1;
@@ -110,26 +109,26 @@ static int onEdit(int col, int row, CellEditAction action) {
     if (isInput) {
       // A note held across the switch must not leave a phantom entry in the
       // legato held-note stack once the (possibly different) device resumes.
-      appMidiInResetHeldNotes();
+      midiRouterResetHeldNotes(chipnomadState->midiRouter);
       if (*device < 0) {
-        midiIoCloseInput();
+        midiRouterCloseInput();
         appSettings.midiInputDeviceName[0] = '\0';
-      } else if (midiIoOpenInput(*device) != 0) {
+      } else if (midiRouterOpenInput(*device) != 0) {
         *device = -1; // Transient failure to open - leave any saved name alone.
       } else {
-        midiIoInputPortName(*device, appSettings.midiInputDeviceName, sizeof(appSettings.midiInputDeviceName));
+        midiRouterInputPortName(*device, appSettings.midiInputDeviceName, sizeof(appSettings.midiInputDeviceName));
       }
     } else {
       // Flush any still-sounding notes on the port we're about to leave -
       // once it's closed/switched, a Note Off can no longer reach it.
       chipnomadMidiPanic(chipnomadState);
       if (*device < 0) {
-        midiIoCloseOutput();
+        midiRouterCloseOutput();
         appSettings.midiOutputDeviceName[0] = '\0';
-      } else if (midiIoOpenOutput(*device) != 0) {
+      } else if (midiRouterOpenOutput(*device) != 0) {
         *device = -1;
       } else {
-        midiIoOutputPortName(*device, appSettings.midiOutputDeviceName, sizeof(appSettings.midiOutputDeviceName));
+        midiRouterOutputPortName(*device, appSettings.midiOutputDeviceName, sizeof(appSettings.midiOutputDeviceName));
       }
     }
     return 1;
@@ -178,10 +177,10 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
-  // Dropped count is monotonic (see midiIoGetDroppedCount) and only means
-  // something went wrong at some point this session - once shown it stays
-  // shown, rather than disappearing again on its own.
-  int dropped = (int)midiIoGetDroppedCount();
+  // Dropped count is monotonic (see midiRouterGetDroppedCount) and only
+  // means something went wrong at some point this session - once shown it
+  // stays shown, rather than disappearing again on its own.
+  int dropped = (int)midiRouterGetDroppedCount();
   if (dropped == displayedDroppedCount || dropped == 0) return;
   displayedDroppedCount = dropped;
   gfxSetFgColor(appSettings.colorScheme.warning);
