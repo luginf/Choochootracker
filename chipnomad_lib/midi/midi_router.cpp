@@ -67,6 +67,9 @@ void midiRouterCloseOutput(void) {
 unsigned int midiRouterGetDroppedCount(void) {
   return (g_backend && g_backend->droppedCount) ? g_backend->droppedCount(g_backend->userdata) : 0;
 }
+uint64_t midiRouterNowMicros(void) {
+  return (g_backend && g_backend->nowMicros) ? g_backend->nowMicros(g_backend->userdata) : 0;
+}
 
 MidiRouterState* midiRouterCreate(void) {
   MidiRouterState* router = new MidiRouterState();

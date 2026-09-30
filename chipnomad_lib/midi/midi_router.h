@@ -78,6 +78,12 @@ void midiRouterCloseInput(void);
 int midiRouterOpenOutput(int portIndex);
 void midiRouterCloseOutput(void);
 unsigned int midiRouterGetDroppedCount(void);
+// Monotonic microsecond clock on the same scale the backend schedules
+// output against (see midiRouterEmitNoteOn's dueMicros) - callers that
+// compute a due time ahead of when they call it (e.g. one audio callback
+// computing several tracker rows' worth of events) read "now" through this
+// once, then add each row's offset to it.
+uint64_t midiRouterNowMicros(void);
 
 // Which incoming MIDI channels drive what. Only auto_ is implemented;
 // tracks8 is reserved so multitimbral 8-track input can be added later

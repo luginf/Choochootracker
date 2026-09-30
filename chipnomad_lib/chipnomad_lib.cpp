@@ -13,7 +13,7 @@
 #include "synth/mme_voice.h"
 #include "synth/sintered_voice.h"
 #include "synth/master_effects.h"
-#include "midi_io.h"
+#include "midi/midi_router.h"
 #include <math.h>
 #include <atomic>
 #include <limits.h>
@@ -478,6 +478,7 @@ ChipNomadState* chipnomadCreate(void) {
   memset(state, 0, sizeof(ChipNomadState));
   state->ownsProjectResources = 1;
   state->audioCommands = new AudioCommandQueue();
+  state->midiRouter = midiRouterCreate();
   fillFXNames();
   projectInit(&state->project);
   state->audioProject = state->project;
@@ -560,6 +561,7 @@ void chipnomadDestroy(ChipNomadState* state) {
   free(state->delayBuffer);
   delete state->masterEffects;
   delete state->audioCommands;
+  midiRouterDestroy(state->midiRouter);
 
   free(state);
 }
@@ -849,10 +851,10 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
   if (!state || !buffer || samples <= 0 || samples > INT_MAX / 2) return 0;
   // Real wall-clock reference for this callback: a row that lands N samples
   // into it is due N/sampleRate seconds after "now", not "now" itself - see
-  // midiIoScheduleMessage for why this matters (this callback can compute
+  // midiRouterEmitNoteOn for why this matters (this callback can compute
   // several rows' worth of MIDI events well ahead of when they actually
   // play).
-  uint64_t callbackStartMicros = midiIoNowMicros();
+  uint64_t callbackStartMicros = midiRouterNowMicros();
   int samplesLeft = samples;
   while (samplesLeft > 0) {
     uint64_t dueMicros = callbackStartMicros +
@@ -1022,7 +1024,7 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
       if (ccNumber == EMPTY_VALUE_8) continue;
       uint8_t channel = instrument->chip.midi.channel & 0x0f;
       uint8_t value = (uint8_t)(track->midiCCValue[slot] * 127 / 255);
-      midiIoScheduleMessage((uint8_t)(0xB0 | channel), ccNumber & 0x7f, value, dueMicros);
+      midiRouterEmitCC(state->midiRouter, channel, ccNumber, value, dueMicros);
     }
 
     if (!track->note.noteTriggered && !track->note.noteReleased && !track->note.noteKilled) continue;
@@ -1076,49 +1078,30 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
           else if (track->note.noteTriggered) state->sinteredVoices[trackIdx][slot]->noteOn();
         break;
       case InstrumentType::Midi: {
-        // No voice object: send real MIDI Note On/Off instead. Note Off uses
-        // the note number that was actually sent (midiActiveNote), not the
-        // chord's current pitch, so a pitch slide between trigger and
-        // release can't turn it into a stuck note on the external device.
+        // No voice object: send real MIDI Note On/Off instead, through the
+        // router (see midi/midi_router.h), which tracks the active note per
+        // slot - so a pitch slide between trigger and release can't turn it
+        // into a stuck note - and the Program/Bank "already sent" cache.
         InstrumentMidi* midiParams = &project->instruments[track->note.instrument].chip.midi;
         uint8_t channel = midiParams->channel & 0x0f;
         if (track->note.noteTriggered) {
-          uint8_t* sent = &state->midiChannelSetupSent[channel];
-          uint8_t* lastProgram = &state->midiChannelProgram[channel];
-          uint8_t* lastBankHigh = &state->midiChannelBankHigh[channel];
-          uint8_t* lastBankLow = &state->midiChannelBankLow[channel];
-          if (!*sent || *lastProgram != midiParams->program ||
-              *lastBankHigh != midiParams->bankHigh || *lastBankLow != midiParams->bankLow) {
-            if (midiParams->bankHigh != EMPTY_VALUE_8) midiIoScheduleMessage((uint8_t)(0xB0 | channel), 0, midiParams->bankHigh, dueMicros);
-            if (midiParams->bankLow != EMPTY_VALUE_8) midiIoScheduleMessage((uint8_t)(0xB0 | channel), 32, midiParams->bankLow, dueMicros);
-            if (midiParams->program != EMPTY_VALUE_8) midiIoScheduleMessage((uint8_t)(0xC0 | channel), midiParams->program, 0, dueMicros);
-            *sent = 1;
-            *lastProgram = midiParams->program;
-            *lastBankHigh = midiParams->bankHigh;
-            *lastBankLow = midiParams->bankLow;
-          }
+          midiRouterEmitProgramBank(state->midiRouter, channel, midiParams->program, midiParams->bankHigh, midiParams->bankLow, dueMicros);
         }
         for (int slot = 0; slot < CHORD_MAX_VOICES; ++slot) {
-          uint8_t* active = &state->midiNoteActive[trackIdx][slot];
-          uint8_t* activeNote = &state->midiActiveNote[trackIdx][slot];
           int endSlot = track->note.noteKilled || track->note.noteReleased ||
                         (track->note.noteTriggered && slot >= track->chordVoiceCount);
-          if (endSlot && *active) {
-            midiIoScheduleMessage((uint8_t)(0x80 | channel), *activeNote, 0, dueMicros);
-            *active = 0;
-          }
+          // midiRouterEmitNoteOff/On are no-ops (Off) or release-then-send
+          // (On, if this slot was still active) on their own, matching the
+          // *active-gated sends this replaced.
+          if (endSlot) midiRouterEmitNoteOff(state->midiRouter, trackIdx, slot, dueMicros);
           if (track->note.noteTriggered && slot < track->chordVoiceCount) {
-            if (*active) midiIoScheduleMessage((uint8_t)(0x80 | channel), *activeNote, 0, dueMicros);
             int midiNote = 12 + track->chordPitchFinal[slot];
             if (midiNote < 0) midiNote = 0;
             if (midiNote > 127) midiNote = 127;
             int volume = clampInt(track->note.volume + track->note.volumeOffset, 0, 15);
             int velocity = (volume * 127 + 7) / 15;
             if (velocity < 1) velocity = 1;
-            midiIoScheduleMessage((uint8_t)(0x90 | channel), (uint8_t)midiNote, (uint8_t)velocity, dueMicros);
-            *activeNote = (uint8_t)midiNote;
-            state->midiActiveChannel[trackIdx][slot] = channel;
-            *active = 1;
+            midiRouterEmitNoteOn(state->midiRouter, trackIdx, slot, channel, (uint8_t)midiNote, (uint8_t)velocity, dueMicros);
           }
         }
         break;
@@ -1129,37 +1112,17 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
   }
 }
 
+// InstrumentType::Midi keeps no voice object of its own (see
+// applyVoiceEvents above), so unlike every other instrument type it can't
+// naturally decay through its own release stage: an active note left
+// without an explicit Note Off stays stuck on the external device. The
+// router tracks "still sounding" independently of PlaybackTrackState, so it
+// survives a hard track reset (e.g. Stop) that clears noteTriggered/
+// noteReleased before applyVoiceEvents ever sees them - see
+// midi/midi_router.h's midiRouterPanic for the actual sweep.
 void chipnomadMidiPanic(ChipNomadState* state) {
   if (!state) return;
-  // Drop anything still queued but not yet sent first, so a stale note or CC
-  // computed before this transition can't fire late after it - then this
-  // sweep's own Note Offs/panic CCs below are scheduled fresh on top.
-  midiIoFlushOutputQueue();
-  uint64_t now = midiIoNowMicros();
-  // InstrumentType::Midi keeps no voice object of its own (see
-  // applyVoiceEvents above), so unlike every other instrument type it can't
-  // naturally decay through its own release stage: an active note left
-  // without an explicit Note Off stays stuck on the external device. This
-  // is the only state that tracks "still sounding" independently of
-  // PlaybackTrackState, so it survives a hard track reset (e.g. Stop) that
-  // clears noteTriggered/noteReleased before applyVoiceEvents ever sees them.
-  for (int trackIdx = 0; trackIdx < PROJECT_MAX_TRACKS; ++trackIdx) {
-    for (int slot = 0; slot < CHORD_MAX_VOICES; ++slot) {
-      if (!state->midiNoteActive[trackIdx][slot]) continue;
-      uint8_t channel = state->midiActiveChannel[trackIdx][slot];
-      uint8_t note = state->midiActiveNote[trackIdx][slot];
-      midiIoScheduleMessage((uint8_t)(0x80 | channel), note, 0, now);
-      state->midiNoteActive[trackIdx][slot] = 0;
-    }
-  }
-  // Final fallback, unconditionally on every channel: cheap insurance against
-  // any note this sweep doesn't know about (e.g. one triggered by a device
-  // that was reconnected mid-song, or future MIDI input paths).
-  for (uint8_t channel = 0; channel < 16; ++channel) {
-    midiIoScheduleMessage((uint8_t)(0xB0 | channel), 123, 0, now); // All Notes Off
-    midiIoScheduleMessage((uint8_t)(0xB0 | channel), 120, 0, now); // All Sound Off
-  }
-  memset(state->midiChannelSetupSent, 0, sizeof(state->midiChannelSetupSent));
+  midiRouterPanic(state->midiRouter);
 }
 
 static void updateSampleVoices(ChipNomadState* state) {

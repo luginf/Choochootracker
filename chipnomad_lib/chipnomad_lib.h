@@ -17,6 +17,7 @@ class DrumSynthVoice;
 class MMEVoice;
 class SinteredVoice;
 class AudioCommandQueue;
+struct MidiRouterState;
 
 constexpr int VOICE_MONITOR_SAMPLES = 256;
 
@@ -85,23 +86,11 @@ struct ChipNomadState {
   DrumSynthVoice* drumSynthVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   MMEVoice* mmeVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   SinteredVoice* sinteredVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
-  // A MIDI-out instrument has no voice object (see applyVoiceEvents in
-  // chipnomad_lib.cpp): this is the minimal per-slot state needed to send a
-  // matching Note Off later even if the chord's pitch has since slid away
-  // from the value it was triggered with. Zero-initialized to "inactive".
-  uint8_t midiNoteActive[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
-  uint8_t midiActiveNote[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
-  // The channel the Note On above was actually sent on, so a panic sweep
-  // (chipnomadMidiPanic) can target the right channel even if the
-  // instrument's Channel setting has since changed.
-  uint8_t midiActiveChannel[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
-  // Per MIDI channel (not per track: two tracks can share a channel), so
-  // Program Change/Bank Select are only (re-)sent when they'd actually
-  // change what the receiving device is set to - see applyVoiceEvents().
-  uint8_t midiChannelSetupSent[16];
-  uint8_t midiChannelProgram[16];
-  uint8_t midiChannelBankHigh[16];
-  uint8_t midiChannelBankLow[16];
+  // MIDI-Out active-note tracking, Program/Bank cache, and MIDI-In routing
+  // state now live behind the generic MIDI router (see midi/midi_router.h) -
+  // one instance per ChipNomadState, so independent engine states (e.g. one
+  // per test fixture) never share bookkeeping through a hidden global.
+  MidiRouterState* midiRouter;
   VoiceMonitor voiceMonitors[PROJECT_MAX_TRACKS];
   MasterEffects* masterEffects;
   AudioCommandQueue* audioCommands;

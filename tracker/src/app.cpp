@@ -14,6 +14,8 @@
 #include "screens/screen_quick_help.h"
 #include "screens/screen_instrument.h"
 #include "midi_io.h"
+#include "midi/midi_router.h"
+#include "midi/midi_backend_desktop.h"
 
 #ifdef WEB_BUILD
 #include <emscripten/emscripten.h>
@@ -274,6 +276,11 @@ static int autosaveCounter = 0;
 * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
 */
 void appSetup(void) {
+  // Registered before anything else touches MIDI: chipnomad_lib's engine
+  // path (applyVoiceEvents/chipnomadMidiPanic) now goes through the router,
+  // which does nothing until a backend is registered.
+  midiRouterSetBackend(midiBackendDesktopGet());
+
   // LOGD("--- ChipNomad started ---");
   // Initialize default key mappings if not loaded from settings
   if (appSettings.keyMapping.keyUp[0].deviceType == InputDeviceType::none) {
