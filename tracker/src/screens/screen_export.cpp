@@ -5,6 +5,8 @@
 #include "chipnomad_lib.h"
 #include "screens.h"
 #include "export/export.h"
+#include "export/export_midi.h"
+#include "midi/smf_file.h"
 #include <string.h>
 
 #ifdef WEB_BUILD
@@ -31,7 +33,7 @@ static int currentBitDepthIndex = 0;
 int startRow = 0;
 
 static ScreenData screenExportCommon = {
-  .rows = 4,
+  .rows = 5,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
@@ -144,6 +146,8 @@ int exportCommonColumnCount(int row) {
     return 1;
   } else if (row == 3) {
     return 1;
+  } else if (row == 4) {
+    return 1;
   }
   return 0;
 }
@@ -163,6 +167,8 @@ void exportCommonDrawStatic(void) {
   gfxPrint(0, 5, "Sample rate");
   gfxPrint(0, 6, "Bit depth");
 
+  gfxSetFgColor(cs.textValue);
+  gfxPrint(0, 8, "MIDI");
 }
 
 void exportCommonDrawCursor(int col, int row) {
@@ -178,6 +184,8 @@ void exportCommonDrawCursor(int col, int row) {
     gfxCursor(13, 5, 5);
   } else if (row == 3) {
     gfxCursor(13, 6, 2);
+  } else if (row == 4) {
+    gfxCursor(13, 8, 6);
   }
 }
 
@@ -199,6 +207,8 @@ void exportCommonDrawField(int col, int row, CellState state) {
   } else if (row == 3) {
     gfxClearRect(13, 6, 2, 1);
     gfxPrintf(13, 6, "%d", bitDepths[currentBitDepthIndex]);
+  } else if (row == 4) {
+    gfxPrint(13, 8, "Export");
   }
 }
 
@@ -349,6 +359,22 @@ int exportCommonOnEdit(int col, int row, CellEditAction action) {
       currentBitDepthIndex = (currentBitDepthIndex + 2) % 3;
       handled = 1;
     }
+  } else if (row == 4) {
+    if (currentExporter) return 1;
+    char exportPath[1024];
+    generateExportPath(exportPath, sizeof(exportPath), "mid");
+    if (projectExportMidi(&chipnomadState->project, exportPath) == 0) {
+      screenMessage(MESSAGE_TIME, "Exported %s", exportPath);
+#ifdef WEB_BUILD
+      webDownloadExportFile(exportPath);
+#endif
+#ifdef ANDROID_BUILD
+      fileExportDocument(exportPath, "audio/midi");
+#endif
+    } else {
+      screenMessage(MESSAGE_TIME_ERROR, "%s", smfFileError);
+    }
+    handled = 1;
   }
 
   return handled;

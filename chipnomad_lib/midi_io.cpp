@@ -13,6 +13,15 @@
 static RtMidiIn* g_midiIn = NULL;
 static RtMidiOut* g_midiOut = NULL;
 
+// Program Change and Channel Pressure are 2-byte channel voice messages;
+// every other one we send (Note On/Off, CC) is 3 bytes. Sending a spurious
+// 3rd byte after a Program Change would be read as the start of an
+// unrelated running-status data byte by some receivers.
+static int channelMessageLength(uint8_t status) {
+  uint8_t type = status & 0xf0;
+  return (type == 0xC0 || type == 0xD0) ? 2 : 3;
+}
+
 uint64_t midiIoNowMicros(void) {
   return (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
     std::chrono::steady_clock::now().time_since_epoch()).count();
@@ -50,6 +59,7 @@ static void midiOutDrainThreadLoop() {
       ScheduledMidiMessage msg = g_midiOutQueue[tail];
       if (g_midiOut) {
         std::vector<unsigned char> bytes = {msg.status, msg.data1, msg.data2};
+        bytes.resize(channelMessageLength(msg.status));
         try { g_midiOut->sendMessage(&bytes); } catch (RtError&) {}
       }
       tail = (tail + 1) % kMidiOutQueueCapacity;
@@ -179,7 +189,7 @@ void midiIoSendMessage(uint8_t status, uint8_t data1, uint8_t data2) {
   std::vector<unsigned char> message;
   message.push_back(status);
   message.push_back(data1);
-  message.push_back(data2);
+  if (channelMessageLength(status) == 3) message.push_back(data2);
   try {
     g_midiOut->sendMessage(&message);
   } catch (RtError&) {

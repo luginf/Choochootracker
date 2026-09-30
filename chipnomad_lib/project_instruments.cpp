@@ -296,7 +296,11 @@ static const char* modNameMidi(int modIndex) {
 }
 static int initMidiInstrument(Instrument* instrument) {
   initCommon(instrument); instrument->type = InstrumentType::Midi;
-  instrument->chip.midi.channel = 0;
+  InstrumentMidi* m = &instrument->chip.midi;
+  m->channel = 0;
+  m->program = EMPTY_VALUE_8;
+  m->bankHigh = EMPTY_VALUE_8;
+  m->bankLow = EMPTY_VALUE_8;
   return 0;
 }
 static int freeMidiInstrument(Instrument* instrument) { freeCommon(instrument); return 0; }

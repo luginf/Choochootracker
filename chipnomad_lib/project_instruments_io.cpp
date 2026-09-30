@@ -290,6 +290,9 @@ static int loadInstrumentMidi(FILE* file, Instrument* instrument) {
     char* line = peekLine(file);
     if (line == NULL || line[0] == '#') return 0;
     if (strncmp(line, "- Channel: ", 11) == 0) sscanf(line, "- Channel: %hhu", &m->channel);
+    else if (strncmp(line, "- Program: ", 11) == 0) sscanf(line, "- Program: %hhu", &m->program);
+    else if (strncmp(line, "- Bank high: ", 13) == 0) sscanf(line, "- Bank high: %hhu", &m->bankHigh);
+    else if (strncmp(line, "- Bank low: ", 12) == 0) sscanf(line, "- Bank low: %hhu", &m->bankLow);
     consumeLine(file);
   }
 }
@@ -678,6 +681,9 @@ static int saveInstrumentAChChid(FILE* file, Instrument* instrument) {
 static int saveInstrumentMidi(FILE* file, Instrument* instrument) {
   InstrumentMidi* m = &instrument->chip.midi;
   fprintf(file, "- Channel: %hhu\n", m->channel);
+  fprintf(file, "- Program: %hhu\n", m->program);
+  fprintf(file, "- Bank high: %hhu\n", m->bankHigh);
+  fprintf(file, "- Bank low: %hhu\n", m->bankLow);
   return 0;
 }
 

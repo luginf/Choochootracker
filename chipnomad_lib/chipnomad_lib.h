@@ -91,6 +91,13 @@ struct ChipNomadState {
   // from the value it was triggered with. Zero-initialized to "inactive".
   uint8_t midiNoteActive[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   uint8_t midiActiveNote[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  // Per MIDI channel (not per track: two tracks can share a channel), so
+  // Program Change/Bank Select are only (re-)sent when they'd actually
+  // change what the receiving device is set to - see applyVoiceEvents().
+  uint8_t midiChannelSetupSent[16];
+  uint8_t midiChannelProgram[16];
+  uint8_t midiChannelBankHigh[16];
+  uint8_t midiChannelBankLow[16];
   VoiceMonitor voiceMonitors[PROJECT_MAX_TRACKS];
   MasterEffects* masterEffects;
   AudioCommandQueue* audioCommands;

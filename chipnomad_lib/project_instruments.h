@@ -272,8 +272,15 @@ struct InstrumentBYOWTBL : InstrumentSCWF {
 
 // Drives an external MIDI device instead of synthesizing audio: triggering a
 // note sends a MIDI Note On/Off on this channel (see chipnomad_lib/midi_io.h).
+// Program/bank select are sent once, whenever they're about to differ from
+// what that channel was last told (see applyVoiceEvents in chipnomad_lib.cpp) -
+// not before every note, which would needlessly retrigger the receiving
+// device's own envelopes.
 struct InstrumentMidi {
-  uint8_t channel; // 0-15 (shown to the user as 1-16)
+  uint8_t channel;  // 0-15 (shown to the user as 1-16)
+  uint8_t program;  // 0-127, or EMPTY_VALUE_8 to not send Program Change
+  uint8_t bankHigh; // CC0 (Bank Select MSB), 0-127 or EMPTY_VALUE_8 for none
+  uint8_t bankLow;  // CC32 (Bank Select LSB), 0-127 or EMPTY_VALUE_8 for none
 };
 
 union InstrumentChipData {

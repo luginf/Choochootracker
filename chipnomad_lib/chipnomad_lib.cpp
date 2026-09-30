@@ -1058,7 +1058,24 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
         // the note number that was actually sent (midiActiveNote), not the
         // chord's current pitch, so a pitch slide between trigger and
         // release can't turn it into a stuck note on the external device.
-        uint8_t channel = project->instruments[track->note.instrument].chip.midi.channel & 0x0f;
+        InstrumentMidi* midiParams = &project->instruments[track->note.instrument].chip.midi;
+        uint8_t channel = midiParams->channel & 0x0f;
+        if (track->note.noteTriggered) {
+          uint8_t* sent = &state->midiChannelSetupSent[channel];
+          uint8_t* lastProgram = &state->midiChannelProgram[channel];
+          uint8_t* lastBankHigh = &state->midiChannelBankHigh[channel];
+          uint8_t* lastBankLow = &state->midiChannelBankLow[channel];
+          if (!*sent || *lastProgram != midiParams->program ||
+              *lastBankHigh != midiParams->bankHigh || *lastBankLow != midiParams->bankLow) {
+            if (midiParams->bankHigh != EMPTY_VALUE_8) midiIoScheduleMessage((uint8_t)(0xB0 | channel), 0, midiParams->bankHigh, dueMicros);
+            if (midiParams->bankLow != EMPTY_VALUE_8) midiIoScheduleMessage((uint8_t)(0xB0 | channel), 32, midiParams->bankLow, dueMicros);
+            if (midiParams->program != EMPTY_VALUE_8) midiIoScheduleMessage((uint8_t)(0xC0 | channel), midiParams->program, 0, dueMicros);
+            *sent = 1;
+            *lastProgram = midiParams->program;
+            *lastBankHigh = midiParams->bankHigh;
+            *lastBankLow = midiParams->bankLow;
+          }
+        }
         for (int slot = 0; slot < CHORD_MAX_VOICES; ++slot) {
           uint8_t* active = &state->midiNoteActive[trackIdx][slot];
           uint8_t* activeNote = &state->midiActiveNote[trackIdx][slot];
