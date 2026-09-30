@@ -373,6 +373,10 @@ The six macros are **Waves**, **Interval**, **Amount**, **Flow**, **Feedback** a
 
 MME uses the shared LP/BP/HP multimode filter and ADSR. All six macros, Cutoff and Resonance are available to modulation and motion recording. Hold **EDIT** on Model to open the model popup.
 
+### MIDI Out
+
+**MIDI Out** (desktop only) drives an external MIDI device instead of synthesizing audio: triggering a note sends a real MIDI Note On on the instrument's **Channel** (`1-16`) and, when the note ends, the matching Note Off. Volume becomes velocity, and a chord track's voices each get their own Note On/Off. There is no per-row FX for MIDI Out and no audio to hear from ChooChooTracker itself - select the output device under [Settings](#12-settings) first. See [MIDI](#14-midi) for the full picture, including sound preview from a MIDI keyboard.
+
 ### Subtractive engines
 
 The engines in this category share a VCO to VCF to VCA architecture.
@@ -897,6 +901,7 @@ Use **Save** before changing instrument types or loading another project.
 - **Sample dithering** controls AY Sample dithering only.
 - **Braids BITS / DRFT / SIGN** apply globally to every Braids instrument.
 - **Stick live mode** selects `HOLD`, `TOGGLE`, or `FREE` for the existing mapped Stick live button.
+- **MIDI In / MIDI Out** (desktop only) pick a connected MIDI device, cycling through detected ports with `OFF` at either end. See [MIDI](#14-midi).
 - **Key mapping**, **Load font**, and **Edit color theme** customise the interface. ChipNomad fonts and themes should work.
 - **Quit ChooChooTracker** exits cleanly.
 
@@ -920,6 +925,14 @@ Check the instrument number, track mute or solo state, track LVL, application Mi
 
 Adjust Repeat delay and Repeat speed in Settings. If a single press moves twice, check that only 1 physical control is mapped to that direction and report the exact screen and shortcut.
 
-## 14. Credits and licensing
+## 14. MIDI
 
-ChooChooTracker is a fork of ChipNomad and retains its MIT licensing approach. Braids, Plaits, Plaits-Alt, Clouds DSP, Warps-derived MME DSP and stmlib code are derived from Mutable Instruments' open-source releases under their applicable MIT notices. Plaits-Alt is sourced from the lylepmills/eurorack Plaits Lab fork; its retained source notices apply. The aChChid engine uses Open303 by Robin Schmidt, copyright 2009, under the MIT License. Bogie and Sintered are original native implementations. See the packaged license files for exact attribution.
+Desktop only (Linux, Windows, macOS). Pick devices under [Settings](#12-settings) first; both directions need a device selected.
+
+- **Sound preview from a MIDI keyboard**: with a MIDI In device selected and the [Instrument](#5-instruments) screen open, playing notes on the connected keyboard auditions the currently selected instrument, the same as the on-screen **EDIT + PLAY** shortcut. This is preview only - it does not enter notes into the song.
+- **Driving an external MIDI device**: give a track the [MIDI Out](#midi-out) instrument type and set its Channel; triggering notes on that track sends real MIDI to the selected MIDI Out device instead of making sound in ChooChooTracker.
+- The device selection is per session: it is not saved to settings.txt, since a port's position in the list can change across reboots or when devices are plugged in a different order.
+
+## 15. Credits and licensing
+
+ChooChooTracker is a fork of ChipNomad and retains its MIT licensing approach. Braids, Plaits, Plaits-Alt, Clouds DSP, Warps-derived MME DSP and stmlib code are derived from Mutable Instruments' open-source releases under their applicable MIT notices. Plaits-Alt is sourced from the lylepmills/eurorack Plaits Lab fork; its retained source notices apply. The aChChid engine uses Open303 by Robin Schmidt, copyright 2009, under the MIT License. Bogie and Sintered are original native implementations. MIDI I/O uses RtMidi by Gary P. Scavone, under its MIT-style license. See the packaged license files for exact attribution.
