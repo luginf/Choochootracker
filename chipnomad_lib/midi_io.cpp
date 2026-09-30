@@ -38,6 +38,15 @@ static std::atomic<unsigned int> g_midiOutHead{0};
 static std::atomic<unsigned int> g_midiOutTail{0};
 static std::atomic<bool> g_midiOutThreadRunning{false};
 static std::thread* g_midiOutThread = NULL;
+static std::atomic<unsigned int> g_midiOutDropped{0};
+
+void midiIoFlushOutputQueue(void) {
+  g_midiOutTail.store(g_midiOutHead.load(std::memory_order_acquire), std::memory_order_release);
+}
+
+unsigned int midiIoGetDroppedCount(void) {
+  return g_midiOutDropped.load(std::memory_order_relaxed);
+}
 
 void midiIoScheduleMessage(uint8_t status, uint8_t data1, uint8_t data2, uint64_t dueMicros) {
   // No output open means no drain thread running to ever consume this
@@ -47,7 +56,10 @@ void midiIoScheduleMessage(uint8_t status, uint8_t data1, uint8_t data2, uint64_
   if (!g_midiOut) return;
   unsigned int head = g_midiOutHead.load(std::memory_order_relaxed);
   unsigned int next = (head + 1) % kMidiOutQueueCapacity;
-  if (next == g_midiOutTail.load(std::memory_order_acquire)) return; // full: drop rather than block the audio thread
+  if (next == g_midiOutTail.load(std::memory_order_acquire)) {
+    g_midiOutDropped.fetch_add(1, std::memory_order_relaxed); // full: drop rather than block the audio thread
+    return;
+  }
   g_midiOutQueue[head] = {status, data1, data2, dueMicros};
   g_midiOutHead.store(next, std::memory_order_release);
 }
@@ -219,5 +231,7 @@ int midiIoIsOutputOpen(void) { return 0; }
 void midiIoSendMessage(uint8_t, uint8_t, uint8_t) {}
 uint64_t midiIoNowMicros(void) { return 0; }
 void midiIoScheduleMessage(uint8_t, uint8_t, uint8_t, uint64_t) {}
+void midiIoFlushOutputQueue(void) {}
+unsigned int midiIoGetDroppedCount(void) { return 0; }
 
 #endif

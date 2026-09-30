@@ -165,9 +165,12 @@ static ScreenData screenMidiData = {
   .getLoopRange = NULL,
 };
 
+static int displayedDroppedCount = -1;
+
 static void setup(int input) {
   screenMidiData.cursorRow = 0;
   screenMidiData.cursorCol = 0;
+  displayedDroppedCount = -1;
 }
 
 static void fullRedraw(void) {
@@ -175,6 +178,15 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
+  // Dropped count is monotonic (see midiIoGetDroppedCount) and only means
+  // something went wrong at some point this session - once shown it stays
+  // shown, rather than disappearing again on its own.
+  int dropped = (int)midiIoGetDroppedCount();
+  if (dropped == displayedDroppedCount || dropped == 0) return;
+  displayedDroppedCount = dropped;
+  gfxSetFgColor(appSettings.colorScheme.warning);
+  gfxClearRect(0, 7, 40, 1);
+  gfxPrintf(0, 7, "MIDI out queue dropped %d msg%s", dropped, dropped == 1 ? "" : "s");
 }
 
 static int inputScreenNavigation(int keys, int tapCount) {

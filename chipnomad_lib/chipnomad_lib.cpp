@@ -1131,6 +1131,10 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
 
 void chipnomadMidiPanic(ChipNomadState* state) {
   if (!state) return;
+  // Drop anything still queued but not yet sent first, so a stale note or CC
+  // computed before this transition can't fire late after it - then this
+  // sweep's own Note Offs/panic CCs below are scheduled fresh on top.
+  midiIoFlushOutputQueue();
   uint64_t now = midiIoNowMicros();
   // InstrumentType::Midi keeps no voice object of its own (see
   // applyVoiceEvents above), so unlike every other instrument type it can't

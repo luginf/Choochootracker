@@ -64,4 +64,15 @@ uint64_t midiIoNowMicros(void);
 // pacing is decoupled from the audio buffer size.
 void midiIoScheduleMessage(uint8_t status, uint8_t data1, uint8_t data2, uint64_t dueMicros);
 
+// Drops every not-yet-sent scheduled message (already-sent ones are
+// unaffected). Call before a transport transition - stop, output port
+// change - so nothing stale fires late afterward; chipnomadMidiPanic()
+// already does this as part of its own sweep.
+void midiIoFlushOutputQueue(void);
+
+// Total messages dropped so far because the scheduling queue was full (see
+// midiIoScheduleMessage) - monotonic, never decreases on its own. 0 in a
+// build/session that never filled the queue.
+unsigned int midiIoGetDroppedCount(void);
+
 #endif // __CHIPNOMAD_LIB__MIDI_IO_H__
