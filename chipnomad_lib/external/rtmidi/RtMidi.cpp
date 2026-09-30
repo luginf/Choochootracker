@@ -1770,10 +1770,10 @@ struct WinMidiData {
 //*********************************************************************//
 
 static void CALLBACK midiInputCallback( HMIDIOUT hmin,
-                                        UINT inputStatus, 
-                                        DWORD instancePtr,
-                                        DWORD midiMessage,
-                                        DWORD timestamp )
+                                        UINT inputStatus,
+                                        DWORD_PTR instancePtr,
+                                        DWORD_PTR midiMessage,
+                                        DWORD_PTR timestamp )
 {
   if ( inputStatus != MIM_DATA && inputStatus != MIM_LONGDATA ) return;
 
@@ -1781,11 +1781,13 @@ static void CALLBACK midiInputCallback( HMIDIOUT hmin,
   RtMidiIn::RtMidiInData *data = (RtMidiIn::RtMidiInData *)instancePtr;
   WinMidiData *apiData = static_cast<WinMidiData *> (data->apiData);
 
-  // Calculate time stamp.
+  // Calculate time stamp. dwParam2 (timestamp) is pointer-sized only for
+  // ABI reasons - the MM timer tick it actually carries always fits in
+  // DWORD, same as apiData->lastTime below, so narrowing here is safe.
   apiData->message.timeStamp = 0.0;
   if ( data->firstMessage == true ) data->firstMessage = false;
-  else apiData->message.timeStamp = (double) ( timestamp - apiData->lastTime ) * 0.001;
-  apiData->lastTime = timestamp;
+  else apiData->message.timeStamp = (double) ( (DWORD)timestamp - apiData->lastTime ) * 0.001;
+  apiData->lastTime = (DWORD)timestamp;
 
   if ( inputStatus == MIM_DATA ) { // Channel or system message
 
@@ -1901,8 +1903,8 @@ void RtMidiIn :: openPort( unsigned int portNumber, const std::string /*portName
   WinMidiData *data = static_cast<WinMidiData *> (apiData_);
   MMRESULT result = midiInOpen( &data->inHandle,
                                 portNumber,
-                                (DWORD)&midiInputCallback,
-                                (DWORD)&inputData_,
+                                (DWORD_PTR)&midiInputCallback,
+                                (DWORD_PTR)&inputData_,
                                 CALLBACK_FUNCTION );
   if ( result != MMSYSERR_NOERROR ) {
     errorString_ = "RtMidiIn::openPort: error creating Windows MM MIDI input port.";
@@ -2080,8 +2082,8 @@ void RtMidiOut :: openPort( unsigned int portNumber, const std::string /*portNam
   WinMidiData *data = static_cast<WinMidiData *> (apiData_);
   MMRESULT result = midiOutOpen( &data->outHandle,
                                  portNumber,
-                                 (DWORD)NULL,
-                                 (DWORD)NULL,
+                                 (DWORD_PTR)NULL,
+                                 (DWORD_PTR)NULL,
                                  CALLBACK_NULL );
   if ( result != MMSYSERR_NOERROR ) {
     errorString_ = "RtMidiOut::openPort: error creating Windows MM MIDI output port.";
