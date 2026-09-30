@@ -10,11 +10,20 @@ export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
 # instruments, sample projects...) bundled under usr/share/choochootracker
 # can be read from there but never saved into. Seed a writable copy into
 # the same per-user directory corelib_file.cpp's APPIMAGE handling already
-# uses for settings/autosave, once, the first time this AppImage runs.
-DATA_DIR="${HOME}/.local/share/ChooChooTracker"
-if [ ! -d "${DATA_DIR}/projects" ]; then
-  mkdir -p "${DATA_DIR}"
-  cp -rn "${HERE}/usr/share/choochootracker/common/." "${DATA_DIR}/" 2>/dev/null || true
-fi
+# uses for settings/autosave. Each top-level bonus directory is seeded
+# independently and only if missing, rather than gating the whole copy on
+# one directory's presence: that way an interrupted first run, or a user
+# who already created e.g. their own "projects" folder before the rest was
+# seeded, still gets the remaining bonus content on the next launch instead
+# of never seeing it.
+DATA_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/ChooChooTracker"
+SOURCE_DIR="${HERE}/usr/share/choochootracker/common"
+mkdir -p "${DATA_DIR}"
+for item in "${SOURCE_DIR}"/*; do
+  name="$(basename "${item}")"
+  if [ ! -e "${DATA_DIR}/${name}" ]; then
+    cp -r "${item}" "${DATA_DIR}/" 2>/dev/null || true
+  fi
+done
 
 exec "${HERE}/usr/bin/choochootracker" "$@"

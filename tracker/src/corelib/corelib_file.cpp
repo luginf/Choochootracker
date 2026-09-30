@@ -98,6 +98,12 @@ int fileGetDefaultDirectory(char* buffer, int bufferSize) {
   // can't be written to. Fall back to a normal writable per-user directory
   // instead.
   if (fileIsRunningFromAppImage()) {
+    const char* dataHome = getenv("XDG_DATA_HOME");
+    if (dataHome && dataHome[0] != '\0') {
+      snprintf(buffer, bufferSize, "%s/ChooChooTracker", dataHome);
+      createDirectoryRecursive(buffer);
+      return 0;
+    }
     const char* home = getenv("HOME");
     if (home) {
       snprintf(buffer, bufferSize, "%s/.local/share/ChooChooTracker", home);

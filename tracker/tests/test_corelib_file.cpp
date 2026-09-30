@@ -19,6 +19,17 @@ struct AppImageEnvGuard {
     else unsetenv("APPIMAGE");
   }
 };
+
+// Clears XDG_DATA_HOME for the duration of the test (restoring it after),
+// so tests of the ~/.local/share fallback stay deterministic regardless of
+// the environment they run in.
+struct NoXdgDataHomeGuard {
+  const char* previous = getenv("XDG_DATA_HOME");
+  NoXdgDataHomeGuard() { unsetenv("XDG_DATA_HOME"); }
+  ~NoXdgDataHomeGuard() {
+    if (previous) setenv("XDG_DATA_HOME", previous, 1);
+  }
+};
 }
 
 TEST_SUITE("corelib_file default directory") {
@@ -26,6 +37,7 @@ TEST_SUITE("corelib_file default directory") {
 TEST_CASE("APPIMAGE env var redirects to a writable per-user directory") {
   const char* home = getenv("HOME");
   REQUIRE(home != nullptr);
+  NoXdgDataHomeGuard noXdg;
   AppImageEnvGuard guard;
 
   char buffer[4096];
@@ -35,9 +47,21 @@ TEST_CASE("APPIMAGE env var redirects to a writable per-user directory") {
   CHECK(std::string(buffer) == expected);
 }
 
+TEST_CASE("APPIMAGE env var honors XDG_DATA_HOME when set") {
+  AppImageEnvGuard guard;
+  setenv("XDG_DATA_HOME", "/tmp/choochootracker-xdg-test", 1);
+
+  char buffer[4096];
+  REQUIRE(fileGetDefaultDirectory(buffer, sizeof(buffer)) == 0);
+
+  CHECK(std::string(buffer) == "/tmp/choochootracker-xdg-test/ChooChooTracker");
+  unsetenv("XDG_DATA_HOME");
+}
+
 TEST_CASE("APPIMAGE env var anchors default project/sample/theme paths") {
   const char* home = getenv("HOME");
   REQUIRE(home != nullptr);
+  NoXdgDataHomeGuard noXdg;
   AppImageEnvGuard guard;
 
   initDefaultAppSettings();

@@ -93,15 +93,15 @@ appimage: linux
 	@cp packaging/linux-appimage/choochootracker.desktop $(BUILD)/$(APPNAME).AppDir/
 	@cp ../docs/play-store-assets/ChooChooTracker-play-icon-512.png $(BUILD)/$(APPNAME).AppDir/choochootracker.png
 	@mkdir -p ../releases
-	@if command -v appimagetool >/dev/null 2>&1; then TOOL=appimagetool; \
-	else \
-		echo "appimagetool not found, downloading it to ../.tmp..."; \
-		mkdir -p ../.tmp; \
-		curl -L -o ../.tmp/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage; \
-		chmod +x ../.tmp/appimagetool; \
-		TOOL=../.tmp/appimagetool; \
-	fi; \
-	ARCH=x86_64 $$TOOL $(BUILD)/$(APPNAME).AppDir ../releases/$(APPNAME)-$$(date +%Y-%m-%d)-$(VERSION)-x86_64.AppImage
+	@command -v appimagetool >/dev/null 2>&1 || { \
+		echo "Error: appimagetool not found on PATH."; \
+		echo "Install it first, e.g.:"; \
+		echo "  curl -L -o /usr/local/bin/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage"; \
+		echo "  chmod +x /usr/local/bin/appimagetool"; \
+		echo "See docs/build-notes.md for details."; \
+		exit 1; \
+	}
+	ARCH=x86_64 appimagetool $(BUILD)/$(APPNAME).AppDir ../releases/$(APPNAME)-$$(date +%Y-%m-%d)-$(VERSION)-x86_64.AppImage
 	@echo "AppImage created in ../releases/"
 
 .PHONY: clean
