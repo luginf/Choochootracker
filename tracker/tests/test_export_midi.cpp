@@ -77,4 +77,36 @@ TEST_CASE("an empty song refuses to export") {
   CHECK(projectExportMidi(&p, "/tmp/test_export_midi_empty.mid") != 0);
 }
 
+TEST_CASE("a chain ending early advances to the next song row immediately, not after a full 256-row block") {
+  Project p;
+  projectInitAY(&p);
+  p.tracksCount = 1;
+
+  // Song row 0's chain only fills chain row 0 (rows 1-15 stay "---"): real
+  // playback ends the chain there and jumps straight to song row 1, rather
+  // than padding out the remaining 15 chain rows as silence.
+  setNote(&p, 0, 0, 0, 0, 0, 0, 15);
+  setNote(&p, 0, 1, 0, 0, 1, 0, 15); // second song row, distinct note
+
+  const char* path = "/tmp/test_export_midi_early_chain_end.mid";
+  REQUIRE(projectExportMidi(&p, path) == 0);
+
+  SmfReadResult result;
+  REQUIRE(smfReadFile(path, &result) == 0);
+
+  // noteOn(12), then noteOff(12)+noteOn(13) back-to-back where the chain
+  // ends and the song row advances, then a final noteOff(13) at track end.
+  REQUIRE(result.channels[0].count == 4);
+  CHECK(result.channels[0].events[0].type == SmfEventType::noteOn);
+  CHECK(result.channels[0].events[0].note == 12); // song row 0's note
+  CHECK(result.channels[0].events[0].absoluteTick == 0);
+  CHECK(result.channels[0].events[2].type == SmfEventType::noteOn);
+  CHECK(result.channels[0].events[2].note == 13); // song row 1's note
+  // One full 16-row phrase (not 256 rows) after the first note.
+  CHECK(result.channels[0].events[2].absoluteTick == 16 * 120);
+
+  smfFreeReadResult(&result);
+  std::remove(path);
+}
+
 }
