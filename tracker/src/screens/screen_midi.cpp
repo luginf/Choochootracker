@@ -107,6 +107,9 @@ static int onEdit(int col, int row, CellEditAction action) {
     if (isInput) {
       if (*device < 0) midiIoCloseInput(); else if (midiIoOpenInput(*device) != 0) *device = -1;
     } else {
+      // Flush any still-sounding notes on the port we're about to leave -
+      // once it's closed/switched, a Note Off can no longer reach it.
+      chipnomadMidiPanic(chipnomadState);
       if (*device < 0) midiIoCloseOutput(); else if (midiIoOpenOutput(*device) != 0) *device = -1;
     }
     return 1;

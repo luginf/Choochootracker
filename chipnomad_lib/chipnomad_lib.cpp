@@ -732,7 +732,10 @@ static void updateAudioRateModulations(ChipNomadState* state) {
 static int advancePlaybackFrame(ChipNomadState* state, uint64_t dueMicros) {
   state->audioCommands->applyProject(&state->audioProject);
   state->playbackState.p = &state->audioProject;
-  if (state->audioCommands->takeStopRequest()) playbackStop(&state->playbackState);
+  if (state->audioCommands->takeStopRequest()) {
+    chipnomadMidiPanic(state);
+    playbackStop(&state->playbackState);
+  }
   state->audioCommands->applySettings(&state->playbackState);
   state->audioCommands->applyCommands(&state->playbackState);
   float axes[4];
@@ -1114,6 +1117,7 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
             if (velocity < 1) velocity = 1;
             midiIoScheduleMessage((uint8_t)(0x90 | channel), (uint8_t)midiNote, (uint8_t)velocity, dueMicros);
             *activeNote = (uint8_t)midiNote;
+            state->midiActiveChannel[trackIdx][slot] = channel;
             *active = 1;
           }
         }
@@ -1123,6 +1127,35 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
     }
     track->note.noteTriggered = track->note.noteReleased = track->note.noteKilled = 0;
   }
+}
+
+void chipnomadMidiPanic(ChipNomadState* state) {
+  if (!state) return;
+  uint64_t now = midiIoNowMicros();
+  // InstrumentType::Midi keeps no voice object of its own (see
+  // applyVoiceEvents above), so unlike every other instrument type it can't
+  // naturally decay through its own release stage: an active note left
+  // without an explicit Note Off stays stuck on the external device. This
+  // is the only state that tracks "still sounding" independently of
+  // PlaybackTrackState, so it survives a hard track reset (e.g. Stop) that
+  // clears noteTriggered/noteReleased before applyVoiceEvents ever sees them.
+  for (int trackIdx = 0; trackIdx < PROJECT_MAX_TRACKS; ++trackIdx) {
+    for (int slot = 0; slot < CHORD_MAX_VOICES; ++slot) {
+      if (!state->midiNoteActive[trackIdx][slot]) continue;
+      uint8_t channel = state->midiActiveChannel[trackIdx][slot];
+      uint8_t note = state->midiActiveNote[trackIdx][slot];
+      midiIoScheduleMessage((uint8_t)(0x80 | channel), note, 0, now);
+      state->midiNoteActive[trackIdx][slot] = 0;
+    }
+  }
+  // Final fallback, unconditionally on every channel: cheap insurance against
+  // any note this sweep doesn't know about (e.g. one triggered by a device
+  // that was reconnected mid-song, or future MIDI input paths).
+  for (uint8_t channel = 0; channel < 16; ++channel) {
+    midiIoScheduleMessage((uint8_t)(0xB0 | channel), 123, 0, now); // All Notes Off
+    midiIoScheduleMessage((uint8_t)(0xB0 | channel), 120, 0, now); // All Sound Off
+  }
+  memset(state->midiChannelSetupSent, 0, sizeof(state->midiChannelSetupSent));
 }
 
 static void updateSampleVoices(ChipNomadState* state) {

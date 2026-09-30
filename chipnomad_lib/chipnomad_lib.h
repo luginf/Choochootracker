@@ -91,6 +91,10 @@ struct ChipNomadState {
   // from the value it was triggered with. Zero-initialized to "inactive".
   uint8_t midiNoteActive[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   uint8_t midiActiveNote[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  // The channel the Note On above was actually sent on, so a panic sweep
+  // (chipnomadMidiPanic) can target the right channel even if the
+  // instrument's Channel setting has since changed.
+  uint8_t midiActiveChannel[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   // Per MIDI channel (not per track: two tracks can share a channel), so
   // Program Change/Bank Select are only (re-)sent when they'd actually
   // change what the receiving device is set to - see applyVoiceEvents().
@@ -132,6 +136,11 @@ int chipnomadQueueProjectRefresh(ChipNomadState* state);
 int chipnomadQueuePlaybackScale(ChipNomadState* state, uint8_t root, ScalePreset preset);
 void chipnomadDiscardQueuedProject(ChipNomadState* state);
 void chipnomadQueuePlaybackStop(ChipNomadState* state);
+// Sends Note Off for every currently active MIDI Out note, plus a blanket
+// CC123 (All Notes Off) / CC120 (All Sound Off) on every channel as a final
+// fallback. Call before closing/switching the MIDI output port and on
+// application shutdown, in addition to the automatic call on playback stop.
+void chipnomadMidiPanic(ChipNomadState* state);
 int chipnomadQueuePlaybackStartSong(ChipNomadState* state, int songRow, int chainRow, int loop);
 int chipnomadQueuePlaybackStartChain(ChipNomadState* state, int trackIdx, int songRow, int chainRow, int loop);
 int chipnomadQueuePlaybackStartPhrase(ChipNomadState* state, int trackIdx, int songRow, int chainRow, int loop);

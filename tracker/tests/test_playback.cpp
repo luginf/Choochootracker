@@ -141,6 +141,31 @@ TEST_CASE("playback stop command applies on the audio tick") {
   CHECK_FALSE(playbackIsPlaying(&fixture.state->playbackState));
 }
 
+TEST_CASE("playback stop sends MIDI Note Off instead of leaving the note stuck") {
+  PlaybackFixture fixture;
+  ChipNomadState* state = fixture.state;
+  getInstrumentFunctions(InstrumentType::Midi).init(&state->project.instruments[0]);
+  REQUIRE(chipnomadQueueProjectRefresh(state));
+  playbackPreviewNote(&state->playbackState, 0, 60, 0);
+
+  // Render a full tick's worth of samples (not just 1) so frameSampleCounter
+  // actually cycles back to 0 within each call and advancePlaybackFrame -
+  // where the preview command, then later the queued stop, are consumed -
+  // runs both times, rather than only on the very first sample ever rendered.
+  float buffer[2048] = {};
+  chipnomadRender(state, buffer, 1024);
+  REQUIRE(state->midiNoteActive[0][0] == 1);
+
+  // resetTrack() (called from playbackStop) clears noteTriggered/noteReleased
+  // directly, bypassing the normal path applyVoiceEvents uses to notice a
+  // release and send Note Off - the stop command must still flush it via
+  // chipnomadMidiPanic, or the note stays stuck on the external device.
+  chipnomadQueuePlaybackStop(state);
+  chipnomadRender(state, buffer, 1024);
+
+  CHECK(state->midiNoteActive[0][0] == 0);
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "playback init all tracks stopped") {
   CHECK_FALSE(playbackIsPlaying(&state->playbackState));
 }
@@ -455,6 +480,26 @@ TEST_CASE_FIXTURE(PlaybackFixture, "Plaits instrument renders and receives note 
   handleNoteOff(&state->playbackState, 0);
   CHECK(state->playbackState.tracks[0].note.noteReleased == 1);
   CHECK(state->playbackState.tracks[0].note.pitchBase == EMPTY_VALUE_8);
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "MIDI Out instrument tracks its active note and panic sends Note Off") {
+  getInstrumentFunctions(InstrumentType::Midi).init(&state->project.instruments[0]);
+  state->project.instruments[0].chip.midi.channel = 3;
+  REQUIRE(chipnomadQueueProjectRefresh(state));
+  playbackPreviewNote(&state->playbackState, 0, 60, 0);
+
+  float buffer[2] = {};
+  chipnomadRender(state, buffer, 1);
+
+  REQUIRE(state->midiNoteActive[0][0] == 1);
+  CHECK(state->midiActiveChannel[0][0] == 3);
+  REQUIRE(state->midiChannelSetupSent[3] == 1);
+
+  chipnomadMidiPanic(state);
+  CHECK(state->midiNoteActive[0][0] == 0);
+  // So the next note on this channel re-sends Program/Bank instead of
+  // assuming a device we may have just reconnected to still remembers it.
+  CHECK(state->midiChannelSetupSent[3] == 0);
 }
 
 TEST_CASE_FIXTURE(PlaybackFixture, "SLE reaches every BYOWTBL engine FX destination") {

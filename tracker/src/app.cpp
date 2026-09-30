@@ -339,6 +339,13 @@ extern "C" EMSCRIPTEN_KEEPALIVE int webSaveProject(const char* path) {
 */
 void appCleanup(void) {
   audioManager.stop();
+  // Explicitly flush and close MIDI I/O rather than relying on process exit:
+  // the output port owns a worker thread that must be stopped and joined
+  // cleanly, and any still-sounding note must get a Note Off while the port
+  // is still open.
+  chipnomadMidiPanic(chipnomadState);
+  midiIoCloseInput();
+  midiIoCloseOutput();
   chipnomadDestroy(chipnomadState);
   chipnomadState = NULL;
 }

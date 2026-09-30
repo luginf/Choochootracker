@@ -40,6 +40,11 @@ static std::atomic<bool> g_midiOutThreadRunning{false};
 static std::thread* g_midiOutThread = NULL;
 
 void midiIoScheduleMessage(uint8_t status, uint8_t data1, uint8_t data2, uint64_t dueMicros) {
+  // No output open means no drain thread running to ever consume this
+  // queue: without this guard, a project with MIDI instruments but no
+  // output device selected would silently fill the queue and start
+  // dropping messages instead of just doing nothing.
+  if (!g_midiOut) return;
   unsigned int head = g_midiOutHead.load(std::memory_order_relaxed);
   unsigned int next = (head + 1) % kMidiOutQueueCapacity;
   if (next == g_midiOutTail.load(std::memory_order_acquire)) return; // full: drop rather than block the audio thread
