@@ -58,6 +58,8 @@ CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
 
 TRACKER_SRC_SOURCES = src/app.cpp \
                       src/screens/screen_settings.cpp \
+                      src/screens/screen_midi.cpp \
+                      src/screens/screen_midi_channel_map.cpp \
                       src/string_utils.cpp \
                       src/common.cpp \
                       src/copy_paste.cpp \

@@ -17,6 +17,7 @@ extern "C" {
 #define FILENAME_LENGTH (24)
 #define PATH_LENGTH (4096)
 #define THEME_NAME_LENGTH (16)
+#define MIDI_CHANNEL_COUNT (16)
 
 struct ColorScheme {
   int background;
@@ -70,6 +71,11 @@ struct AppSettings {
   // stable across reboots/replugging, so re-select each launch. -1 = off.
   int midiInputDevice;
   int midiOutputDevice;
+  // Saved to settings.txt: which instrument a MIDI-in note on a given
+  // channel (0-15) plays during preview, e.g. channel 0 -> instrument 5.
+  // -1 = channel not assigned (falls back to the currently selected
+  // instrument, the pre-existing behavior).
+  int8_t midiChannelInstrument[MIDI_CHANNEL_COUNT];
   StickLiveMode stickLiveMode;
   KeyMapping keyMapping;
   ColorScheme colorScheme;

@@ -613,10 +613,16 @@ void appOnEvent(MainLoopEventData eventData) {
       while (midiIoPollInput(&status, &data1, &data2)) {
         if (!previewSafe) continue;
         uint8_t messageType = status & 0xf0;
+        // Settings > MIDI > Channel mapping lets a channel play a specific
+        // instrument instead of whatever's selected on screen (-1 = channel
+        // not assigned, falls back to cInstrument as before).
+        uint8_t channel = status & 0x0f;
+        int8_t mappedInstrument = appSettings.midiChannelInstrument[channel];
+        int instrument = mappedInstrument >= 0 ? mappedInstrument : cInstrument;
         if (messageType == 0x90 && data2 > 0) {
           int note = (int)data1 - 12;
-          if (note >= 0 && note < 128 && !instrumentIsEmpty(&chipnomadState->project, cInstrument)) {
-            chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, (uint8_t)note, cInstrument);
+          if (note >= 0 && note < 128 && !instrumentIsEmpty(&chipnomadState->project, instrument)) {
+            chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, (uint8_t)note, instrument);
           }
         } else if (messageType == 0x80 || (messageType == 0x90 && data2 == 0)) {
           chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);

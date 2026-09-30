@@ -969,7 +969,7 @@ Use **Save** before changing instrument types or loading another project.
 - **Sample dithering** controls AY Sample dithering only.
 - **Braids BITS / DRFT / SIGN** apply globally to every Braids instrument.
 - **Stick live mode** selects `HOLD`, `TOGGLE`, or `FREE` for the existing mapped Stick live button.
-- **MIDI In / MIDI Out** (desktop only) pick a connected MIDI device, cycling through detected ports with `OFF` at either end. See [MIDI](#14-midi).
+- **MIDI** opens the [MIDI](#14-midi) submenu: device selection and the MIDI In channel-to-instrument mapping.
 - **Key mapping**, **Load font**, and **Edit color theme** customise the interface. ChipNomad fonts and themes should work.
 - **Quit ChooChooTracker** exits cleanly.
 
@@ -995,11 +995,11 @@ Adjust Repeat delay and Repeat speed in Settings. If a single press moves twice,
 
 ## 14. MIDI
 
-Desktop only (Linux, Windows, macOS). Pick devices under [Settings](#12-settings) first; both directions need a device selected.
+Desktop only (Linux, Windows, macOS). Settings > **MIDI** opens this submenu: **MIDI In** / **MIDI Out** pick a connected device, cycling through detected ports with `OFF` at either end; both directions need a device selected. The device selection is per session: it is not saved to settings.txt, since a port's position in the list can change across reboots or when devices are plugged in a different order.
 
-- **Sound preview from a MIDI keyboard**: with a MIDI In device selected and the [Instrument](#5-instruments) screen open, playing notes on the connected keyboard auditions the currently selected instrument, the same as the on-screen **EDIT + PLAY** shortcut. This is preview only - it does not enter notes into the song.
+- **Sound preview from a MIDI keyboard**: with a MIDI In device selected and the [Instrument](#5-instruments) screen open, playing notes on the connected keyboard auditions an instrument, the same as the on-screen **EDIT + PLAY** shortcut. This is preview only - it does not enter notes into the song.
+- **Channel mapping**: opens a list of the 16 MIDI channels; assign each one an instrument (`OFF` by default) so notes received on that channel preview that instrument regardless of which one is selected on the Instrument screen - e.g. channel `01` -> instrument `05`. A channel left `OFF` falls back to the currently selected instrument, the original behavior. This mapping is saved to settings.txt.
 - **Driving an external MIDI device**: give a track the [MIDI Out](#midi-out) instrument type and set its Channel; triggering notes on that track sends real MIDI to the selected MIDI Out device instead of making sound in ChooChooTracker.
-- The device selection is per session: it is not saved to settings.txt, since a port's position in the list can change across reboots or when devices are plugged in a different order.
 
 ## 15. Credits and licensing
 
