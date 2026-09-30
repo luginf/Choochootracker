@@ -591,11 +591,13 @@ void appOnEvent(MainLoopEventData eventData) {
     }
     if (audioProjectDirty && chipnomadQueueProjectRefresh(chipnomadState)) audioProjectDirty = 0;
 
-    // MIDI-in sound preview: while the Instrument screen is open, an
-    // external MIDI keyboard plays the currently selected instrument the
-    // same way the on-screen Edit+Play preview shortcut does - auditioning
-    // a sound only, not note entry into the song. No-ops when no MIDI
-    // input device is open (midiIoPollInput always returns 0 then).
+    // MIDI-in sound preview: an external MIDI keyboard auditions a sound on
+    // the current track - not note entry into the song - the same way the
+    // on-screen Edit+Play preview shortcut does on the Instrument screen.
+    // Available on every screen so a multi-channel keyboard (see channel
+    // mapping below) can be played live regardless of what's on screen. No-op
+    // when no MIDI input device is open (midiIoPollInput always returns 0
+    // then).
     //
     // Always drain the poll queue even when we won't act on it (below), so
     // a keyboard held/played while the song is actually playing doesn't
@@ -606,7 +608,7 @@ void appOnEvent(MainLoopEventData eventData) {
     // isPlaying) would block every note after the first, since the first
     // note's own preview never fully lets go of the track between key
     // presses.
-    if (currentScreen == &screenInstrument) {
+    {
       PlaybackMode trackMode = chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode;
       int previewSafe = trackMode == PlaybackMode::stopped || trackMode == PlaybackMode::phraseRow;
       uint8_t status, data1, data2;
@@ -614,8 +616,8 @@ void appOnEvent(MainLoopEventData eventData) {
         if (!previewSafe) continue;
         uint8_t messageType = status & 0xf0;
         // Settings > MIDI > Channel mapping lets a channel play a specific
-        // instrument instead of whatever's selected on screen (-1 = channel
-        // not assigned, falls back to cInstrument as before).
+        // instrument regardless of what's selected on the Instrument screen
+        // (-1 = channel not assigned, falls back to cInstrument as before).
         uint8_t channel = status & 0x0f;
         int8_t mappedInstrument = appSettings.midiChannelInstrument[channel];
         int instrument = mappedInstrument >= 0 ? mappedInstrument : cInstrument;

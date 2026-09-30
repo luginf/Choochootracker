@@ -997,7 +997,7 @@ Adjust Repeat delay and Repeat speed in Settings. If a single press moves twice,
 
 Desktop only (Linux, Windows, macOS). Settings > **MIDI** opens this submenu: **MIDI In** / **MIDI Out** pick a connected device, cycling through detected ports with `OFF` at either end; both directions need a device selected. The device selection is per session: it is not saved to settings.txt, since a port's position in the list can change across reboots or when devices are plugged in a different order.
 
-- **Sound preview from a MIDI keyboard**: with a MIDI In device selected and the [Instrument](#5-instruments) screen open, playing notes on the connected keyboard auditions an instrument, the same as the on-screen **EDIT + PLAY** shortcut. This is preview only - it does not enter notes into the song.
+- **Sound preview from a MIDI keyboard**: with a MIDI In device selected, playing notes on the connected keyboard auditions an instrument on any screen, the same as the on-screen **EDIT + PLAY** shortcut on the [Instrument](#5-instruments) screen. This is preview only - it does not enter notes into the song.
 - **Channel mapping**: opens a list of the 16 MIDI channels; assign each one an instrument (`OFF` by default) so notes received on that channel preview that instrument regardless of which one is selected on the Instrument screen - e.g. channel `01` -> instrument `05`. A channel left `OFF` falls back to the currently selected instrument, the original behavior. This mapping is saved to settings.txt.
 - **Driving an external MIDI device**: give a track the [MIDI Out](#midi-out) instrument type and set its Channel; triggering notes on that track sends real MIDI to the selected MIDI Out device instead of making sound in ChooChooTracker.
 
