@@ -12,15 +12,42 @@ static int columnCount(int row) {
   return 1;
 }
 
+// The value field starts at column 23 on the fixed 40-column char grid (see
+// screens.cpp's gfxClearRect(0, 0, 40, 20)), leaving 17 columns to work with.
+#define DEVICE_FIELD_X (23)
+#define DEVICE_FIELD_WIDTH (40 - DEVICE_FIELD_X)
+
+// Truncates src to at most maxLen visible characters, replacing the tail
+// with "..." when it doesn't fit, rather than letting a long device name
+// overwrite neighboring rows or wrap past the field.
+static void truncateWithEllipsis(const char* src, char* dst, int maxLen) {
+  int len = (int)strlen(src);
+  if (len <= maxLen) {
+    strcpy(dst, src);
+    return;
+  }
+  if (maxLen <= 3) {
+    strncpy(dst, src, maxLen);
+    dst[maxLen] = '\0';
+    return;
+  }
+  strncpy(dst, src, maxLen - 3);
+  strcpy(dst + (maxLen - 3), "...");
+}
+
 // isInput selects which port list to look up (input ports for MIDI In,
 // output ports for MIDI Out). deviceIndex < 0, or out of range because a
-// device was unplugged since it was selected, both show as "OFF".
+// device was unplugged since it was selected, both show as "OFF". The
+// result is already clipped to DEVICE_FIELD_WIDTH.
 static void midiDeviceLabel(int isInput, int deviceIndex, char* buffer, int bufferSize) {
   int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
+  char fullName[128];
   if (deviceIndex < 0 || deviceIndex >= count ||
-      (isInput ? midiIoInputPortName(deviceIndex, buffer, bufferSize) : midiIoOutputPortName(deviceIndex, buffer, bufferSize)) != 0) {
+      (isInput ? midiIoInputPortName(deviceIndex, fullName, sizeof(fullName)) : midiIoOutputPortName(deviceIndex, fullName, sizeof(fullName))) != 0) {
     snprintf(buffer, bufferSize, "OFF");
+    return;
   }
+  truncateWithEllipsis(fullName, buffer, bufferSize - 1 < DEVICE_FIELD_WIDTH ? bufferSize - 1 : DEVICE_FIELD_WIDTH);
 }
 
 static void drawStatic(void) {
@@ -30,7 +57,7 @@ static void drawStatic(void) {
 
 static void drawCursor(int col, int row) {
   if ((row == 0 || row == 1) && col == 0) {
-    gfxCursor(23, 2 + row, 20);
+    gfxCursor(DEVICE_FIELD_X, 2 + row, DEVICE_FIELD_WIDTH);
   } else if (row == 2 && col == 0) {
     gfxCursor(0, 4, 15);
   }
@@ -47,18 +74,18 @@ static void drawField(int col, int row, CellState state) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, 2, "MIDI In");
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    char name[24];
+    char name[DEVICE_FIELD_WIDTH + 1];
     midiDeviceLabel(1, appSettings.midiInputDevice, name, sizeof(name));
-    gfxClearRect(23, 2, 24, 1);
-    gfxPrint(23, 2, name);
+    gfxClearRect(DEVICE_FIELD_X, 2, DEVICE_FIELD_WIDTH, 1);
+    gfxPrint(DEVICE_FIELD_X, 2, name);
   } else if (row == 1 && col == 0) {
     gfxSetFgColor(appSettings.colorScheme.textDefault);
     gfxPrint(0, 3, "MIDI Out");
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    char name[24];
+    char name[DEVICE_FIELD_WIDTH + 1];
     midiDeviceLabel(0, appSettings.midiOutputDevice, name, sizeof(name));
-    gfxClearRect(23, 3, 24, 1);
-    gfxPrint(23, 3, name);
+    gfxClearRect(DEVICE_FIELD_X, 3, DEVICE_FIELD_WIDTH, 1);
+    gfxPrint(DEVICE_FIELD_X, 3, name);
   } else if (row == 2 && col == 0) {
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
     gfxPrint(0, 5, "Channel mapping");

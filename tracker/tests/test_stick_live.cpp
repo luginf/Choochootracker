@@ -349,7 +349,7 @@ TEST_CASE_FIXTURE(StickLiveFixture, "screenMidi shows device rows and links to c
   screen->drawCursor(0, 0);
   CHECK(mockCursorX == 23);
   CHECK(mockCursorY == 2);
-  CHECK(mockCursorWidth == 20);
+  CHECK(mockCursorWidth == 17);
   CHECK(screen->onEdit(0, 0, CellEditAction::increase) == 1); // handled, wraps straight back to OFF (no ports)
   CHECK(appSettings.midiInputDevice == -1);
 
