@@ -46,11 +46,15 @@ static SelectionItem instrumentTypeSample[] = {
   {NULL, (int)InstrumentType::BYOWTBL, NULL, 0},
   {NULL, (int)InstrumentType::Sample, NULL, 0},
 };
+static SelectionItem instrumentTypeMidi[] = {
+  {NULL, (int)InstrumentType::Midi, NULL, 0},
+};
 static const SelectionItem instrumentTypeCategories[] = {
   {"CHIP", -1, instrumentTypeChip, 3},
   {"DRUMS", -1, instrumentTypeDrums, 2},
   {"SAMPLE", -1, instrumentTypeSample, 3},
   {"SYNTH", -1, instrumentTypeSynth, 5},
+  {"MIDI", -1, instrumentTypeMidi, 1},
 };
 
 static const InstrumentType instrumentTypesQuickCycle[] = {
@@ -59,7 +63,7 @@ static const InstrumentType instrumentTypesQuickCycle[] = {
   InstrumentType::SCWF, InstrumentType::BYOWTBL, InstrumentType::Sample,
   InstrumentType::AChChid, InstrumentType::Braids,
   InstrumentType::Plaits, InstrumentType::PlaitsAlt,
-  InstrumentType::MME,
+  InstrumentType::MME, InstrumentType::Midi,
 };
 
 static int editInstrumentType(CellEditAction action, InstrumentType* type) {
@@ -258,7 +262,7 @@ static ScreenData* instrumentScreen(void) {
     &screenInstrumentAYSample, &screenInstrumentBraids, &screenInstrumentSample,
     &screenInstrumentSCWF, &screenInstrumentBYOWTBL, &screenInstrumentPlaits, &screenInstrumentAChChid,
     &screenInstrumentDrumSynth, &screenInstrumentMME,
-    &screenInstrumentSintered,
+    &screenInstrumentSintered, &screenInstrumentMidi,
   };
   InstrumentScreenKind kind = getInstrumentDefinition(chipnomadState->project.instruments[cInstrument].type)->screen;
   ScreenData* data = screens[(int)kind];
@@ -272,9 +276,9 @@ static void init(void) {
   typeButtonDown = 0;
   screenInstrumentNone.cursorRow = 0;
   screenInstrumentNone.cursorCol = 0;
-  SelectionItem* groups[] = {instrumentTypeChip, instrumentTypeSample, instrumentTypeSynth, instrumentTypeDrums};
-  const int counts[] = {3, 3, 5, 2};
-  for (int group = 0; group < 4; ++group)
+  SelectionItem* groups[] = {instrumentTypeChip, instrumentTypeSample, instrumentTypeSynth, instrumentTypeDrums, instrumentTypeMidi};
+  const int counts[] = {3, 3, 5, 2, 1};
+  for (int group = 0; group < 5; ++group)
     for (int item = 0; item < counts[group]; ++item)
       groups[group][item].label = getInstrumentDefinition((InstrumentType)groups[group][item].value)->uiName;
 }

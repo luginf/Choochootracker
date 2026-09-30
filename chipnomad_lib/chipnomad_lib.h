@@ -85,6 +85,12 @@ struct ChipNomadState {
   DrumSynthVoice* drumSynthVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   MMEVoice* mmeVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   SinteredVoice* sinteredVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  // A MIDI-out instrument has no voice object (see applyVoiceEvents in
+  // chipnomad_lib.cpp): this is the minimal per-slot state needed to send a
+  // matching Note Off later even if the chord's pitch has since slid away
+  // from the value it was triggered with. Zero-initialized to "inactive".
+  uint8_t midiNoteActive[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  uint8_t midiActiveNote[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   VoiceMonitor voiceMonitors[PROJECT_MAX_TRACKS];
   MasterEffects* masterEffects;
   AudioCommandQueue* audioCommands;

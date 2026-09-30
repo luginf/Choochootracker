@@ -66,6 +66,10 @@ struct AppSettings {
   int pitchConflictWarning;
   int quickHelpReleaseSeen;
   int ayWavetableLfoView;
+  // Runtime-only (not saved to settings.txt): MIDI port indices are not
+  // stable across reboots/replugging, so re-select each launch. -1 = off.
+  int midiInputDevice;
+  int midiOutputDevice;
   StickLiveMode stickLiveMode;
   KeyMapping keyMapping;
   ColorScheme colorScheme;

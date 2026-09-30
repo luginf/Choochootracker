@@ -283,7 +283,7 @@ TEST_CASE_FIXTURE(StickLiveFixture, "absent, older and invalid settings default 
 TEST_CASE_FIXTURE(StickLiveFixture, "Settings row, padded value, cursor and subsequent actions align") {
   screenSettings.fullRedraw();
   REQUIRE(mockScreenData != nullptr);
-  CHECK(mockScreenData->rows == 14);
+  CHECK(mockScreenData->rows == 16);
   auto* screen = mockScreenData;
   CHECK(screen->getColumnCount(9) == 1);
   screen->drawField(0, 9, CellState::focus);
@@ -310,19 +310,37 @@ TEST_CASE_FIXTURE(StickLiveFixture, "Settings row, padded value, cursor and subs
   CHECK(mockCursorY == 11);
   CHECK(mockCursorWidth == 6);
 
+  // MIDI In/Out rows: no real device attached under test, so they stay OFF.
+  screen->drawField(0, 10, CellState::focus);
+  CHECK(std::string(mockGfxCells[12], 7) == "MIDI In");
+  CHECK(std::string(mockGfxCells[12] + 23, 3) == "OFF");
+  screen->drawCursor(0, 10);
+  CHECK(mockCursorX == 23);
+  CHECK(mockCursorY == 12);
+  CHECK(mockCursorWidth == 20);
+  CHECK(screen->onEdit(0, 10, CellEditAction::increase) == 1); // handled, but wraps straight back to OFF (no ports)
+  CHECK(appSettings.midiInputDevice == -1);
+  screen->drawField(0, 11, CellState::focus);
+  CHECK(std::string(mockGfxCells[13], 8) == "MIDI Out");
+  CHECK(std::string(mockGfxCells[13] + 23, 3) == "OFF");
+  screen->drawCursor(0, 11);
+  CHECK(mockCursorX == 23);
+  CHECK(mockCursorY == 13);
+  CHECK(mockCursorWidth == 20);
+
   const char* labels[] = {"Key mapping", "Load font", "Edit color theme", "Quit ChooChooTracker"};
-  const int lines[] = {12, 13, 14, 18};
+  const int lines[] = {14, 15, 16, 19};
   const int widths[] = {11, 9, 16, 19}; // preserve existing action cursor widths
   const AppScreen* destinations[] = {&screenKeyMapping, &screenFileBrowser, &screenColorTheme};
   mockQuitTriggered = 0;
   for (int i = 0; i < 4; ++i) {
-    screen->drawField(0, 10 + i, CellState::focus);
+    screen->drawField(0, 12 + i, CellState::focus);
     CHECK(std::string(mockGfxCells[lines[i]], std::string(labels[i]).size()) == labels[i]);
-    screen->drawCursor(0, 10 + i);
+    screen->drawCursor(0, 12 + i);
     CHECK(mockCursorX == 0);
     CHECK(mockCursorY == lines[i]);
     CHECK(mockCursorWidth == widths[i]);
-    screen->onEdit(0, 10 + i, CellEditAction::tap);
+    screen->onEdit(0, 12 + i, CellEditAction::tap);
     if (i < 3) {
       CHECK(currentScreen == destinations[i]);
       CHECK_FALSE(mockQuitTriggered);

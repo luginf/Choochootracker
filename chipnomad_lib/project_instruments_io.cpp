@@ -284,6 +284,16 @@ static int loadInstrumentAChChid(FILE* file, Instrument* instrument) {
   }
 }
 
+static int loadInstrumentMidi(FILE* file, Instrument* instrument) {
+  InstrumentMidi* m = &instrument->chip.midi;
+  while (1) {
+    char* line = peekLine(file);
+    if (line == NULL || line[0] == '#') return 0;
+    if (strncmp(line, "- Channel: ", 11) == 0) sscanf(line, "- Channel: %hhu", &m->channel);
+    consumeLine(file);
+  }
+}
+
 static int loadInstrumentSCWF(FILE* file, Instrument* instrument) {
   InstrumentSCWF* scwf = &instrument->chip.scwf;
   while (1) {
@@ -517,6 +527,9 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
       case InstrumentType::Sintered:
         if (loadInstrumentSintered(file, instrument)) return 1;
         break;
+      case InstrumentType::Midi:
+        if (loadInstrumentMidi(file, instrument)) return 1;
+        break;
       default:
         break;
     }
@@ -662,6 +675,12 @@ static int saveInstrumentAChChid(FILE* file, Instrument* instrument) {
   return 0;
 }
 
+static int saveInstrumentMidi(FILE* file, Instrument* instrument) {
+  InstrumentMidi* m = &instrument->chip.midi;
+  fprintf(file, "- Channel: %hhu\n", m->channel);
+  return 0;
+}
+
 static int saveInstrumentSCWF(FILE* file, Instrument* instrument) {
   InstrumentSCWF* scwf = &instrument->chip.scwf;
   fprintf(file, "- Oscillator A path: %s\n", scwf->oscillator[0].path);
@@ -798,6 +817,9 @@ int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
       break;
     case InstrumentType::Sintered:
       saveInstrumentSintered(file, instrument);
+      break;
+    case InstrumentType::Midi:
+      saveInstrumentMidi(file, instrument);
       break;
     default:
       break;
