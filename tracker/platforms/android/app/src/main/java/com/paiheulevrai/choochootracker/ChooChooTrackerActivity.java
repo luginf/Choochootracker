@@ -7,6 +7,7 @@ import android.provider.OpenableColumns;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.util.Locale;
 import org.libsdl.app.SDLActivity;
 
 public final class ChooChooTrackerActivity extends SDLActivity {
@@ -103,7 +104,10 @@ public final class ChooChooTrackerActivity extends SDLActivity {
             importDirectory = relativeDirectory;
             Intent intent = new Intent(Intent.ACTION_OPEN_DOCUMENT);
             intent.addCategory(Intent.CATEGORY_OPENABLE);
-            intent.setType(mimeType);
+            // Downloads providers do not consistently label WAVs as audio/wav
+            // (some use audio/x-wav or application/octet-stream). Let the user
+            // choose the file, then validate its extension below.
+            intent.setType("*/*");
             startActivityForResult(intent, OPEN_DOCUMENT);
         });
     }
@@ -129,6 +133,11 @@ public final class ChooChooTrackerActivity extends SDLActivity {
             }
         } catch (Exception ignored) { }
         name = name.replaceAll("[^A-Za-z0-9._ -]", "_");
+        String expectedExtension = "samples".equals(importDirectory) ? ".wav" : ".cct";
+        if (!name.toLowerCase(Locale.ROOT).endsWith(expectedExtension)) {
+            android.widget.Toast.makeText(this, "Choose a " + expectedExtension + " file", android.widget.Toast.LENGTH_SHORT).show();
+            return;
+        }
         File destination = new File(new File(getWorkspacePath(), importDirectory), name);
         destination.getParentFile().mkdirs();
         try (InputStream input = getContentResolver().openInputStream(uri);

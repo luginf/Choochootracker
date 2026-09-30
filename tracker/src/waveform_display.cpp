@@ -21,6 +21,12 @@ static int charW = 0;
 static int charH = 0;
 static uint8_t noisePattern[512];
 static int noiseAnimIdx = 0;
+// The audio callback may be much slower than the display (notably with a
+// large Android audio buffer).  Keep a UI-side copy so waveform changes are
+// blended over display frames instead of visibly jumping once per callback.
+static float displayedVoiceSamples[PROJECT_MAX_TRACKS][VOICE_MONITOR_SAMPLES];
+static float displayedVoiceEnvelopes[PROJECT_MAX_TRACKS];
+static uint8_t displayedVoiceActive[PROJECT_MAX_TRACKS];
 
 // ============================================================================
 // Playback wavevorm display
@@ -36,6 +42,9 @@ void waveformDisplayInit(void) {
   for (int i = 0; i < PROJECT_MAX_TRACKS; i++) {
     waveformBitmaps[i] = gfxBitmapCreate(1, 1);
   }
+  memset(displayedVoiceSamples, 0, sizeof(displayedVoiceSamples));
+  memset(displayedVoiceEnvelopes, 0, sizeof(displayedVoiceEnvelopes));
+  memset(displayedVoiceActive, 0, sizeof(displayedVoiceActive));
 
   for (int i = 0; i < 512; i++) {
     noisePattern[i] = rand() & 1;
@@ -132,14 +141,35 @@ static int getAYEnvelopeHeight(int x, int envShape) {
 
 static Bitmap* drawVoiceWaveform(int trackIdx) {
   VoiceMonitor* monitor = &chipnomadState->voiceMonitors[trackIdx];
-  if (!monitor->active) return emptyBitmap;
+  if (!monitor->active) {
+    displayedVoiceActive[trackIdx] = 0;
+    return emptyBitmap;
+  }
+
+  // This runs once per rendered UI frame.  The first monitor frame is copied
+  // directly; following callback snapshots glide into place in roughly 4 UI
+  // frames (about 67 ms at 60 Hz).
+  const float blend = 0.3f;
+  if (!displayedVoiceActive[trackIdx]) {
+    memcpy(displayedVoiceSamples[trackIdx], monitor->samples,
+           sizeof(displayedVoiceSamples[trackIdx]));
+    displayedVoiceEnvelopes[trackIdx] = monitor->envelope;
+    displayedVoiceActive[trackIdx] = 1;
+  } else {
+    for (int i = 0; i < VOICE_MONITOR_SAMPLES; ++i) {
+      displayedVoiceSamples[trackIdx][i] +=
+        (monitor->samples[i] - displayedVoiceSamples[trackIdx][i]) * blend;
+    }
+    displayedVoiceEnvelopes[trackIdx] +=
+      (monitor->envelope - displayedVoiceEnvelopes[trackIdx]) * blend;
+  }
 
   Bitmap* bitmap = waveformBitmaps[trackIdx];
   memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels);
   int previousY = charH / 2;
   for (int x = 0; x < charW; ++x) {
     int sampleIdx = charW > 1 ? (x * (VOICE_MONITOR_SAMPLES - 1)) / (charW - 1) : 0;
-    float sample = monitor->samples[sampleIdx];
+    float sample = displayedVoiceSamples[trackIdx][sampleIdx];
     if (sample > 1.0f) sample = 1.0f;
     if (sample < -1.0f) sample = -1.0f;
     int y = (charH - 1) / 2 - (int)(sample * (charH - 1) / 2.0f);
@@ -147,7 +177,7 @@ static Bitmap* drawVoiceWaveform(int trackIdx) {
     previousY = y;
   }
 
-  int envelopeY = charH - 1 - (int)(monitor->envelope * (charH - 1));
+  int envelopeY = charH - 1 - (int)(displayedVoiceEnvelopes[trackIdx] * (charH - 1));
   if (envelopeY < 0) envelopeY = 0;
   for (int x = 0; x < charW; ++x) bitmap->data[envelopeY * charW + x] = ENVELOPE_DIM_BRIGHTNESS;
   return bitmap;

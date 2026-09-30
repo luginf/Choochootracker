@@ -51,6 +51,9 @@ task copyNativeLibs(type: Copy) {
 
 // Make the build process depend on our custom task
 preBuild.dependsOn copyNativeLibs
+tasks.matching { it.name.startsWith('merge') && it.name.endsWith('NativeLibs') }.configureEach {
+    dependsOn copyNativeLibs
+}
 
 android {
     namespace 'com.paiheulevrai.choochootracker'
@@ -60,8 +63,8 @@ android {
         applicationId "com.paiheulevrai.choochootracker"
         minSdk 26
         targetSdk 36
-        versionCode 13
-        versionName "1.0.13-alpha"
+        versionCode 14
+        versionName "1.0.14-alpha"
     }
 
     // Copy bundled tracker content to assets.

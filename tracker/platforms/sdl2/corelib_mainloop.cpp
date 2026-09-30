@@ -283,8 +283,12 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
             event.window.event == SDL_WINDOWEVENT_RESIZED) {
           gfxHandleResize();
 #ifdef TOUCH_INPUT
+#ifndef ANDROID_BUILD
           releaseFingers();
 #endif
+#endif
+          // Android can resize while it transiently reconfigures system bars.
+          // That must not cancel a finger still holding a virtual button.
           // A resize changes the explicit tracker viewport. Redraw the
           // current screen immediately instead of waiting for an input frame.
           eventData.type = MainLoopEvent::fullRedraw;

@@ -20,7 +20,7 @@ FXName fxNamesSequencer[] = {
 };
 int fxSequencerCount = sizeof(fxNamesSequencer) / sizeof(FXName);
 
-FXName fxNamesTrack[] = {{fxRSN, "RSN"}, {fxDSN, "DSN"}, {fxSCL, "SCL"}, {fxCRD, "CRD"}, {fxSTA, "STA"}};
+FXName fxNamesTrack[] = {{fxRSN, "RSN"}, {fxDSN, "DSN"}, {fxSCL, "SCL"}, {fxCRD, "CRD"}};
 int fxTrackCount = sizeof(fxNamesTrack) / sizeof(FXName);
 
 FXName fxNamesEnvelope[] = {
@@ -41,7 +41,7 @@ int fxModulationCount = sizeof(fxNamesModulation) / sizeof(FXName);
 // FX Groups array. FX counts are filled in fillFXNames()
 FXGroup fxGroups[] = {
   {"Sequencer FX", fxNamesSequencer, 0, 8, InstrumentType::none},
-  {"Track FX", fxNamesTrack, 0, 2, InstrumentType::none},
+  {"Track FX", fxNamesTrack, 0, 4, InstrumentType::none},
   {"AY Classic FX", NULL, 0, 8, InstrumentType::AY1},
   {"AY Plus FX", NULL, 0, 8, InstrumentType::AY2},
   {"AYSample FX", NULL, 0, 8, InstrumentType::AYSample},
@@ -57,6 +57,8 @@ FXGroup fxGroups[] = {
   {"Modulation FX", fxNamesModulation, 0, 5, InstrumentType::none},
   {"MME FX", NULL, 0, 8, InstrumentType::MME},
   {"Sintered FX", NULL, 0, 8, InstrumentType::Sintered},
+  {"PD-VCO FX", NULL, 0, 8, InstrumentType::PDVCO},
+  {"PD-voice FX", NULL, 0, 8, InstrumentType::PDVoice},
   {"MIDI FX", NULL, 0, 4, InstrumentType::Midi},
 };
 int fxGroupCount = sizeof(fxGroups) / sizeof(FXGroup);
@@ -103,10 +105,11 @@ void fillFXNames() {
     fxGroups[16].fxList = names; fxGroups[16].count = definition->fxCount;
     for (int i = 0; i < definition->fxCount; ++i) { names[i].fx = (FX)definition->fxList[i].fx; strcpy(names[i].name, definition->fxList[i].name); }
   }
-  {
-    const InstrumentDefinition* definition = getInstrumentDefinition(InstrumentType::Midi);
-    FXName* names = instrumentGroupNames[(int)InstrumentType::Midi];
-    fxGroups[17].fxList = names; fxGroups[17].count = definition->fxCount;
+  for (int group = 17; group < 20; ++group) {
+    InstrumentType type = fxGroups[group].instType;
+    const InstrumentDefinition* definition = getInstrumentDefinition(type);
+    FXName* names = instrumentGroupNames[(int)type];
+    fxGroups[group].fxList = names; fxGroups[group].count = definition->fxCount;
     for (int i = 0; i < definition->fxCount; ++i) { names[i].fx = (FX)definition->fxList[i].fx; strcpy(names[i].name, definition->fxList[i].name); }
   }
 

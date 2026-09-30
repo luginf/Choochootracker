@@ -72,7 +72,8 @@ they sit below the tracker, with a square D-pad, A/EDIT, B/OPT, START/PLAY and
 SELECT/SHIFT controls, then a separate Live/Motion section with two modulation
 sticks and momentary REC/DEL controls. Landscape keeps the D-pad on the left
 and the action buttons on the right. Android projects and samples stay private to
-the app; use the Android file picker to import files and save WAV exports.
+the app; use the Android file picker to import `.cct` projects and `.wav` samples,
+and to choose where WAV exports are saved.
 
 ### Navigation
 
@@ -280,6 +281,46 @@ Each instrument has a default table with the same number in the `00-7F` range. Y
 - **EDIT + PLAY**: preview the instrument
 - **SHIFT + OPT**: copy the instrument
 - **SHIFT + EDIT**: paste the instrument
+
+### Pure Data instruments (Windows POC)
+
+`PD-VCO` and `PD-voice` load Pd Vanilla `.pd` patches from the instrument
+screen. This POC is available only in the Windows build. Each active tracker
+track owns an independent libpd instance.
+
+- `PD-VCO` treats the patch as a mono oscillator and passes its left output
+  through ChooChooTracker's standard filter and ADSR. The patch should not add
+  its own amplitude envelope.
+- `PD-voice` is a complete voice: its patch owns its envelope and filtering.
+  Its left and right outputs are mixed directly. Without `audio stereo`
+  metadata, the left channel is duplicated to the right.
+- The instrument page shows the patch status and eight `00-FF` macros. Phrase
+  and Table FX `PD1` through `PD8` replace the corresponding macro value for
+  that row.
+- Saved projects use a path relative to the `.cct` when the patch is inside
+  the project folder. Missing patches leave the instrument silent and do not
+  prevent the song from opening.
+
+Only Pd Vanilla objects are supported. Native externals, third-party DLLs and
+community packs are neither loaded nor distributed by ChooChooTracker; custom
+patches run at the user's own risk.
+
+#### Patch contract
+
+Receive MIDI notes on `[r cct-note]`, gate `0/1` on `[r cct-gate]`, and macros
+normalised to `0..1` on `[r cct-m1]` through `[r cct-m8]`. Send audio to
+`[throw~ cct-out-l]` and optionally `[throw~ cct-out-r]`, and include the
+bundled `[cct-output~]` abstraction to route those buses to libpd.
+
+When the tracker bangs `cct-meta`, reply to `cct-meta` with
+`param <1-8> <short_name>` messages. Underscores display as spaces. Send
+`audio stereo` as well only when the patch provides a real right channel.
+Search paths are limited to the patch folder and ChooChooTracker's bundled Pd
+abstractions.
+
+Two intentionally silly examples are installed in the `pd` folder:
+`Warp Wobble.pd` is a phase-warped `PD-VCO`, and `Pigeon Laser.pd` is a noisy
+gliding `PD-voice` with its own envelope.
 
 ### AY Classic, AY Plus and AY Sample
 
@@ -549,6 +590,8 @@ The available modulation types are:
 
 The list of modulation destinations depends on the instrument type.
 
+For a `Cutoff` destination, Amount is exponential with a quadratic response: 25% reaches 4.5 semitones, 50% reaches 18 semitones, 75% reaches 40.5 semitones, and 100% reaches six octaves. This keeps fine control at low amounts while still allowing deep sweeps.
+
 When an ADSR or AHD envelope targets Volume, it becomes the instrument's volume envelope. An LFO targeting Volume offsets the current output volume instead.
 
 The modulation amount can be positive or negative. Its range depends on the destination. If the destination's full range is `127` or less, as it is for most parameters, the amount defines an absolute range. Wider destinations such as pitch use a scaled amount.
@@ -663,7 +706,7 @@ Each FX has a 3-letter command and a hexadecimal value. The in-app help panel gi
 
 ### Chords
 
-`CRD XY` turns the note on its own Phrase row into a chord. `Y` selects: `0` Major, `1` Minor, `2` Dim, `3` Aug, `4` Sus2, `5` Sus4, `6` Power, `7` Maj7, `8` Min7, `9` Dom7, `A` Min7b5, `B` Dim7, `C` Add9, `D` MinAdd9, `E` Maj9, or `F` Min9. `X` selects the voicing: `0` is root position, `1-7` move the lowest voice up by octaves, and `8-F` move it down. The command is not persistent: write it on every chorded row. Each generated note is quantized independently when Scale is active. It is available to software engines only; AY instruments ignore it and remain monophonic.
+`CRD XY` turns the note on its own Phrase row into a chord. `Y` selects: `0` Major, `1` Minor, `2` Dim, `3` Aug, `4` Sus2, `5` Sus4, `6` Power, `7` Maj7, `8` Min7, `9` Dom7, `A` Min7b5, `B` Dim7, `C` Add9, `D` MinAdd9, `E` Maj9, or `F` Min9. `X` selects the musical inversion: `0` is root position; three-note chords offer `1-2`, and four-note chords offer `1-3`. The command is not persistent: write it on every chorded row. Each generated note is quantized independently when Scale is active. It is available to software engines only; AY instruments ignore it and remain monophonic.
 
 ### Sequencer FX
 
@@ -1003,4 +1046,4 @@ Desktop only (Linux, Windows, macOS). Settings > **MIDI** opens this submenu: **
 
 ## 15. Credits and licensing
 
-ChooChooTracker is a fork of ChipNomad and retains its MIT licensing approach. Braids, Plaits, Plaits-Alt, Clouds DSP, Warps-derived MME DSP and stmlib code are derived from Mutable Instruments' open-source releases under their applicable MIT notices. Plaits-Alt is sourced from the lylepmills/eurorack Plaits Lab fork; its retained source notices apply. The aChChid engine uses Open303 by Robin Schmidt, copyright 2009, under the MIT License. Bogie and Sintered are original native implementations. MIDI I/O uses RtMidi by Gary P. Scavone, under its MIT-style license. See the packaged license files for exact attribution.
+ChooChooTracker is a fork of ChipNomad and retains its MIT licensing approach. Braids, Plaits, Plaits-Alt, Clouds DSP, Warps-derived MME DSP and stmlib code are derived from Mutable Instruments' open-source releases under their applicable MIT notices. Plaits-Alt is sourced from the lylepmills/eurorack Plaits Lab fork; its retained source notices apply. The aChChid engine uses Open303 by Robin Schmidt, copyright 2009, under the MIT License. The Windows Pure Data POC statically links libpd/Pure Data under the Standard Improved BSD License. Bogie and Sintered are original native implementations. MIDI I/O uses RtMidi by Gary P. Scavone, under its MIT-style license. See the packaged license files for exact attribution.

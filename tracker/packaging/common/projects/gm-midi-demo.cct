@@ -340,7 +340,7 @@ OFF -- -- --- 00 --- 00 --- 00
 ### Instrument 0
 
 - Name: GM Piano
-- Type: 14
+- Type: 16
 - Table speed: 1
 - Volume: 255
 - Transpose: 1
@@ -362,7 +362,7 @@ OFF -- -- --- 00 --- 00 --- 00
 ### Instrument 1
 
 - Name: GM Bass
-- Type: 14
+- Type: 16
 - Table speed: 1
 - Volume: 255
 - Transpose: 1
@@ -384,7 +384,7 @@ OFF -- -- --- 00 --- 00 --- 00
 ### Instrument 2
 
 - Name: GM Strings
-- Type: 14
+- Type: 16
 - Table speed: 1
 - Volume: 255
 - Transpose: 1
@@ -406,7 +406,7 @@ OFF -- -- --- 00 --- 00 --- 00
 ### Instrument 3
 
 - Name: GM Flute
-- Type: 14
+- Type: 16
 - Table speed: 1
 - Volume: 255
 - Transpose: 1

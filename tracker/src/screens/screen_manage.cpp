@@ -115,10 +115,10 @@ int manageOnEdit(int col, int row, CellEditAction action) {
       screenMessage(MESSAGE_TIME, "Nothing to clean");
     }
   } else if (row == 3) {
-    fileImportDocument("application/octet-stream", "projects");
+    fileImportDocument("*/*", "projects");
     screenMessage(MESSAGE_TIME, "Choose a project to import");
   } else if (row == 4) {
-    fileImportDocument("audio/wav", "samples");
+    fileImportDocument("*/*", "samples");
     screenMessage(MESSAGE_TIME, "Choose a WAV to import");
   }
 

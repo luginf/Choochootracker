@@ -1,0 +1,3 @@
+[submodule "tracker/external/libpd"]
+	path = tracker/external/libpd
+	url = https://github.com/libpd/libpd.git

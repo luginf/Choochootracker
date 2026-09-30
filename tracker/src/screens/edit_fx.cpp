@@ -1,6 +1,7 @@
 #include "screens.h"
 #include "corelib_gfx.h"
 #include "help.h"
+#include "chord.h"
 
 // State for FX selection screen
 int currentGroup;      // Current group being navigated
@@ -118,6 +119,29 @@ int editFX(CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable, 
 }
 
 int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx) {
+  if (fx[0] == fxCRD) {
+    int isNotMultiAction = action != CellEditAction::multiIncrease && action != CellEditAction::multiDecrease &&
+      action != CellEditAction::multiIncreaseBig && action != CellEditAction::multiDecreaseBig;
+    action = convertMultiAction(action);
+    uint8_t chord = fx[1] & 0x0f;
+    uint8_t inversion = fx[1] >> 4;
+    int handled = 1;
+    if (action == CellEditAction::clear) { chord = 0; inversion = 0; }
+    else if (action == CellEditAction::tap) { if (fx[1] == 0) { chord = lastFX[1] & 0x0f; inversion = lastFX[1] >> 4; } }
+    else if (action == CellEditAction::increase) chord = (chord + 1) & 0x0f;
+    else if (action == CellEditAction::decrease) chord = (chord + 15) & 0x0f;
+    else if (action == CellEditAction::increaseBig && inversion < chordMaxInversion(chord)) ++inversion;
+    else if (action == CellEditAction::decreaseBig && inversion > 0) --inversion;
+    else handled = 0;
+    if (inversion > chordMaxInversion(chord)) inversion = chordMaxInversion(chord);
+    if (handled) {
+      fx[1] = (inversion << 4) | chord;
+      if (isNotMultiAction) lastFX[1] = fx[1];
+    }
+    screenMessage(0, "%s", helpFXHint(fx, isTable, instrumentIdx));
+    return handled;
+  }
+
   action = convertMultiAction(action);
 
   if (fx[0] == fxSPD && !chipnomadState->project.signedTrackSpeed) {

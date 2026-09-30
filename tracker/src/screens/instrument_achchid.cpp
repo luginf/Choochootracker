@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "model_catalog.h"
 #include "selection_popup.h"
+#include "synth/multimode_filter.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -62,7 +63,7 @@ static int onEdit(int col,int row,CellEditAction action) {
   else if(isBraids() && row==4 && !col) ok=edit8noLast(action,&a->model,1,0,46);
   else if(isBraids() && row==5 && !col) ok=editOscillatorParameter(action,&a->timbre);
   else if(isBraids() && row==6 && !col) ok=editOscillatorParameter(action,&a->color);
-  else if(col && row==3) ok=edit16withMinMax(action,&a->cutoff,100,200,20000);
+  else if(col && row==3) ok=edit16withMinMax(action,&a->cutoff,100,200,FILTER_CUTOFF_MAX_HZ);
   else if(col && row==4) ok=editNormalized8(action,&a->resonance,100);
   else if(col && row==5) ok=editNormalized8(action,&a->envMod,100);
   else if(col && row==6) ok=edit16withMinMax(action,&a->decay,50,200,2000);

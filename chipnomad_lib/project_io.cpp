@@ -974,11 +974,35 @@ static int projectLoadInternal(FILE* file, Project* project) {
 
 static int pathIsAbsolute(const char* path) {
   if (path[0] == '/' || path[0] == '\\') return 1;
-#ifdef _WIN32
   return isalpha((unsigned char)path[0]) && path[1] == ':';
-#else
-  return 0;
-#endif
+}
+
+static size_t projectDirectoryLength(const char* projectPath) {
+  const char* slash = strrchr(projectPath, '/');
+  const char* backslash = strrchr(projectPath, '\\');
+  if (!slash || (backslash && backslash > slash)) slash = backslash;
+  return slash ? (size_t)(slash - projectPath + 1) : 0;
+}
+
+static InstrumentPDBase* instrumentPD(Instrument* instrument) {
+  if (instrument->type == InstrumentType::PDVCO)
+    return static_cast<InstrumentPDBase*>(&instrument->chip.pdVco);
+  if (instrument->type == InstrumentType::PDVoice) return &instrument->chip.pdVoice;
+  return NULL;
+}
+
+static void projectResolveRelativePdPatches(Project* project, const char* projectPath) {
+  size_t directoryLength = projectDirectoryLength(projectPath);
+  if (!directoryLength) return;
+  for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; ++i) {
+    InstrumentPDBase* pd = instrumentPD(&project->instruments[i]);
+    if (!pd || !pd->path[0] || pathIsAbsolute(pd->path)) continue;
+    char fullPath[sizeof(pd->path)];
+    if (directoryLength + strlen(pd->path) >= sizeof(fullPath)) continue;
+    memcpy(fullPath, projectPath, directoryLength);
+    strcpy(fullPath + directoryLength, pd->path);
+    strcpy(pd->path, fullPath);
+  }
 }
 
 static void projectLoadRelativeSamples(Project* project, const char* projectPath) {
@@ -1032,7 +1056,10 @@ int projectLoad(Project* p, const char* path) {
 
   int result = projectLoadInternal(file, p);
   fclose(file);
-  if (!result) projectLoadRelativeSamples(p, path);
+  if (!result) {
+    projectLoadRelativeSamples(p, path);
+    projectResolveRelativePdPatches(p, path);
+  }
   return result;
 }
 
@@ -1298,7 +1325,28 @@ int projectSave(Project* p, const char* path) {
   FILE* file = fopen(path, "wb");
   if (file == NULL) return 1;
 
+  // Keep runtime paths absolute, but make portable .cct files when a patch is
+  // inside the project directory.
+  char originalPaths[PROJECT_MAX_INSTRUMENTS][256] = {{0}};
+  size_t directoryLength = projectDirectoryLength(path);
+  for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; ++i) {
+    InstrumentPDBase* pd = instrumentPD(&p->instruments[i]);
+    if (!pd || !pd->path[0] || !directoryLength) continue;
+    int sameDirectory = strlen(pd->path) >= directoryLength;
+#ifdef _WIN32
+    if (sameDirectory) sameDirectory = _strnicmp(pd->path, path, directoryLength) == 0;
+#else
+    if (sameDirectory) sameDirectory = strncmp(pd->path, path, directoryLength) == 0;
+#endif
+    if (!sameDirectory) continue;
+    strcpy(originalPaths[i], pd->path);
+    memmove(pd->path, pd->path + directoryLength, strlen(pd->path + directoryLength) + 1);
+  }
   int result = projectSaveInternal(file, p);
+  for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; ++i) {
+    InstrumentPDBase* pd = instrumentPD(&p->instruments[i]);
+    if (pd && originalPaths[i][0]) strcpy(pd->path, originalPaths[i]);
+  }
   fclose(file);
   return result;
 }

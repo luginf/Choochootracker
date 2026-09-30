@@ -66,8 +66,9 @@ static SDL_Rect getTrackerViewport(void) {
     return (SDL_Rect){(physicalW - canvasW) / 2, (physicalH - groupH) / 2,
       canvasW, canvasH};
   }
-  // Wide displays fill their height. Square and near-square handhelds fit
-  // the 4:3 tracker canvas to their width so neither side is cropped.
+  // Wide displays fill their height.  Square and near-square handhelds must
+  // instead fit the 4:3 tracker canvas to their width; filling the height
+  // would make the viewport wider than the display and crop both sides.
   if (physicalW * 3 >= physicalH * 4) {
     const int canvasW = physicalH * 4 / 3;
     return (SDL_Rect){(physicalW - canvasW) / 2, 0, canvasW, physicalH};
@@ -424,7 +425,21 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     return 1;
   }
 
+  // Android's software renderer repaints the whole tracker canvas on the CPU
+  // and can miss display deadlines while the audio callback stays realtime.
+  // Prefer the platform compositor; retain software as a portability fallback.
+#ifdef ANDROID_BUILD
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  if (!renderer) renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+#else
   renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+#endif
+  if (!renderer) {
+    fprintf(stderr, "SDL2 Create Renderer Error: %s\n", SDL_GetError());
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 1;
+  }
 
   // Check for high-DPI display and get actual drawable size. HTML5 uses a
   // software canvas, so SDL_GL_GetDrawableSize is not meaningful there.

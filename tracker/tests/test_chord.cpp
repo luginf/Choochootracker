@@ -16,15 +16,17 @@ TEST_CASE("fixed chord palette and inversions") {
   CHECK(pitches[2] == 48);
   CHECK(chordBuild(36, 7, 0, 96, pitches) == 4);
   CHECK(pitches[3] == 47);
+  CHECK(chordMaxInversion(0) == 2);
+  CHECK(chordMaxInversion(7) == 3);
   for (uint8_t slot = 0; slot < 16; ++slot) {
     int count = chordBuild(36, slot, 0, 96, pitches);
     CHECK(count >= 2);
     CHECK(count <= CHORD_MAX_VOICES);
   }
   CHECK(chordBuild(36, 0, 0x0f, 96, pitches) == 3);
-  CHECK(pitches[0] == 24);
+  CHECK(pitches[0] == 43);
   CHECK(chordBuild(0, 0, 0x0f, 96, pitches) == 3);
-  CHECK(pitches[0] == 0);
+  CHECK(pitches[0] == 7);
 }
 
 TEST_CASE("CRD is same-row only and quantizes every chord note") {
