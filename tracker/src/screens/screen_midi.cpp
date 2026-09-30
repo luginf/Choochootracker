@@ -2,6 +2,7 @@
 #include "screen_settings.h"
 #include "screen_midi_channel_map.h"
 #include "common.h"
+#include "app.h"
 #include "corelib_gfx.h"
 #include "corelib_input.h"
 #include "screens.h"
@@ -105,6 +106,9 @@ static int onEdit(int col, int row, CellEditAction action) {
     if (*device < -1) *device = count - 1;
     if (*device >= count) *device = -1;
     if (isInput) {
+      // A note held across the switch must not leave a phantom entry in the
+      // legato held-note stack once the (possibly different) device resumes.
+      appMidiInResetHeldNotes();
       if (*device < 0) midiIoCloseInput(); else if (midiIoOpenInput(*device) != 0) *device = -1;
     } else {
       // Flush any still-sounding notes on the port we're about to leave -

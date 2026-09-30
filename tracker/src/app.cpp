@@ -44,6 +44,22 @@ static int quickHelpSelectHeld;
 static int quickHelpSelectAlone;
 static int audioProjectDirty;
 
+// MIDI-in held-note stack for last-note-priority monophonic preview (see the
+// MainLoopEvent::tick handling below). Index 0..midiHeldCount-1, most
+// recently pressed (and still held) note last. midiHeldInstrument stores the
+// instrument each note was triggered with, so resuming an older held note
+// after the current one releases uses the right instrument even if it was
+// pressed on a different (channel-mapped) instrument than the one just
+// released.
+#define MIDI_HELD_NOTES_MAX (16)
+static uint8_t midiHeldNotes[MIDI_HELD_NOTES_MAX];
+static int midiHeldInstrument[MIDI_HELD_NOTES_MAX];
+static int midiHeldCount = 0;
+
+void appMidiInResetHeldNotes(void) {
+  midiHeldCount = 0;
+}
+
 static int applyMotionRecordEvent(const MotionRecordEvent& event) {
   if (event.phrase >= PROJECT_MAX_PHRASES || event.row >= 16 || event.fx >= fxTotalCount) return 0;
   PhraseRow* row = &chipnomadState->project.phrases[event.phrase].rows[event.row];
@@ -346,6 +362,7 @@ void appCleanup(void) {
   chipnomadMidiPanic(chipnomadState);
   midiIoCloseInput();
   midiIoCloseOutput();
+  appMidiInResetHeldNotes();
   chipnomadDestroy(chipnomadState);
   chipnomadState = NULL;
 }
@@ -628,13 +645,48 @@ void appOnEvent(MainLoopEventData eventData) {
         uint8_t channel = status & 0x0f;
         int8_t mappedInstrument = appSettings.midiChannelInstrument[channel];
         int instrument = mappedInstrument >= 0 ? mappedInstrument : cInstrument;
+        // Last-note priority (legato): releasing a note that isn't the one
+        // currently sounding must not cut the preview - only resume the
+        // next most recently held note (or stop if none remain) when the
+        // *current* note is released. A velocity-0 Note On is a Note Off by
+        // MIDI convention, handled by the messageType==0x90&&data2==0 leg.
         if (messageType == 0x90 && data2 > 0) {
           int note = (int)data1 - 12;
-          if (note >= 0 && note < 128 && !instrumentIsEmpty(&chipnomadState->project, instrument)) {
-            chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, (uint8_t)note, instrument);
+          if (note >= 0 && note < 128) {
+            int alreadyHeld = 0;
+            for (int i = 0; i < midiHeldCount; i++) if (midiHeldNotes[i] == (uint8_t)note) { alreadyHeld = 1; break; }
+            if (!alreadyHeld && midiHeldCount < MIDI_HELD_NOTES_MAX) {
+              midiHeldNotes[midiHeldCount] = (uint8_t)note;
+              midiHeldInstrument[midiHeldCount] = instrument;
+              midiHeldCount++;
+            }
+            if (!instrumentIsEmpty(&chipnomadState->project, instrument)) {
+              chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, (uint8_t)note, instrument);
+            }
           }
         } else if (messageType == 0x80 || (messageType == 0x90 && data2 == 0)) {
-          chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
+          int note = (int)data1 - 12;
+          int foundIdx = -1;
+          for (int i = 0; i < midiHeldCount; i++) if (midiHeldNotes[i] == (uint8_t)note) { foundIdx = i; break; }
+          if (foundIdx >= 0) {
+            int wasCurrent = foundIdx == midiHeldCount - 1;
+            for (int i = foundIdx; i < midiHeldCount - 1; i++) {
+              midiHeldNotes[i] = midiHeldNotes[i + 1];
+              midiHeldInstrument[i] = midiHeldInstrument[i + 1];
+            }
+            midiHeldCount--;
+            if (wasCurrent) {
+              if (midiHeldCount > 0) {
+                uint8_t resumeNote = midiHeldNotes[midiHeldCount - 1];
+                int resumeInstrument = midiHeldInstrument[midiHeldCount - 1];
+                if (!instrumentIsEmpty(&chipnomadState->project, resumeInstrument)) {
+                  chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, resumeNote, resumeInstrument);
+                }
+              } else {
+                chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
+              }
+            }
+          }
         }
       }
     }
