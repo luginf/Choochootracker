@@ -579,9 +579,22 @@ void appOnEvent(MainLoopEventData eventData) {
     // same way the on-screen Edit+Play preview shortcut does - auditioning
     // a sound only, not note entry into the song. No-ops when no MIDI
     // input device is open (midiIoPollInput always returns 0 then).
-    if (currentScreen == &screenInstrument && !chipnomadGetPlaybackStatus(chipnomadState)->isPlaying) {
+    //
+    // Always drain the poll queue even when we won't act on it (below), so
+    // a keyboard held/played while the song is actually playing doesn't
+    // back up in RtMidi's own queue and then dump a burst of stale notes
+    // once the song stops. Previewing itself puts the track in
+    // PlaybackMode::phraseRow, which must stay "safe" here - gating on the
+    // track being merely "not stopped" (e.g. chipnomadGetPlaybackStatus's
+    // isPlaying) would block every note after the first, since the first
+    // note's own preview never fully lets go of the track between key
+    // presses.
+    if (currentScreen == &screenInstrument) {
+      PlaybackMode trackMode = chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode;
+      int previewSafe = trackMode == PlaybackMode::stopped || trackMode == PlaybackMode::phraseRow;
       uint8_t status, data1, data2;
       while (midiIoPollInput(&status, &data1, &data2)) {
+        if (!previewSafe) continue;
         uint8_t messageType = status & 0xf0;
         if (messageType == 0x90 && data2 > 0) {
           int note = (int)data1 - 12;
