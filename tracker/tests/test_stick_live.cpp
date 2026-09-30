@@ -407,7 +407,15 @@ TEST_CASE_FIXTURE(StickLiveFixture, "midiChannelInstrument round-trips through s
   for (int i = 1; i < 15; i++) CHECK(appSettings.midiChannelInstrument[i] == -1);
 
   // Out-of-range values (from a hand-edited or corrupted settings.txt) clamp to OFF.
-  std::ofstream("settings.txt") << "midiChannelInstrument: 999,-5,3\n";
+  // Written to fileGetDefaultDirectory()'s own resolved path rather than a bare
+  // relative "settings.txt": that call resolves the running test binary's own
+  // executable directory (see fileGetDefaultDirectory()'s desktop fallback),
+  // not this fixture's temp cwd, so a relative write here would silently miss
+  // the file settingsLoad() actually reads.
+  char defaultDir[PATH_LENGTH];
+  REQUIRE(fileGetDefaultDirectory(defaultDir, sizeof(defaultDir)) == 0);
+  std::string settingsPath = std::string(defaultDir) + PATH_SEPARATOR_STR + "settings.txt";
+  std::ofstream(settingsPath) << "midiChannelInstrument: 999,-5,3\n";
   REQUIRE(settingsLoad() == 0);
   CHECK(appSettings.midiChannelInstrument[0] == -1);
   CHECK(appSettings.midiChannelInstrument[1] == -1);
