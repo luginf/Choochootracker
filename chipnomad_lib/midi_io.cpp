@@ -6,9 +6,58 @@
 #include <stdio.h>
 #include <string.h>
 #include <vector>
+#include <atomic>
+#include <chrono>
+#include <thread>
 
 static RtMidiIn* g_midiIn = NULL;
 static RtMidiOut* g_midiOut = NULL;
+
+uint64_t midiIoNowMicros(void) {
+  return (uint64_t)std::chrono::duration_cast<std::chrono::microseconds>(
+    std::chrono::steady_clock::now().time_since_epoch()).count();
+}
+
+// See midi_io.h's midiIoScheduleMessage for why this queue+thread exist.
+// Single producer (the audio thread), single consumer (drainThreadLoop), so
+// this plain head/tail ring buffer needs no lock - same pattern as
+// chipnomad_lib.cpp's own AudioCommandQueue.
+struct ScheduledMidiMessage { uint8_t status, data1, data2; uint64_t dueMicros; };
+static constexpr unsigned int kMidiOutQueueCapacity = 512;
+static ScheduledMidiMessage g_midiOutQueue[kMidiOutQueueCapacity];
+static std::atomic<unsigned int> g_midiOutHead{0};
+static std::atomic<unsigned int> g_midiOutTail{0};
+static std::atomic<bool> g_midiOutThreadRunning{false};
+static std::thread* g_midiOutThread = NULL;
+
+void midiIoScheduleMessage(uint8_t status, uint8_t data1, uint8_t data2, uint64_t dueMicros) {
+  unsigned int head = g_midiOutHead.load(std::memory_order_relaxed);
+  unsigned int next = (head + 1) % kMidiOutQueueCapacity;
+  if (next == g_midiOutTail.load(std::memory_order_acquire)) return; // full: drop rather than block the audio thread
+  g_midiOutQueue[head] = {status, data1, data2, dueMicros};
+  g_midiOutHead.store(next, std::memory_order_release);
+}
+
+// Polls at ~1ms resolution - far tighter than an audio callback (which can
+// represent tens of milliseconds of "musical time" computed all at once)
+// without needing sample-accurate OS scheduling support that RtMidi doesn't
+// offer.
+static void midiOutDrainThreadLoop() {
+  while (g_midiOutThreadRunning.load(std::memory_order_relaxed)) {
+    unsigned int tail = g_midiOutTail.load(std::memory_order_relaxed);
+    uint64_t now = midiIoNowMicros();
+    while (tail != g_midiOutHead.load(std::memory_order_acquire) && g_midiOutQueue[tail].dueMicros <= now) {
+      ScheduledMidiMessage msg = g_midiOutQueue[tail];
+      if (g_midiOut) {
+        std::vector<unsigned char> bytes = {msg.status, msg.data1, msg.data2};
+        try { g_midiOut->sendMessage(&bytes); } catch (RtError&) {}
+      }
+      tail = (tail + 1) % kMidiOutQueueCapacity;
+      g_midiOutTail.store(tail, std::memory_order_release);
+    }
+    std::this_thread::sleep_for(std::chrono::milliseconds(1));
+  }
+}
 
 int midiIoAvailable(void) { return 1; }
 
@@ -99,6 +148,10 @@ int midiIoOpenOutput(int portIndex) {
   try {
     g_midiOut = new RtMidiOut();
     g_midiOut->openPort((unsigned int)portIndex, "ChooChooTracker Out");
+    g_midiOutHead.store(0, std::memory_order_relaxed);
+    g_midiOutTail.store(0, std::memory_order_relaxed);
+    g_midiOutThreadRunning.store(true, std::memory_order_relaxed);
+    g_midiOutThread = new std::thread(midiOutDrainThreadLoop);
     return 0;
   } catch (RtError&) {
     delete g_midiOut;
@@ -108,6 +161,11 @@ int midiIoOpenOutput(int portIndex) {
 }
 
 void midiIoCloseOutput(void) {
+  // Stop and join the drain thread before touching g_midiOut, so it can
+  // never run against a port that's mid-close/deleted.
+  if (g_midiOutThreadRunning.exchange(false, std::memory_order_relaxed)) {
+    if (g_midiOutThread) { g_midiOutThread->join(); delete g_midiOutThread; g_midiOutThread = NULL; }
+  }
   if (!g_midiOut) return;
   g_midiOut->closePort();
   delete g_midiOut;
@@ -144,5 +202,7 @@ int midiIoOpenOutput(int) { return -1; }
 void midiIoCloseOutput(void) {}
 int midiIoIsOutputOpen(void) { return 0; }
 void midiIoSendMessage(uint8_t, uint8_t, uint8_t) {}
+uint64_t midiIoNowMicros(void) { return 0; }
+void midiIoScheduleMessage(uint8_t, uint8_t, uint8_t, uint64_t) {}
 
 #endif

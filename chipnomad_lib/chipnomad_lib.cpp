@@ -30,7 +30,7 @@ static void updateAChChidVoices(ChipNomadState* state);
 static void updateDrumSynthVoices(ChipNomadState* state);
 static void updateMMEVoices(ChipNomadState* state);
 static void updateSinteredVoices(ChipNomadState* state);
-static void applyVoiceEvents(ChipNomadState* state);
+static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros);
 static int hasAudioRateModulation(const ChipNomadState* state);
 static void updateAudioRateModulations(ChipNomadState* state);
 static void motionRecordFrame(ChipNomadState* state);
@@ -729,7 +729,7 @@ static void updateAudioRateModulations(ChipNomadState* state) {
   updateSinteredVoices(state);
 }
 
-static int advancePlaybackFrame(ChipNomadState* state) {
+static int advancePlaybackFrame(ChipNomadState* state, uint64_t dueMicros) {
   state->audioCommands->applyProject(&state->audioProject);
   state->playbackState.p = &state->audioProject;
   if (state->audioCommands->takeStopRequest()) playbackStop(&state->playbackState);
@@ -745,7 +745,7 @@ static int advancePlaybackFrame(ChipNomadState* state) {
   motionRecordFrame(state);
   if (allTracksStopped) playbackUpdateLiveStickModulation(&state->playbackState, axes, enabled);
   updateSampleVoices(state); updateSCWFVoices(state); updateBraidsVoices(state);
-  updatePlaitsVoices(state); updatePlaitsAltVoices(state); updateAChChidVoices(state); updateDrumSynthVoices(state); updateMMEVoices(state); updateSinteredVoices(state); applyVoiceEvents(state);
+  updatePlaitsVoices(state); updatePlaitsAltVoices(state); updateAChChidVoices(state); updateDrumSynthVoices(state); updateMMEVoices(state); updateSinteredVoices(state); applyVoiceEvents(state, dueMicros);
   if (state->audioOverload > 0) state->audioOverload--;
   for (int i = 0; i < PROJECT_MAX_TRACKS; ++i)
     if (state->trackClipping[i] > 0) state->trackClipping[i]--;
@@ -844,9 +844,17 @@ static void processMasterMix(ChipNomadState* state, float* output, int frames) {
 
 int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
   if (!state || !buffer || samples <= 0 || samples > INT_MAX / 2) return 0;
+  // Real wall-clock reference for this callback: a row that lands N samples
+  // into it is due N/sampleRate seconds after "now", not "now" itself - see
+  // midiIoScheduleMessage for why this matters (this callback can compute
+  // several rows' worth of MIDI events well ahead of when they actually
+  // play).
+  uint64_t callbackStartMicros = midiIoNowMicros();
   int samplesLeft = samples;
   while (samplesLeft > 0) {
-    if ((int)state->frameSampleCounter == 0 && advancePlaybackFrame(state)) break;
+    uint64_t dueMicros = callbackStartMicros +
+      (uint64_t)((double)(samples - samplesLeft) * 1000000.0 / state->sampleRate);
+    if ((int)state->frameSampleCounter == 0 && advancePlaybackFrame(state, dueMicros)) break;
     int frames = (int)state->frameSampleCounter < samplesLeft ? (int)state->frameSampleCounter : samplesLeft;
     if (hasAudioRateModulation(state)) { updateAudioRateModulations(state); frames = 1; }
     float* output = buffer + (samples - samplesLeft) * 2;
@@ -990,7 +998,7 @@ int chipnomadAutoMix(ChipNomadState* state, int seconds, uint8_t proposed[PROJEC
   return 0;
 }
 
-static void applyVoiceEvents(ChipNomadState* state) {
+static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
   PlaybackState* playback = &state->playbackState;
   Project* project = &state->audioProject;
   for (int trackIdx = 0; trackIdx < project->tracksCount; ++trackIdx) {
@@ -1057,18 +1065,18 @@ static void applyVoiceEvents(ChipNomadState* state) {
           int endSlot = track->note.noteKilled || track->note.noteReleased ||
                         (track->note.noteTriggered && slot >= track->chordVoiceCount);
           if (endSlot && *active) {
-            midiIoSendMessage((uint8_t)(0x80 | channel), *activeNote, 0);
+            midiIoScheduleMessage((uint8_t)(0x80 | channel), *activeNote, 0, dueMicros);
             *active = 0;
           }
           if (track->note.noteTriggered && slot < track->chordVoiceCount) {
-            if (*active) midiIoSendMessage((uint8_t)(0x80 | channel), *activeNote, 0);
+            if (*active) midiIoScheduleMessage((uint8_t)(0x80 | channel), *activeNote, 0, dueMicros);
             int midiNote = 12 + track->chordPitchFinal[slot];
             if (midiNote < 0) midiNote = 0;
             if (midiNote > 127) midiNote = 127;
             int volume = clampInt(track->note.volume + track->note.volumeOffset, 0, 15);
             int velocity = (volume * 127 + 7) / 15;
             if (velocity < 1) velocity = 1;
-            midiIoSendMessage((uint8_t)(0x90 | channel), (uint8_t)midiNote, (uint8_t)velocity);
+            midiIoScheduleMessage((uint8_t)(0x90 | channel), (uint8_t)midiNote, (uint8_t)velocity, dueMicros);
             *activeNote = (uint8_t)midiNote;
             *active = 1;
           }
