@@ -1003,6 +1003,25 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
   Project* project = &state->audioProject;
   for (int trackIdx = 0; trackIdx < project->tracksCount; ++trackIdx) {
     PlaybackTrackState* track = &playback->tracks[trackIdx];
+
+    // MC1-MC4 row FX (see playback_fx_midi.cpp): independent of note
+    // trigger/release, so this runs even on a row that only carries a CC
+    // change. Only meaningful for a MIDI Out instrument; the FX is silently
+    // inert (already recorded as pending, just dropped here) on any other
+    // instrument type since a raw CC number has no equivalent there.
+    for (int slot = 0; slot < 4; ++slot) {
+      if (!track->midiCCPending[slot]) continue;
+      track->midiCCPending[slot] = 0;
+      if (track->note.instrument == EMPTY_VALUE_8) continue;
+      Instrument* instrument = &project->instruments[track->note.instrument];
+      if (instrument->type != InstrumentType::Midi) continue;
+      uint8_t ccNumber = instrument->chip.midi.ccNumber[slot];
+      if (ccNumber == EMPTY_VALUE_8) continue;
+      uint8_t channel = instrument->chip.midi.channel & 0x0f;
+      uint8_t value = (uint8_t)(track->midiCCValue[slot] * 127 / 255);
+      midiIoScheduleMessage((uint8_t)(0xB0 | channel), ccNumber & 0x7f, value, dueMicros);
+    }
+
     if (!track->note.noteTriggered && !track->note.noteReleased && !track->note.noteKilled) continue;
     if (track->note.instrument == EMPTY_VALUE_8) continue;
     auto applyEvent = [&](auto* voices) {

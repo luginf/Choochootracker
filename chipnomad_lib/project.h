@@ -195,6 +195,10 @@ enum FX {
   // Alias for PCM sample start. Appended to preserve project FX IDs.
   fxSTA,
 
+  // MIDI Out: send a CC whose number is set per-instrument (see
+  // InstrumentMidi's ccNumber[]). Appended to preserve project FX IDs.
+  fxMC1, fxMC2, fxMC3, fxMC4,
+
   // Total count - must be last
   fxTotalCount
 };

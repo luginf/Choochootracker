@@ -281,6 +281,12 @@ struct InstrumentMidi {
   uint8_t program;  // 0-127, or EMPTY_VALUE_8 to not send Program Change
   uint8_t bankHigh; // CC0 (Bank Select MSB), 0-127 or EMPTY_VALUE_8 for none
   uint8_t bankLow;  // CC32 (Bank Select LSB), 0-127 or EMPTY_VALUE_8 for none
+  // Which CC number each of the 4 generic MC1-MC4 row FX sends to (0-127,
+  // or EMPTY_VALUE_8 to leave that FX slot unconfigured/inert). A single FX
+  // byte only carries one 0-255 value, not a CC number and a value, so the
+  // number is fixed per instrument here and the per-row FX just carries the
+  // value (0-255, rescaled to 0-127 on send) - same idea as Braids' BTM/BCL.
+  uint8_t ccNumber[4];
 };
 
 union InstrumentChipData {

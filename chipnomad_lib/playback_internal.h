@@ -20,6 +20,7 @@ extern PlaybackFXHandler fxHandlers[fxTotalCount];
 void initFXHandlers(void);
 void registerFXHandlers_AY(void);
 void registerFXHandlers_Modulation(void);
+void registerFXHandlers_Midi(void);
 
 // Chip-specific functions
 

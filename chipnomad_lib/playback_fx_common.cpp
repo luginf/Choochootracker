@@ -430,6 +430,7 @@ void initFXHandlers(void) {
   fxHandlers[fxGGR] = (PlaybackFXHandler){NULL, handleFX_GGR, NULL};
   registerFXHandlers_Modulation();
   registerFXHandlers_AY();
+  registerFXHandlers_Midi();
 }
 
 int handleFX(PlaybackState* state, int trackIdx, int chipIdx) {

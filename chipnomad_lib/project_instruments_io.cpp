@@ -293,6 +293,10 @@ static int loadInstrumentMidi(FILE* file, Instrument* instrument) {
     else if (strncmp(line, "- Program: ", 11) == 0) sscanf(line, "- Program: %hhu", &m->program);
     else if (strncmp(line, "- Bank high: ", 13) == 0) sscanf(line, "- Bank high: %hhu", &m->bankHigh);
     else if (strncmp(line, "- Bank low: ", 12) == 0) sscanf(line, "- Bank low: %hhu", &m->bankLow);
+    else if (strncmp(line, "- CC1 number: ", 14) == 0) sscanf(line, "- CC1 number: %hhu", &m->ccNumber[0]);
+    else if (strncmp(line, "- CC2 number: ", 14) == 0) sscanf(line, "- CC2 number: %hhu", &m->ccNumber[1]);
+    else if (strncmp(line, "- CC3 number: ", 14) == 0) sscanf(line, "- CC3 number: %hhu", &m->ccNumber[2]);
+    else if (strncmp(line, "- CC4 number: ", 14) == 0) sscanf(line, "- CC4 number: %hhu", &m->ccNumber[3]);
     consumeLine(file);
   }
 }
@@ -684,6 +688,10 @@ static int saveInstrumentMidi(FILE* file, Instrument* instrument) {
   fprintf(file, "- Program: %hhu\n", m->program);
   fprintf(file, "- Bank high: %hhu\n", m->bankHigh);
   fprintf(file, "- Bank low: %hhu\n", m->bankLow);
+  fprintf(file, "- CC1 number: %hhu\n", m->ccNumber[0]);
+  fprintf(file, "- CC2 number: %hhu\n", m->ccNumber[1]);
+  fprintf(file, "- CC3 number: %hhu\n", m->ccNumber[2]);
+  fprintf(file, "- CC4 number: %hhu\n", m->ccNumber[3]);
   return 0;
 }
 
