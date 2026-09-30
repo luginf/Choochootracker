@@ -220,7 +220,8 @@ static int instrumentTypePopupInput(int isKeyDown, int keys, ScreenData* screen)
     return 0;
   }
   if (input == PopupEditInput::open) {
-    selectionPopupSetup("INSTRUMENT TYPE", instrumentTypeCategories, 4,
+    selectionPopupSetup("INSTRUMENT TYPE", instrumentTypeCategories,
+      sizeof(instrumentTypeCategories) / sizeof(instrumentTypeCategories[0]),
       (int)chipnomadState->project.instruments[cInstrument].type,
       selectInstrumentType, cancelInstrumentTypeSelection);
     screenSetup(&screenSelectionPopup, 0);
