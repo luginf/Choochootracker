@@ -9,6 +9,7 @@
 #include "corelib_font.h"
 #include "corelib_file.h"
 #include "screens.h"
+#include "midi_io.h"
 #include <string.h>
 
 // Forward declarations
@@ -21,7 +22,7 @@ static void settingsDrawField(int col, int row, CellState state);
 static int settingsOnEdit(int col, int row, CellEditAction action);
 
 static ScreenData screenSettingsData = {
-  .rows = 14,
+  .rows = 16,
   .cursorRow = 0,
   .cursorCol = 0,
   .topRow = 0,
@@ -88,6 +89,17 @@ int settingsColumnCount(int row) {
   return 1;
 }
 
+// isInput selects which port list to look up (input ports for MIDI In,
+// output ports for MIDI Out). deviceIndex < 0, or out of range because a
+// device was unplugged since it was selected, both show as "OFF".
+static void midiDeviceLabel(int isInput, int deviceIndex, char* buffer, int bufferSize) {
+  int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
+  if (deviceIndex < 0 || deviceIndex >= count ||
+      (isInput ? midiIoInputPortName(deviceIndex, buffer, bufferSize) : midiIoOutputPortName(deviceIndex, buffer, bufferSize)) != 0) {
+    snprintf(buffer, bufferSize, "OFF");
+  }
+}
+
 void settingsDrawStatic(void) {
   const ColorScheme cs = appSettings.colorScheme;
 
@@ -110,14 +122,16 @@ void settingsDrawCursor(int col, int row) {
     gfxCursor(23, 2 + row, row == 6 ? 6 : 4);
   } else if (row == 9 && col == 0) {
     gfxCursor(23, 11, 6);
-  } else if (row == 10 && col == 0) {
-    gfxCursor(0, 12, 11);
-  } else if (row == 11 && col == 0) {
-    gfxCursor(0, 13, 9);
+  } else if ((row == 10 || row == 11) && col == 0) {
+    gfxCursor(23, 12 + (row - 10), 20);
   } else if (row == 12 && col == 0) {
-    gfxCursor(0, 14, 16);
+    gfxCursor(0, 14, 11);
   } else if (row == 13 && col == 0) {
-    gfxCursor(0, 18, 19);
+    gfxCursor(0, 15, 9);
+  } else if (row == 14 && col == 0) {
+    gfxCursor(0, 16, 16);
+  } else if (row == 15 && col == 0) {
+    gfxCursor(0, 19, 19);
   }
 }
 
@@ -185,17 +199,33 @@ void settingsDrawField(int col, int row, CellState state) {
     gfxPrint(23, 11, appSettings.stickLiveMode == StickLiveMode::free ? "FREE  " :
       appSettings.stickLiveMode == StickLiveMode::toggle ? "TOGGLE" : "HOLD  ");
   } else if (row == 10 && col == 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 12, "MIDI In");
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 12, "Key mapping");
+    char name[24];
+    midiDeviceLabel(1, appSettings.midiInputDevice, name, sizeof(name));
+    gfxClearRect(23, 12, 24, 1);
+    gfxPrint(23, 12, name);
   } else if (row == 11 && col == 0) {
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(0, 13, "MIDI Out");
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 13, "Load font");
+    char name[24];
+    midiDeviceLabel(0, appSettings.midiOutputDevice, name, sizeof(name));
+    gfxClearRect(23, 13, 24, 1);
+    gfxPrint(23, 13, name);
   } else if (row == 12 && col == 0) {
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 14, "Edit color theme");
+    gfxPrint(0, 14, "Key mapping");
   } else if (row == 13 && col == 0) {
     gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 18, "Quit ChooChooTracker");
+    gfxPrint(0, 15, "Load font");
+  } else if (row == 14 && col == 0) {
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 16, "Edit color theme");
+  } else if (row == 15 && col == 0) {
+    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
+    gfxPrint(0, 19, "Quit ChooChooTracker");
   }
 }
 
@@ -258,19 +288,36 @@ int settingsOnEdit(int col, int row, CellEditAction action) {
     int handled = edit8noLast(action, &value, 1, 0, 2);
     if (handled) appSetStickLiveMode((StickLiveMode)value);
     return handled;
-  } else if (row == 10 && col == 0 && action == CellEditAction::tap) {
+  } else if ((row == 10 || row == 11) && col == 0) {
+    action = convertMultiAction(action);
+    int direction = (action == CellEditAction::increase || action == CellEditAction::increaseBig) ? 1 :
+                    (action == CellEditAction::decrease || action == CellEditAction::decreaseBig) ? -1 : 0;
+    if (!direction) return 0;
+    int isInput = row == 10;
+    int count = isInput ? midiIoInputPortCount() : midiIoOutputPortCount();
+    int* device = isInput ? &appSettings.midiInputDevice : &appSettings.midiOutputDevice;
+    *device += direction;
+    if (*device < -1) *device = count - 1;
+    if (*device >= count) *device = -1;
+    if (isInput) {
+      if (*device < 0) midiIoCloseInput(); else if (midiIoOpenInput(*device) != 0) *device = -1;
+    } else {
+      if (*device < 0) midiIoCloseOutput(); else if (midiIoOpenOutput(*device) != 0) *device = -1;
+    }
+    return 1;
+  } else if (row == 12 && col == 0 && action == CellEditAction::tap) {
     screenSetup(&screenKeyMapping, 0);
     return 0;
-  } else if (row == 11 && col == 0 && action == CellEditAction::tap) {
+  } else if (row == 13 && col == 0 && action == CellEditAction::tap) {
     fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath,
       (void (*)(const char*))fontLoadCallback,
       (void (*)(void))fontCancelCallback);
     screenSetup(&screenFileBrowser, 0);
     return 0;
-  } else if (row == 12 && col == 0 && action == CellEditAction::tap) {
+  } else if (row == 14 && col == 0 && action == CellEditAction::tap) {
     screenSetup(&screenColorTheme, 0);
     return 0;
-  } else if (row == 13 && col == 0 && action == CellEditAction::tap) {
+  } else if (row == 15 && col == 0 && action == CellEditAction::tap) {
     // Trigger exit event
     mainLoopTriggerQuit();
     return 1;

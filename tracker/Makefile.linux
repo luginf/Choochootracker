@@ -4,11 +4,11 @@ PLATFORM = linux
 include Makefile.common
 
 # Linux-specific settings
-LIBS = $(COMMON_LIBS) platforms/sdl2
+LIBS = $(COMMON_LIBS) platforms/sdl2 ../chipnomad_lib/external/rtmidi
 OUTPUT_EXT =
 
-XTRA_CFLAGS = -DDESKTOP_BUILD -DGAMEPAD_SUPPORT
-XTRA_LIBS = -lSDL2 -lm
+XTRA_CFLAGS = -DDESKTOP_BUILD -DGAMEPAD_SUPPORT -D__LINUX_ALSA__ -D__LINUX_ALSASEQ__
+XTRA_LIBS = -lSDL2 -lm -lasound
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/choochootracker$(OUTPUT_EXT)
 

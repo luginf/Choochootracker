@@ -85,6 +85,8 @@ const char* instrumentTypeName(InstrumentType type) {
       return "MME";
     case InstrumentType::Sintered:
       return "Sintered";
+    case InstrumentType::Midi:
+      return "MIDI Out";
     case InstrumentType::none:
       return "None";
     default:

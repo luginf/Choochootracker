@@ -25,6 +25,7 @@ enum class InstrumentType : uint8_t {
   DrumSynth = 11,
   MME = 12,
   Sintered = 13,
+  Midi = 14,
   totalCount,
 };
 
@@ -269,6 +270,12 @@ struct InstrumentBYOWTBL : InstrumentSCWF {
   uint8_t frameIndex[2];
 };
 
+// Drives an external MIDI device instead of synthesizing audio: triggering a
+// note sends a MIDI Note On/Off on this channel (see chipnomad_lib/midi_io.h).
+struct InstrumentMidi {
+  uint8_t channel; // 0-15 (shown to the user as 1-16)
+};
+
 union InstrumentChipData {
   InstrumentAY1 ay;
   InstrumentAY2 ay2;
@@ -282,6 +289,7 @@ union InstrumentChipData {
   InstrumentDrumSynth drumSynth;
   InstrumentMME mme;
   InstrumentSintered sintered;
+  InstrumentMidi midi;
 };
 
 struct Instrument {
@@ -305,8 +313,8 @@ struct InstrumentFunctions {
 
 // This is metadata, not an audio abstraction: renderers keep their typed
 // paths while screens, validation and motion routing share this one catalogue.
-enum class InstrumentCategory : uint8_t { none, chip, sample, synth, drums };
-enum class InstrumentScreenKind : uint8_t { none, ay1, ay2, aySample, braids, sample, scwf, byowtbl, plaits, achchid, drumSynth, mme, sintered };
+enum class InstrumentCategory : uint8_t { none, chip, sample, synth, drums, midi };
+enum class InstrumentScreenKind : uint8_t { none, ay1, ay2, aySample, braids, sample, scwf, byowtbl, plaits, achchid, drumSynth, mme, sintered, midi };
 enum class InstrumentMotionValue : uint8_t { raw, speed, cutoff };
 
 static constexpr uint8_t instrumentNoFX = 0xff;

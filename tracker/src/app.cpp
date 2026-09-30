@@ -12,6 +12,8 @@
 #include "corelib_input.h"
 #include "corelib_keymap.h"
 #include "screens/screen_quick_help.h"
+#include "screens/screen_instrument.h"
+#include "midi_io.h"
 
 #ifdef WEB_BUILD
 #include <emscripten/emscripten.h>
@@ -571,6 +573,26 @@ void appOnEvent(MainLoopEventData eventData) {
       if (currentScreen == &screenPhrase) currentScreen->fullRedraw();
     }
     if (audioProjectDirty && chipnomadQueueProjectRefresh(chipnomadState)) audioProjectDirty = 0;
+
+    // MIDI-in sound preview: while the Instrument screen is open, an
+    // external MIDI keyboard plays the currently selected instrument the
+    // same way the on-screen Edit+Play preview shortcut does - auditioning
+    // a sound only, not note entry into the song. No-ops when no MIDI
+    // input device is open (midiIoPollInput always returns 0 then).
+    if (currentScreen == &screenInstrument && !chipnomadGetPlaybackStatus(chipnomadState)->isPlaying) {
+      uint8_t status, data1, data2;
+      while (midiIoPollInput(&status, &data1, &data2)) {
+        uint8_t messageType = status & 0xf0;
+        if (messageType == 0x90 && data2 > 0) {
+          int note = (int)data1 - 12;
+          if (note >= 0 && note < 128 && !instrumentIsEmpty(&chipnomadState->project, cInstrument)) {
+            chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, (uint8_t)note, cInstrument);
+          }
+        } else if (messageType == 0x80 || (messageType == 0x90 && data2 == 0)) {
+          chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
+        }
+      }
+    }
     // Autosave
     if (++autosaveCounter >= AUTOSAVE_INTERVAL_FRAMES) {
       autosaveCounter = 0;

@@ -38,6 +38,8 @@ void initDefaultAppSettings(void) {
   appSettings.quickHelpReleaseSeen = 0;
   appSettings.ayWavetableLfoView = 0;
   appSettings.stickLiveMode = StickLiveMode::hold;
+  appSettings.midiInputDevice = -1;
+  appSettings.midiOutputDevice = -1;
 
   // Zero out key mapping (platform-specific defaults applied later)
   memset(&appSettings.keyMapping, 0, sizeof(KeyMapping));

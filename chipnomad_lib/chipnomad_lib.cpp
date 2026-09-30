@@ -13,6 +13,7 @@
 #include "synth/mme_voice.h"
 #include "synth/sintered_voice.h"
 #include "synth/master_effects.h"
+#include "midi_io.h"
 #include <math.h>
 #include <atomic>
 #include <limits.h>
@@ -1044,6 +1045,36 @@ static void applyVoiceEvents(ChipNomadState* state) {
           if (track->note.noteKilled || (track->note.noteTriggered && slot >= track->chordVoiceCount)) state->sinteredVoices[trackIdx][slot]->kill();
           else if (track->note.noteTriggered) state->sinteredVoices[trackIdx][slot]->noteOn();
         break;
+      case InstrumentType::Midi: {
+        // No voice object: send real MIDI Note On/Off instead. Note Off uses
+        // the note number that was actually sent (midiActiveNote), not the
+        // chord's current pitch, so a pitch slide between trigger and
+        // release can't turn it into a stuck note on the external device.
+        uint8_t channel = project->instruments[track->note.instrument].chip.midi.channel & 0x0f;
+        for (int slot = 0; slot < CHORD_MAX_VOICES; ++slot) {
+          uint8_t* active = &state->midiNoteActive[trackIdx][slot];
+          uint8_t* activeNote = &state->midiActiveNote[trackIdx][slot];
+          int endSlot = track->note.noteKilled || track->note.noteReleased ||
+                        (track->note.noteTriggered && slot >= track->chordVoiceCount);
+          if (endSlot && *active) {
+            midiIoSendMessage((uint8_t)(0x80 | channel), *activeNote, 0);
+            *active = 0;
+          }
+          if (track->note.noteTriggered && slot < track->chordVoiceCount) {
+            if (*active) midiIoSendMessage((uint8_t)(0x80 | channel), *activeNote, 0);
+            int midiNote = 12 + track->chordPitchFinal[slot];
+            if (midiNote < 0) midiNote = 0;
+            if (midiNote > 127) midiNote = 127;
+            int volume = clampInt(track->note.volume + track->note.volumeOffset, 0, 15);
+            int velocity = (volume * 127 + 7) / 15;
+            if (velocity < 1) velocity = 1;
+            midiIoSendMessage((uint8_t)(0x90 | channel), (uint8_t)midiNote, (uint8_t)velocity);
+            *activeNote = (uint8_t)midiNote;
+            *active = 1;
+          }
+        }
+        break;
+      }
       default: break;
     }
     track->note.noteTriggered = track->note.noteReleased = track->note.noteKilled = 0;
