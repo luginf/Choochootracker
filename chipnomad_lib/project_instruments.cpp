@@ -240,6 +240,7 @@ static int initAChChidInstrument(Instrument* instrument) {
   InstrumentAChChid* a = &instrument->chip.achchid;
   a->wave = AChChidWave::saw;
   a->timbre = a->color = 16384;
+  a->saturation = 0;
   a->cutoff = 1000;
   a->resonance = 0;
   a->envMod = 25;
@@ -356,7 +357,7 @@ static const InstrumentFX fxSample[]={F(fxSPT,"SPT"),F(fxSST,"SST"),F(fxSTA,"STA
 static const InstrumentFX fxSCWF[]={F(fxSDT,"SDT"),F(fxSMX,"SMX"),F(fxSCF2,"SCF"),F(fxSRS2,"SRS")};
 static const InstrumentFX fxBYOWTBL[]={F(fxSDT,"SDT"),F(fxSMX,"SMX"),F(fxBIA,"BIA"),F(fxBIB,"BIB"),F(fxSCF2,"SCF"),F(fxSRS2,"SRS")};
 static const InstrumentFX fxPlaits[]={F(fxPMD,"PMD"),F(fxPHA,"PHA"),F(fxPTM,"PTM"),F(fxPMO,"PMO"),F(fxPAX,"PAX"),F(fxPCF,"PCF"),F(fxPRS,"PRS")};
-static const InstrumentFX fxAChChid[]={F(fxASL,"ASL"),F(fxADC,"ADC"),F(fxAAC,"AAC"),F(fxATM,"ATM"),F(fxACL,"ACL"),F(fxACF,"ACF"),F(fxARS,"ARS"),F(fxAEM,"AEM")};
+static const InstrumentFX fxAChChid[]={F(fxASL,"ASL"),F(fxATY,"ATY"),F(fxADC,"ADC"),F(fxAAC,"AAC"),F(fxATM,"ATM"),F(fxACL,"ACL"),F(fxACF,"ACF"),F(fxARS,"ARS"),F(fxAEM,"AEM")};
 static const InstrumentFX fxDrumSynth[]={F(fxDMD,"DMD"),F(fxDDC,"DDC"),F(fxDTO,"DTO"),F(fxDSW,"DSW"),F(fxDNO,"DNO"),F(fxDFM,"DFM"),F(fxDDR,"DDR"),F(fxDCF,"DCF"),F(fxDRS,"DRS")};
 static const InstrumentFX fxMME[]={F(fxMMD,"MMD"),F(fxMWV,"MWV"),F(fxMIN,"MIN"),F(fxMAM,"MAM"),F(fxMFL,"MFL"),F(fxMFB,"MFB"),F(fxMSH,"MSH"),F(fxMCF,"MCF"),F(fxMRS,"MRS")};
 static const InstrumentFX fxSintered[]={F(fxSMDL,"SMD"),F(fxSDC,"SDC"),F(fxSMD,"SMP"),F(fxSA,"SMA"),F(fxSB,"SMB"),F(fxSMO,"SMO"),F(fxSC,"SMC"),F(fxSCF3,"SCF"),F(fxSRS3,"SRS")};

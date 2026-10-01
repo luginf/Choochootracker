@@ -13,7 +13,8 @@ class SampleVoice {
   void configure(const InstrumentSample* sample, float pitchCents, float gain,
                  float speedPercent, uint8_t start, uint8_t end, uint8_t loopMode, uint16_t cutoffHz,
                  uint8_t resonance, int attack = -1, int decay = -1, int sustain = -1,
-                 int release = -1, int envelopeShape = -1);
+                 int release = -1, int envelopeShape = -1, uint8_t sliceCount = 0,
+                 uint8_t sliceIndex = 0);
   void noteOn();
   void noteOff();
   void kill();
@@ -46,6 +47,9 @@ class SampleVoice {
   VoicePostProcessor<> post_;
 };
 
+uint8_t sampleNormalizeSlice(uint8_t slice);
+void sampleSliceFrames(uint32_t frameCount, uint8_t sliceCount, uint8_t sliceIndex,
+                       uint32_t* startFrame, uint32_t* endFrame);
 int sampleLoadWav16(const char* path, InstrumentSample* sample,
                     char* error, size_t errorSize);
 

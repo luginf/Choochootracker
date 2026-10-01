@@ -254,6 +254,7 @@ static int loadInstrumentSample(FILE* file, Instrument* instrument) {
     else if (strncmp(line, "- Sample start: ", 16) == 0) sscanf(line, "- Sample start: %hhu", &sample->start);
     else if (strncmp(line, "- Sample end: ", 14) == 0) sscanf(line, "- Sample end: %hhu", &sample->end);
     else if (strncmp(line, "- Sample loop: ", 15) == 0) sscanf(line, "- Sample loop: %hhu", &sample->loopMode);
+    else if (strncmp(line, "- Sample slice: ", 16) == 0) sscanf(line, "- Sample slice: %hhu", &sample->slice);
     else if (strncmp(line, "- Sample volume: ", 17) == 0) sscanf(line, "- Sample volume: %hhu", &instrument->volume);
     else loadVoicePostSetting(line, sample);
     consumeLine(file);
@@ -263,6 +264,7 @@ static int loadInstrumentSample(FILE* file, Instrument* instrument) {
     sampleLoadWav16(sample->path, sample, error, sizeof(error));
   }
   if (sample->loopMode > 2) sample->loopMode = 0;
+  sample->slice = sampleNormalizeSlice(sample->slice);
   return 0;
 }
 
@@ -276,6 +278,7 @@ static int loadInstrumentAChChid(FILE* file, Instrument* instrument) {
     else if (strncmp(line, "- Model: ", 9) == 0) sscanf(line, "- Model: %hhu", &a->model);
     else if (strncmp(line, "- Timbre: ", 10) == 0) sscanf(line, "- Timbre: %hu", &a->timbre);
     else if (strncmp(line, "- Color: ", 9) == 0) sscanf(line, "- Color: %hu", &a->color);
+    else if (strncmp(line, "- Saturation: ", 14) == 0) sscanf(line, "- Saturation: %hhu", &a->saturation);
     else if (strncmp(line, "- Cutoff: ", 10) == 0) sscanf(line, "- Cutoff: %hu", &a->cutoff);
     else if (strncmp(line, "- Resonance: ", 13) == 0) sscanf(line, "- Resonance: %hhu", &a->resonance);
     else if (strncmp(line, "- Env mod: ", 11) == 0) sscanf(line, "- Env mod: %hhu", &a->envMod);
@@ -687,6 +690,7 @@ static int saveInstrumentSample(FILE* file, Instrument* instrument) {
   fprintf(file, "- Sample start: %hhu\n", sample->start);
   fprintf(file, "- Sample end: %hhu\n", sample->end);
   fprintf(file, "- Sample loop: %hhu\n", sample->loopMode);
+  fprintf(file, "- Sample slice: %hhu\n", sampleNormalizeSlice(sample->slice));
   saveVoicePostSettings(file, sample);
   return 0;
 }
@@ -698,6 +702,7 @@ static int saveInstrumentAChChid(FILE* file, Instrument* instrument) {
   fprintf(file, "- Model: %hhu\n", a->model);
   fprintf(file, "- Timbre: %hu\n", a->timbre);
   fprintf(file, "- Color: %hu\n", a->color);
+  fprintf(file, "- Saturation: %hhu\n", a->saturation);
   fprintf(file, "- Cutoff: %hu\n", a->cutoff);
   fprintf(file, "- Resonance: %hhu\n", a->resonance);
   fprintf(file, "- Env mod: %hhu\n", a->envMod);

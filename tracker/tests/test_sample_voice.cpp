@@ -115,6 +115,90 @@ TEST_CASE("SampleVoice loops and grain time keeps rendering") {
   for (float value : output) CHECK(std::isfinite(value));
 }
 
+TEST_CASE("sampleNormalizeSlice keeps even counts and rejects others") {
+  CHECK(sampleNormalizeSlice(0) == 0);
+  CHECK(sampleNormalizeSlice(2) == 2);
+  CHECK(sampleNormalizeSlice(4) == 4);
+  CHECK(sampleNormalizeSlice(8) == 8);
+  CHECK(sampleNormalizeSlice(16) == 16);
+  CHECK(sampleNormalizeSlice(32) == 32);
+  CHECK(sampleNormalizeSlice(1) == 0);
+  CHECK(sampleNormalizeSlice(6) == 0);
+  CHECK(sampleNormalizeSlice(3) == 0);
+  CHECK(sampleNormalizeSlice(64) == 0);
+}
+
+TEST_CASE("sampleSliceFrames splits a frame range evenly and clamps extras") {
+  const uint8_t counts[] = {2, 4, 8, 16, 32};
+  for (uint8_t count : counts) {
+    uint32_t previousEnd = 0;
+    for (uint8_t index = 0; index < count; ++index) {
+      uint32_t start = 0;
+      uint32_t end = 0;
+      sampleSliceFrames(256, count, index, &start, &end);
+      CHECK(start == previousEnd);
+      CHECK(end == (uint32_t)(index + 1) * 256 / count);
+      CHECK(end > start);
+      previousEnd = end;
+    }
+    CHECK(previousEnd == 256);
+    uint32_t start = 0;
+    uint32_t end = 0;
+    sampleSliceFrames(256, count, 255, &start, &end);
+    CHECK(start == (uint32_t)(count - 1) * 256 / count);
+    CHECK(end == 256);
+  }
+}
+
+TEST_CASE("SampleVoice Off uses Start/End and slices use that active window") {
+  int16_t pcm[32];
+  for (int i = 0; i < 32; ++i) pcm[i] = static_cast<int16_t>(i * 1000);
+
+  InstrumentSample sample;
+  std::memset(&sample, 0, sizeof(sample));
+  sample.sampleRate = 48000;
+  sample.frameCount = 32;
+  sample.channels = 1;
+  sample.data = pcm;
+  sample.start = 64;
+  sample.end = 128;
+  sample.sustain = 255;
+  sample.filterCutoffHz = 20000;
+
+  SampleVoice voice;
+  float output[8];
+  voice.init(48000.0f);
+  voice.configure(&sample, 0.0f, 1.0f, 100.0f, sample.start, sample.end, 0,
+                  sample.filterCutoffHz, sample.filterResonance);
+  voice.noteOn();
+  voice.render(output, 4);
+  CHECK(std::fabs(output[0] - pcm[(uint32_t)sample.start * 31 / 255] / 32768.0f) < 0.01f);
+
+  voice.configure(&sample, 1200.0f, 1.0f, 100.0f, sample.start, sample.end, 0,
+                  sample.filterCutoffHz, sample.filterResonance, -1, -1, -1, -1, -1, 4, 1);
+  voice.noteOn();
+  voice.render(output, 4);
+  CHECK(std::fabs(output[0] - pcm[9] / 32768.0f) < 0.01f);
+
+  voice.configure(&sample, 0.0f, 1.0f, 100.0f, sample.start, sample.end, 0,
+                  sample.filterCutoffHz, sample.filterResonance, -1, -1, -1, -1, -1, 4, 0);
+  voice.noteOn();
+  voice.render(output, 4);
+  CHECK(std::fabs(output[0] - pcm[7] / 32768.0f) < 0.01f);
+
+  voice.configure(&sample, 0.0f, 1.0f, 100.0f, sample.start, sample.end, 0,
+                  sample.filterCutoffHz, sample.filterResonance, -1, -1, -1, -1, -1, 4, 3);
+  voice.noteOn();
+  voice.render(output, 4);
+  CHECK(std::fabs(output[0] - pcm[13] / 32768.0f) < 0.01f);
+
+  voice.configure(&sample, 0.0f, 1.0f, 100.0f, sample.start, sample.end, 0,
+                  sample.filterCutoffHz, sample.filterResonance, -1, -1, -1, -1, -1, 4, 9);
+  voice.noteOn();
+  voice.render(output, 4);
+  CHECK(std::fabs(output[0] - pcm[13] / 32768.0f) < 0.01f);
+}
+
 TEST_CASE("Sample loader accepts unsigned PCM8 WAV") {
   const char* path = "build/tests/test_pcm8.wav";
   FILE* file = fopen(path, "wb");

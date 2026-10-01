@@ -51,7 +51,7 @@ FXGroup fxGroups[] = {
   {"BYOWTBL FX", NULL, 0, 6, InstrumentType::BYOWTBL},
   {"Plaits FX", NULL, 0, 7, InstrumentType::Plaits},
   {"Plaits-Alt FX", NULL, 0, 7, InstrumentType::PlaitsAlt},
-  {"aChChid FX", NULL, 0, 8, InstrumentType::AChChid},
+  {"aChChid FX", NULL, 0, 9, InstrumentType::AChChid},
   {"Bogie FX", NULL, 0, 8, InstrumentType::DrumSynth},
   {"ADSR / Trigger FX", fxNamesEnvelope, 0, 7, InstrumentType::none},
   {"Modulation FX", fxNamesModulation, 0, 5, InstrumentType::none},

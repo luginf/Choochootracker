@@ -95,6 +95,8 @@ struct PlaybackTrackState {
   uint8_t speedRatio;
   uint32_t speedPhase;
   uint8_t slewTicks;
+  uint8_t achchidGateTicks;
+  uint8_t achchidGateCounter;
   int16_t slewCurrent[fxTotalCount];
   int16_t slewTarget[fxTotalCount];
   uint8_t slewRemaining[fxTotalCount];

@@ -9,6 +9,8 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "waveform_display.h"
+#include "monitor_display.h"
+#include "piano_display.h"
 #include "corelib_input.h"
 #include "corelib_keymap.h"
 #include "screens/screen_quick_help.h"
@@ -298,6 +300,7 @@ void appSetup(void) {
 
   // Initialize waveform display
   waveformDisplayInit();
+  monitorDisplayInit();
 
   // Create ChipNomad state
   chipnomadState = chipnomadCreate();
@@ -385,11 +388,14 @@ void appCleanup(void) {
 void appDraw(void) {
   const ColorScheme cs = appSettings.colorScheme;
 
+  monitorDisplayUpdate();
   screenDraw();
 
   if (currentScreen == &screenTitle) return;
 
   if (!chipnomadState) return;
+
+  pianoDisplayDraw();
 
   // Tracks
   char digit[2] = "0";

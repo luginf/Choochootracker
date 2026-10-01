@@ -65,7 +65,7 @@ static void resetNoteFX(PlaybackState* state, int trackIdx) {
 static void resetInstrumentFX(PlaybackTrackState* track) {
   for (int i = fxBMD; i <= fxPRS; i++) track->note.fx[i].isOn = 0;
   for (int i = fxRSN; i <= fxTCL; i++) track->note.fx[i].isOn = 0;
-  for (int i = fxASL; i <= fxAEM; ++i) track->note.fx[i].isOn = 0;
+  for (int i = fxASL; i <= fxATY; ++i) track->note.fx[i].isOn = 0;
 }
 
 static void resetTrack(PlaybackState* state, int trackIdx) {
@@ -82,6 +82,8 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   track->speedRatio = state->p->signedTrackSpeed ? 0 : 9;
   track->speedPhase = 0;
   track->slewTicks = 0;
+  track->achchidGateTicks = 0;
+  track->achchidGateCounter = 0;
   for (int i = 0; i < fxTotalCount; ++i) track->slewTarget[i] = -1;
   memset(track->slewCurrent, 0, sizeof(track->slewCurrent));
   memset(track->slewRemaining, 0, sizeof(track->slewRemaining));
@@ -282,6 +284,9 @@ void handleNoteOff(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
 
+  track->achchidGateTicks = 0;
+  track->achchidGateCounter = 0;
+
   if (track->note.instrument == EMPTY_VALUE_8) return;
 
   InstrumentType instType = p->instruments[track->note.instrument].type;
@@ -375,6 +380,53 @@ static void restartStructuralLFOs(PlaybackState* state, int trackIdx, int entere
   }
 }
 
+static int rowHasFX(const PhraseRow* row, uint8_t fx) {
+  for (int i = 0; i < 3; ++i)
+    if (row->fx[i][0] == fx) return 1;
+  return 0;
+}
+
+static PhraseRow* phraseRowAt(Project* p, int trackIdx, int songRow, int chainRow, int phraseRow) {
+  if (songRow < 0 || songRow >= PROJECT_MAX_LENGTH || chainRow < 0 || chainRow >= 16 || phraseRow < 0 || phraseRow >= 16)
+    return NULL;
+  uint16_t chain = p->song[songRow][trackIdx];
+  if (chain == EMPTY_VALUE_16) return NULL;
+  uint16_t phrase = p->chains[chain].rows[chainRow].phrase;
+  return phrase == EMPTY_VALUE_16 ? NULL : &p->phrases[phrase].rows[phraseRow];
+}
+
+static PhraseRow* nextPhraseRowForGate(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+  if (track->mode == PlaybackMode::phraseRow) return NULL;
+  if (track->phraseRow < 15)
+    return phraseRowAt(p, trackIdx, track->songRow, track->chainRow, track->phraseRow + 1);
+
+  PhraseRow* row = phraseRowAt(p, trackIdx, track->songRow, track->chainRow + 1, 0);
+  if (row) return row;
+  if (track->mode == PlaybackMode::song)
+    return phraseRowAt(p, trackIdx, track->songRow + 1, 0, 0);
+  if (track->mode == PlaybackMode::live || (track->mode == PlaybackMode::chain && track->loop))
+    return phraseRowAt(p, trackIdx, track->songRow, 0, 0);
+  if (track->mode == PlaybackMode::phrase && track->loop)
+    return phraseRowAt(p, trackIdx, track->songRow, track->chainRow, 0);
+  return NULL;
+}
+
+static void scheduleAChChidGate(PlaybackState* state, int trackIdx) {
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  Project* p = state->p;
+  PhraseRow* next = nextPhraseRowForGate(state, trackIdx);
+  int slideNext = next && next->note != EMPTY_VALUE_8 && next->note != NOTE_OFF && rowHasFX(next, fxASL);
+  if (slideNext) return;
+
+  int ticks = p->grooves[track->grooveIdx].speed[track->grooveRow];
+  if (ticks == EMPTY_VALUE_8 || ticks < 1) ticks = 1;
+  track->achchidGateTicks = track->note.fx[fxATY].isOn ? ticks : ticks / 2;
+  if (track->achchidGateTicks < 1) track->achchidGateTicks = 1;
+  track->achchidGateCounter = 0;
+}
+
 void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRow, int skipDelCheck) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
   Project* p = state->p;
@@ -390,6 +442,11 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   int hasAuxTableFX = 0;
   int hasInstrumentTableFX = 0;
   uint8_t chordValue = EMPTY_VALUE_8;
+
+  if (instrument != EMPTY_VALUE_8 || note != EMPTY_VALUE_8) {
+    track->achchidGateTicks = 0;
+    track->achchidGateCounter = 0;
+  }
 
   // Check for pending groove change
   if (track->pendingGrooveIdx != track->grooveIdx) {
@@ -507,6 +564,9 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
       // Accent is deliberately derived from this row, never from sticky volume.
       track->note.accent = volume == 0x0f;
       track->note.noteTriggered = 1;
+      if (track->note.instrument != EMPTY_VALUE_8 &&
+          p->instruments[track->note.instrument].type == InstrumentType::AChChid)
+        scheduleAChChidGate(state, trackIdx);
     }
   }
 
@@ -521,8 +581,16 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
     }
   }
 
+  InstrumentType type = track->note.instrument == EMPTY_VALUE_8 ? InstrumentType::none
+    : p->instruments[track->note.instrument].type;
+  uint8_t sampleSlice = type == InstrumentType::Sample
+    ? p->instruments[track->note.instrument].chip.sample.slice : 0;
+  int slicedSample = sampleSlice == 2 || sampleSlice == 4 || sampleSlice == 8 ||
+    sampleSlice == 16 || sampleSlice == 32;
+
   // Keep phrases chromatic; only the pitch sent to the engine is quantized.
-  if (note != EMPTY_VALUE_8 && note != NOTE_OFF && p->scaleApply &&
+  // Sliced PCM samples map notes to windows, so they stay unquantized.
+  if (note != EMPTY_VALUE_8 && note != NOTE_OFF && p->scaleApply && !slicedSample &&
       (p->scaleTracksMask & (1u << trackIdx)) && p->pitchTable.octaveSize == 12) {
     uint16_t mask = state->scalePreset == scaleCustom ? p->scaleCustomMask : scalePresetMask(state->scalePreset);
     track->note.pitchBase = scaleQuantizeNote(track->note.pitchBase, state->scaleRoot, mask, p->pitchTable.length);
@@ -531,13 +599,11 @@ void readPhraseRowDirect(PlaybackState* state, int trackIdx, PhraseRow* phraseRo
   if (note != EMPTY_VALUE_8 && note != NOTE_OFF) {
     track->chordVoiceCount = 1;
     track->chordPitchBase[0] = track->note.pitchBase;
-    InstrumentType type = track->note.instrument == EMPTY_VALUE_8 ? InstrumentType::none
-      : p->instruments[track->note.instrument].type;
     bool ay = type == InstrumentType::AY1 || type == InstrumentType::AY2 || type == InstrumentType::AYSample;
     if (chordValue != EMPTY_VALUE_8 && !ay && p->pitchTable.octaveSize == 12) {
       track->chordVoiceCount = chordBuild(track->note.pitchBase, chordValue & 0x0f, chordValue >> 4,
                                           p->pitchTable.length, track->chordPitchBase);
-      if (p->scaleApply && (p->scaleTracksMask & (1u << trackIdx))) {
+      if (p->scaleApply && !slicedSample && (p->scaleTracksMask & (1u << trackIdx))) {
         uint16_t mask = state->scalePreset == scaleCustom ? p->scaleCustomMask : scalePresetMask(state->scalePreset);
         for (int i = 0; i < track->chordVoiceCount; ++i)
           track->chordPitchBase[i] = scaleQuantizeNote(track->chordPitchBase[i], state->scaleRoot, mask, p->pitchTable.length);
@@ -839,6 +905,13 @@ static void nextFrame(PlaybackState* state, int trackIdx, int chipIdx) {
 
   resetOffsets(state, trackIdx);
   handleFX(state, trackIdx, chipIdx);
+  if (track->achchidGateTicks) {
+    if (track->achchidGateCounter >= track->achchidGateTicks) {
+      handleNoteOff(state, trackIdx);
+    } else {
+      track->achchidGateCounter++;
+    }
+  }
   processModulations(state, trackIdx);
   handleInstrument(state, trackIdx);
 

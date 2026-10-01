@@ -52,6 +52,9 @@ struct StickLiveFixture {
   StickLiveFixture() {
     std::filesystem::create_directories(testPath);
     std::filesystem::current_path(testPath);
+    char settingsDirectory[PATH_LENGTH];
+    if (fileGetDefaultDirectory(settingsDirectory, sizeof(settingsDirectory)) == 0)
+      realSettingsPath = std::string(settingsDirectory) + "/settings.txt";
     if (!realSettingsPath.empty()) std::filesystem::remove(realSettingsPath);
     initDefaultAppSettings();
     appSettings.keyMapping.keyMotionLive[0] = keyboardLive;

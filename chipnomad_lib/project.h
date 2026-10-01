@@ -202,6 +202,9 @@ enum FX {
   // InstrumentMidi's ccNumber[]). Appended to preserve project FX IDs.
   fxMC1, fxMC2, fxMC3, fxMC4,
 
+  // aChChid tie. Appended to preserve project FX IDs.
+  fxATY,
+
   // Total count - must be last
   fxTotalCount
 };

@@ -12,6 +12,8 @@
 static int sampleButtonDown;
 static constexpr int sourceValueX = 9;
 static constexpr int sourceValueWidth = 7;
+static constexpr int editLabelX = 17;
+static constexpr int editLabelWidth = 4;
 static constexpr int previewRow = 16, previewWidth = 32, previewHeight = 3;
 static Bitmap* samplePreviewBitmap;
 
@@ -71,9 +73,15 @@ static void onSampleLoaded(const char* path) {
   screenSetup(&screenInstrument, cInstrument);
 }
 
+static int sampleHasFile(const InstrumentSample* sample) {
+  return sample->path[0] != 0;
+}
+
 static int getColumnCount(int row) {
   if (row < 3) return instrumentCommonColumnCount(row);
-  if (row == 3) return 1;
+  if (row == 3) {
+    return sampleHasFile(&chipnomadState->project.instruments[cInstrument].chip.sample) ? 2 : 1;
+  }
   return row == 9 ? 5 : 2;
 }
 
@@ -93,7 +101,7 @@ static void drawStatic(void) {
 static void drawCursor(int col, int row) {
   if (row < 3) return instrumentCommonDrawCursor(col, row);
   if (instrumentCommonDrawVoicePostCursor(col, row)) return;
-  else if (row == 3) gfxCursor(sourceValueX,6,sourceValueWidth);
+  else if (row == 3) gfxCursor(col ? editLabelX : sourceValueX, 6, col ? editLabelWidth : sourceValueWidth);
   else gfxCursor(col ? 26 : sourceValueX,row+4,col?8:sourceValueWidth);
 }
 
@@ -113,9 +121,21 @@ static void drawField(int col, int row, CellState state) {
   InstrumentSample* sample = &chipnomadState->project.instruments[cInstrument].chip.sample;
   if (instrumentCommonDrawVoicePostField(col, row, state, sample)) return;
   gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-  if (row == 3) gfxClearRect(sourceValueX,6,sourceValueWidth,1); else gfxClearRect(col?26:sourceValueX,row+4,col?8:sourceValueWidth,1);
+  if (row == 3) {
+    if (col == 0) gfxClearRect(sourceValueX, 6, sourceValueWidth, 1);
+    else gfxClearRect(editLabelX, 6, editLabelWidth, 1);
+  } else {
+    gfxClearRect(col?26:sourceValueX,row+4,col?8:sourceValueWidth,1);
+  }
   switch (row) {
-    case 3: gfxPrint(sourceValueX,6,sample->path[0] ? shortSampleFilename(sample->path, 7) : "Load"); break;
+    case 3:
+      if (col == 0) {
+        gfxPrint(sourceValueX, 6, sampleHasFile(sample) ? shortSampleFilename(sample->path, 7) : "Load");
+        if (!sampleHasFile(sample)) gfxClearRect(editLabelX, 6, editLabelWidth, 1);
+      } else {
+        gfxPrint(editLabelX, 6, "EDIT");
+      }
+      break;
     case 4: if(!col) gfxPrintf(sourceValueX,8,"%+d st",sample->pitch); break;
     case 5: if(!col) gfxPrint(sourceValueX,9,byteToHex(sample->start)); break;
     case 6: if(!col) gfxPrint(sourceValueX,10,byteToHex(sample->end)); break;
@@ -135,12 +155,23 @@ static int onEdit(int col, int row, CellEditAction action) {
   int handled = 0;
   switch (row) {
     case 3:
+      if (col == 1 && action == CellEditAction::tap && sampleHasFile(sample)) {
+        screenSetup(&screenSampleSettings, cInstrument);
+        return 1;
+      }
       return 0;
     case 4: handled=!col?editSigned8(action,&sample->pitch,12,-48,48):0; break;
     case 5: handled=!col?edit8noLast(action,&sample->start,16,0,255):0; break;
     case 6: handled=!col?edit8noLast(action,&sample->end,16,0,255):0; break;
     case 7: handled=!col?edit8noLast(action,&sample->loopMode,1,0,2):0; break;
-    case 8: handled=!col?editNormalized16(action,&sample->speedPercent,500):0; break;
+    case 8:
+      if (!col && action == CellEditAction::clear) {
+        handled = sample->speedPercent != 100;
+        sample->speedPercent = 100;
+      } else {
+        handled = !col ? editNormalized16(action, &sample->speedPercent, 500) : 0;
+      }
+      break;
   }
   if (handled) projectModified = 1;
   if (handled && !col && (row == 5 || row == 6)) {
@@ -159,7 +190,7 @@ static int loadAdjacentSample(int direction) {
 }
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
-  if (screenInstrumentSample.cursorRow != 3) {
+  if (screenInstrumentSample.cursorRow != 3 || screenInstrumentSample.cursorCol != 0) {
     sampleButtonDown = 0;
     return 0;
   }

@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <fstream>
 #include <string>
+#include <cstdio>
 
 TEST_SUITE("project") {
 
@@ -144,6 +145,46 @@ TEST_CASE("a project with fewer than 8 tracks survives save and load") {
   CHECK(loaded.chipsCount == 3);
   CHECK(loaded.song[0][2] == 0);
   CHECK(loaded.phrases[0].rows[0].note == 40);
+}
+
+TEST_CASE("sample slice survives save and load; missing field is Off") {
+  Project saved, loaded;
+  projectInit(&saved);
+  projectInit(&loaded);
+  saved.chipsCount = 1;
+  saved.tracksCount = 1;
+  saved.chipType = ChipType::AY;
+  std::strcpy(saved.pitchTable.name, "Test");
+  saved.pitchTable.length = 1;
+  std::strcpy(saved.pitchTable.noteNames[0], "C-4");
+  saved.pitchTable.values[0] = 1000;
+  getInstrumentFunctions(InstrumentType::Sample).init(&saved.instruments[0]);
+  saved.instruments[0].chip.sample.slice = 16;
+  const char* path = "build/tests/sample_slice_io.cct";
+  REQUIRE(projectSave(&saved, path) == 0);
+  INFO(projectFileError);
+  REQUIRE(projectLoad(&loaded, path) == 0);
+  CHECK(loaded.instruments[0].type == InstrumentType::Sample);
+  CHECK(loaded.instruments[0].chip.sample.slice == 16);
+
+  FILE* in = std::fopen(path, "r");
+  REQUIRE(in != nullptr);
+  const char* stripped = "build/tests/sample_slice_missing.cct";
+  FILE* out = std::fopen(stripped, "w");
+  REQUIRE(out != nullptr);
+  char line[512];
+  while (std::fgets(line, sizeof(line), in)) {
+    if (std::strncmp(line, "- Sample slice:", 15) == 0) continue;
+    std::fputs(line, out);
+  }
+  std::fclose(in);
+  std::fclose(out);
+
+  Project missing;
+  projectInit(&missing);
+  REQUIRE(projectLoad(&missing, stripped) == 0);
+  CHECK(missing.instruments[0].type == InstrumentType::Sample);
+  CHECK(missing.instruments[0].chip.sample.slice == 0);
 }
 
 TEST_CASE("new projects initialize the validated period pitch table") {
@@ -372,6 +413,7 @@ TEST_CASE("new instruments use audible synth defaults") {
   CHECK(instrument.chip.sample.end == 255);
   CHECK(instrument.chip.sample.loopMode == 0);
   CHECK(instrument.chip.sample.speedPercent == 100);
+  CHECK(instrument.chip.sample.slice == 0);
 
   const InstrumentType voiceTypes[] = {InstrumentType::Braids, InstrumentType::Sample,
     InstrumentType::SCWF, InstrumentType::BYOWTBL, InstrumentType::Plaits, InstrumentType::PlaitsAlt};

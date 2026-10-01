@@ -305,6 +305,70 @@ TEST_CASE_FIXTURE(PlaybackFixture, "instrument FX holds until the next note trig
   CHECK(state->playbackState.tracks[0].note.fx[fxBTM].isOn == 0);
 }
 
+static void setupAChChidGatePattern(PlaybackFixture& fixture) {
+  Project* p = &fixture.state->project;
+  getInstrumentFunctions(InstrumentType::AChChid).init(&p->instruments[0]);
+  p->song[0][0] = 0;
+  p->chains[0].rows[0].phrase = 0;
+  for (int row = 0; row < 16; ++row)
+    memset(&p->phrases[0].rows[row], EMPTY_VALUE_8, sizeof(PhraseRow));
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "aChChid normal notes release after half a six-tick step") {
+  setupAChChidGatePattern(*this);
+  PhraseRow* row = &state->project.phrases[0].rows[0];
+  row->note = 48;
+  row->instrument = 0;
+  playbackStartSong(&state->playbackState, 0, 0, 0);
+
+  playbackNextFrame(state);
+  advanceFrames(2);
+  CHECK_FALSE(state->playbackState.tracks[0].note.noteReleased);
+  playbackNextFrame(state);
+  CHECK(state->playbackState.tracks[0].note.noteReleased);
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "aChChid ATY keeps a note open for its full step") {
+  setupAChChidGatePattern(*this);
+  PhraseRow* row = &state->project.phrases[0].rows[0];
+  row->note = 48;
+  row->instrument = 0;
+  row->fx[0][0] = fxATY;
+  row->fx[0][1] = 0;
+  playbackStartSong(&state->playbackState, 0, 0, 0);
+
+  playbackNextFrame(state);
+  advanceFrames(5);
+  CHECK_FALSE(state->playbackState.tracks[0].note.noteReleased);
+  playbackNextFrame(state);
+  CHECK(state->playbackState.tracks[0].note.noteReleased);
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "aChChid holds the preceding note for ASL across a chain boundary") {
+  setupAChChidGatePattern(*this);
+  Project* p = &state->project;
+  p->chains[0].rows[1].phrase = 1;
+  for (int row = 0; row < 16; ++row)
+    memset(&p->phrases[1].rows[row], EMPTY_VALUE_8, sizeof(PhraseRow));
+  PhraseRow* source = &p->phrases[0].rows[15];
+  source->note = 48;
+  source->instrument = 0;
+  PhraseRow* target = &p->phrases[1].rows[0];
+  target->note = 50;
+  target->fx[0][0] = fxASL;
+  target->fx[0][1] = 6;
+
+  PlaybackTrackState* track = &state->playbackState.tracks[0];
+  track->mode = PlaybackMode::song;
+  track->songRow = 0;
+  track->chainRow = 0;
+  track->phraseRow = 15;
+  readPhraseRowDirect(&state->playbackState, 0, source, 0);
+  advanceFrames(4);
+  CHECK_FALSE(track->note.noteReleased);
+  CHECK(track->achchidGateTicks == 0);
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "instrument table FX applies on the trigger row") {
   state->project.instruments[0].type = InstrumentType::Braids;
   state->project.instruments[0].tableSpeed = 1;

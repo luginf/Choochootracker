@@ -3,27 +3,45 @@
 #include "utils.h"
 #include "model_catalog.h"
 #include "selection_popup.h"
+#include "waveform_display.h"
 #include "synth/multimode_filter.h"
+#include <math.h>
 #include <string.h>
 #include <stdio.h>
 
 static int modelButtonDown;
+static Bitmap* previewBitmap;
 static InstrumentAChChid* instrument() { return &chipnomadState->project.instruments[cInstrument].chip.achchid; }
 static int isBraids() { return instrument()->wave == AChChidWave::braids; }
+static int editLogarithmic16(CellEditAction action, uint16_t* value, uint16_t min, uint16_t max) {
+  uint16_t bounded = *value < min ? min : *value > max ? max : *value;
+  float ratio = (float)max / min;
+  uint8_t control = (uint8_t)(255.0f * logf((float)bounded / min) / logf(ratio) + .5f);
+  int handled = edit8noLast(action, &control, 16, 0, 255);
+  if (handled) *value = (uint16_t)(min * powf(ratio, control / 255.0f) + .5f);
+  return handled;
+}
+static void drawPreview(const InstrumentAChChid* a) {
+  if (!previewBitmap) previewBitmap = gfxBitmapCreate(32, 3);
+  renderAChChidPreview(previewBitmap, a);
+  gfxSetFgColor(appSettings.colorScheme.textInfo);
+  gfxDrawBitmap(previewBitmap, 0, 16);
+}
 static void selectModel(int value) { instrument()->model = (uint8_t)value; projectModified = 1; screenSetup(&screenInstrument, cInstrument); }
 static void cancelModel() { screenSetup(&screenInstrument, cInstrument); }
 static void openModel() { selectionPopupSetup("BRAIDS MODEL", braidsCategories, braidsCategoryCount, instrument()->model, selectModel, cancelModel); screenSetup(&screenSelectionPopup, 0); }
 static int columns(int row) { return row < 3 ? instrumentCommonColumnCount(row) : 2; }
 static int isCellValid(int col,int row) {
   if (row < 3 || col) return 1;
-  return row <= (isBraids() ? 6 : 4);
+  return row <= (isBraids() ? 7 : 4);
 }
 static void drawStatic() {
   instrumentCommonDrawStatic();
   gfxSetFgColor(appSettings.colorScheme.textTitles); gfxPrint(0,6,"OSCILLATOR"); gfxPrint(20,6,"303 FILTER");
   gfxSetFgColor(appSettings.colorScheme.textDefault); gfxPrint(0,7,"Wave");
-  if (isBraids()) { gfxPrint(0,8,"Model"); gfxPrint(0,9,"Timbre"); gfxPrint(0,10,"Color"); } else gfxPrint(0,8,"Fine");
+  if (isBraids()) { gfxPrint(0,8,"Model"); gfxPrint(0,9,"Timbre"); gfxPrint(0,10,"Color"); gfxPrint(0,11,"Shaper"); } else gfxPrint(0,8,"Fine");
   gfxPrint(20,7,"Cutoff"); gfxPrint(20,8,"Reso"); gfxPrint(20,9,"Env Mod"); gfxPrint(20,10,"Decay"); gfxPrint(20,11,"Accent");
+  drawPreview(instrument());
 }
 // The track status panel starts at column 34; keep values and cursors before it.
 static void drawCursor(int col,int row) {
@@ -32,7 +50,7 @@ static void drawCursor(int col,int row) {
   if (!col) {
     if (row == 3) gfxCursor(11, 7, strlen(a->wave == AChChidWave::square ? "Square" : a->wave == AChChidWave::saw ? "Saw" : "Braids"));
     else if (row == 4) gfxCursor(11, 8, isBraids() ? 3 + min((int)strlen(modelCatalogName(InstrumentType::Braids, a->model)), 6) : 3);
-    else if (row == 5 || row == 6) gfxCursor(11, row + 4, 2);
+    else if (row >= 5 && row <= 7) gfxCursor(11, row + 4, 2);
   } else {
     char value[12];
     snprintf(value, sizeof(value), "%u Hz", a->cutoff);
@@ -49,6 +67,7 @@ static void drawField(int col,int row,CellState state) {
   else if(isBraids() && row==4 && !col) gfxPrintf(11,8,"%02u %.6s",a->model,modelCatalogName(InstrumentType::Braids,a->model));
   else if(isBraids() && row==5 && !col) gfxPrint(11,9,byteToHex(controlFromRange(a->timbre,32767)));
   else if(isBraids() && row==6 && !col) gfxPrint(11,10,byteToHex(controlFromRange(a->color,32767)));
+  else if(isBraids() && row==7 && !col) gfxPrint(11,11,byteToHex(a->saturation));
   else if(col && row==3) gfxPrintf(28,7,"%u Hz",a->cutoff);
   else if(col && row==4) gfxPrint(28,8,byteToHex(controlFromRange(a->resonance,100)));
   else if(col && row==5) gfxPrint(28,9,byteToHex(controlFromRange(a->envMod,100)));
@@ -63,11 +82,12 @@ static int onEdit(int col,int row,CellEditAction action) {
   else if(isBraids() && row==4 && !col) ok=edit8noLast(action,&a->model,1,0,46);
   else if(isBraids() && row==5 && !col) ok=editOscillatorParameter(action,&a->timbre);
   else if(isBraids() && row==6 && !col) ok=editOscillatorParameter(action,&a->color);
-  else if(col && row==3) ok=edit16withMinMax(action,&a->cutoff,100,200,FILTER_CUTOFF_MAX_HZ);
-  else if(col && row==4) ok=editNormalized8(action,&a->resonance,100);
-  else if(col && row==5) ok=editNormalized8(action,&a->envMod,100);
-  else if(col && row==6) ok=edit16withMinMax(action,&a->decay,50,200,2000);
-  else if(col && row==7) ok=editNormalized8(action,&a->accent,100);
+  else if(isBraids() && row==7 && !col) ok=edit8noLast(action,&a->saturation,16,0,255);
+  else if(col && row==3) ok=editLogarithmic16(action,&a->cutoff,200,FILTER_CUTOFF_MAX_HZ);
+  else if(col && row==4) ok=edit8noLast(action,&a->resonance,6,0,100);
+  else if(col && row==5) ok=edit8noLast(action,&a->envMod,6,0,100);
+  else if(col && row==6) ok=editLogarithmic16(action,&a->decay,200,2000);
+  else if(col && row==7) ok=edit8noLast(action,&a->accent,6,0,100);
   if(ok){projectModified=1;screenFullRedraw(&screenInstrumentAChChid);} return ok;
 }
 static int onInput(int down,int keys,int taps) {

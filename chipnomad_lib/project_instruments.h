@@ -189,6 +189,7 @@ struct InstrumentAChChid {
   uint8_t model;
   uint16_t timbre;
   uint16_t color;
+  uint8_t saturation;
   uint16_t cutoff;
   uint8_t resonance;
   uint8_t envMod;
@@ -255,6 +256,7 @@ struct InstrumentSample : InstrumentVoicePostSettings {
   uint8_t start;
   uint8_t end;
   uint8_t loopMode; // 0: off, 1: loop, 2: ping-pong
+  uint8_t slice; // 0: off, else even divisions 2/4/8/16/32
 };
 
 // 2xSCWF is a pair of forward-looping, one-cycle PCM waveforms.  It shares

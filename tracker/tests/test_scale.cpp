@@ -47,6 +47,33 @@ TEST_CASE("SCL changes runtime scale without changing phrase data") {
   CHECK(state.tracks[0].note.pitchBase == 2);
 }
 
+TEST_CASE("sliced sample notes skip scale quantization") {
+  Project project;
+  projectInit(&project);
+  project.pitchTable.octaveSize = 12;
+  project.pitchTable.length = 96;
+  project.scaleApply = 1;
+  project.scalePreset = scaleMajor;
+  getInstrumentFunctions(InstrumentType::Sample).init(&project.instruments[0]);
+  project.instruments[0].chip.sample.slice = 8;
+
+  PlaybackState state = {};
+  playbackInit(&state, &project);
+  state.tracks[0].mode = PlaybackMode::phraseRow;
+
+  PhraseRow row = {};
+  row.note = 3;
+  row.instrument = 0;
+  row.volume = EMPTY_VALUE_8;
+  for (int i = 0; i < 3; ++i) row.fx[i][0] = EMPTY_VALUE_8;
+  readPhraseRowDirect(&state, 0, &row, 0);
+  CHECK(state.tracks[0].note.pitchBase == 3);
+
+  project.instruments[0].chip.sample.slice = 0;
+  readPhraseRowDirect(&state, 0, &row, 0);
+  CHECK(state.tracks[0].note.pitchBase == 2);
+}
+
 TEST_CASE("track scale mask leaves excluded tracks chromatic") {
   Project project;
   projectInit(&project);

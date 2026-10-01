@@ -77,41 +77,6 @@ the engine processes about 102 ms of audio per callback. At 512 frames this
 falls to about 10.7 ms. This observation validates that test configuration;
 it does not establish a safe buffer size for every supported device.
 
-### AppImage
-
-```sh
-make -j4 -f Makefile.linux appimage
-```
-
-Produces `releases/ChooChooTracker-<date>-<version>-x86_64.AppImage`. Bundles
-only `libSDL2` and its `libsamplerate` dependency into `usr/lib` - the two
-libraries the tar.gz release's README tells users to `apt install` - and
-lets everything else (X11, ALSA, glibc...) resolve from the host, to avoid
-the ABI-mismatch risk of bundling core OS libraries into an AppImage. Uses
-`appimagetool` if it's already on `PATH`, otherwise downloads it once to
-`.tmp/appimagetool`.
-
-`fileGetDefaultDirectory()` (`src/corelib/corelib_file.cpp`) detects the
-`APPIMAGE` environment variable the AppImage runtime sets and resolves
-settings/autosave to `~/.local/share/ChooChooTracker` instead of next to the
-executable, since an AppImage mounts itself read-only - confirmed by running
-the produced AppImage under Xvfb with an isolated `$HOME` and checking that
-`settings.txt`/`autosave.cct` land there rather than inside the
-`/tmp/.mount_*` squashfs mount.
-
-`packaging/common/*` (bonus themes, instruments, sample projects, title art)
-is bundled read-only under `usr/share/choochootracker/common`. Since the
-AppImage itself can't be written to, `AppRun` seeds a writable copy into
-`~/.local/share/ChooChooTracker/` the first time it runs (checked via the
-`projects` subfolder's presence), and `initDefaultAppSettings()`
-(`src/common.cpp`) points `projectPath`/`samplePath`/`themePath`/etc at that
-same directory when `fileIsRunningFromAppImage()` is true - normal desktop
-builds keep their existing behavior (relative paths, resolved via the
-launcher script's `cd`) untouched. Confirmed under Xvfb with a fresh `$HOME`:
-first launch populates every subfolder, the files are writable, and the
-Project screen's Load browser lists the bundled example songs from the
-seeded (not the read-only) copy.
-
 ### MIDI I/O
 
 Desktop builds (Linux/Windows/macOS) link RtMidi (vendored at
@@ -122,6 +87,54 @@ plus `-lasound` on Linux, `-D__WINDOWS_MM__` plus `-lwinmm` on Windows,
 `-D__MACOSX_CORE__` plus the CoreMIDI/CoreAudio/CoreFoundation frameworks on
 macOS. `Dockerfile.linux` installs `libasound2-dev` for the Docker-based
 Linux build.
+
+### AppImage
+
+```sh
+make -j4 -f Makefile.linux appimage
+```
+
+Produces `releases/ChooChooTracker-<date>-<version>-x86_64.AppImage`. Bundles
+only `libSDL2` and its `libsamplerate` dependency into `usr/lib` - the two
+libraries the tar.gz release's README tells users to `apt install` - and
+lets everything else (X11, ALSA, glibc...) resolve from the host, to avoid
+the ABI-mismatch risk of bundling core OS libraries into an AppImage.
+
+Requires `appimagetool` on `PATH` - it is not downloaded automatically, since
+the only available URL for it is a `continuous` release tag that isn't
+pinned to a fixed version, which would make the build not reproducible.
+Install it first, e.g.:
+
+```sh
+curl -L -o /usr/local/bin/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+chmod +x /usr/local/bin/appimagetool
+```
+
+`fileGetDefaultDirectory()` (`src/corelib/corelib_file.cpp`) detects the
+`APPIMAGE` environment variable the AppImage runtime sets and resolves
+settings/autosave to `$XDG_DATA_HOME/ChooChooTracker`, falling back to
+`~/.local/share/ChooChooTracker` when `$XDG_DATA_HOME` is unset, instead of
+next to the executable, since an AppImage mounts itself read-only -
+confirmed by running the produced AppImage under Xvfb with an isolated
+`$HOME` and checking that `settings.txt`/`autosave.cct` land there rather
+than inside the `/tmp/.mount_*` squashfs mount.
+
+`packaging/common/*` (bonus themes, instruments, sample projects, title art)
+is bundled read-only under `usr/share/choochootracker/common`. Since the
+AppImage itself can't be written to, `AppRun` seeds a writable copy into the
+same `$XDG_DATA_HOME`-aware directory every time it runs, copying each
+top-level bonus directory independently and only if it's missing on the
+destination - so an interrupted first run, or a user who already created
+their own e.g. `projects` folder before the rest was seeded, still gets the
+remaining bonus content on a later launch instead of never seeing it.
+`initDefaultAppSettings()` (`src/common.cpp`) points
+`projectPath`/`samplePath`/`themePath`/etc at that same directory when
+`fileIsRunningFromAppImage()` is true - normal desktop builds keep their
+existing behavior (relative paths, resolved via the launcher script's `cd`)
+untouched. Confirmed under Xvfb with a fresh `$HOME`: first launch populates
+every subfolder, the files are writable, and the Project screen's Load
+browser lists the bundled example songs from the seeded (not the read-only)
+copy.
 
 ## Web
 

@@ -3,6 +3,7 @@
 #include "chipnomad_lib.h"
 #include "playback_chips.h"
 #include "synth/braids_voice.h"
+#include "synth/achchid_voice.h"
 #include "synth/plaits_voice.h"
 #include "synth/plaits_alt_voice.h"
 #include "synth/mme_voice.h"
@@ -440,6 +441,20 @@ void renderBraidsPreview(Bitmap* bitmap, const InstrumentBraids* instrument) {
   voice.setParameters(instrument->timbre, instrument->color);
   voice.setGain(1.0f);
   voice.strike();
+  voice.render(samples, sizeof(samples) / sizeof(samples[0]));
+  renderFloatPreview(bitmap, samples, sizeof(samples) / sizeof(samples[0]));
+}
+
+void renderAChChidPreview(Bitmap* bitmap, const InstrumentAChChid* instrument) {
+  if (!instrument) { if (bitmap) gfxBitmapClear(bitmap); return; }
+  float samples[768];
+  AChChidVoice voice;
+  voice.init(48000.0f);
+  voice.configure((uint8_t)instrument->wave, instrument->fineTune, instrument->model,
+                  instrument->timbre, instrument->color, instrument->saturation,
+                  instrument->cutoff, instrument->resonance, instrument->envMod,
+                  instrument->decay, instrument->accent, 1.0f);
+  voice.noteOn(48, false, false, 0);
   voice.render(samples, sizeof(samples) / sizeof(samples[0]));
   renderFloatPreview(bitmap, samples, sizeof(samples) / sizeof(samples[0]));
 }

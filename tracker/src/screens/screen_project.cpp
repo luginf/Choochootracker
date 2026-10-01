@@ -244,41 +244,42 @@ void projectCommonDrawStatic(void) {
   gfxPrint(0, 0, "PROJECT");
 
   gfxSetFgColor(cs.textDefault);
-  gfxPrintf(8, 0, "%s v%s (%s)", appTitle, appVersion, appBuild);
+  gfxPrint(8, 0, appTitle);
+  gfxPrintf(0, 1, "v%s (%s)", appVersion, appBuild);
 
-  gfxPrint(0, 3, "File");
-  gfxPrint(0, 4, "Title");
-  gfxPrint(0, 5, "Author");
+  gfxPrint(0, 5, "File");
+  gfxPrint(0, 6, "Title");
+  gfxPrint(0, 7, "Author");
 
-  gfxPrint(0, 7, "Linear pitch");
-  gfxPrint(0, 8, "Tick rate");
+  gfxPrint(0, 9, "Linear pitch");
+  gfxPrint(0, 10, "Tick rate");
 }
 
 void projectCommonDrawCursor(int col, int row) {
   if (row == 0) {
     if (col == 0) {
-      gfxCursor(7, 2, 4); // Load
+      gfxCursor(7, 3, 4); // Load
     } else if (col == 1) {
-      gfxCursor(12, 2, 4); // Save
+      gfxCursor(12, 3, 4); // Save
     } else if (col == 2) {
-      gfxCursor(17, 2, 3); // New
+      gfxCursor(17, 3, 3); // New
     } else if (col == 3) {
-      gfxCursor(21, 2, 6); // Export
+      gfxCursor(21, 3, 6); // Export
     } else if (col == 4) {
-      gfxCursor(28, 2, 6); // Manage
+      gfxCursor(28, 3, 6); // Manage
     }
   } else if (row >= 1 && row <= 3) {
     // Text fields: file name, title, author
-    gfxCursor(7 + col, 2 + row, 1);
+    gfxCursor(7 + col, 4 + row, 1);
   } else if (row == 4) {
     // Linear pitch
-    gfxCursor(13, 7, 3);
+    gfxCursor(13, 9, 3);
   } else if (row == 5) {
     // Tick rate
     if (col == 0) {
-      gfxCursor(13, 8, 3);
+      gfxCursor(13, 10, 3);
     } else {
-      gfxCursor(17, 8, 3);
+      gfxCursor(17, 10, 3);
     }
   }
 }
@@ -288,37 +289,37 @@ void projectCommonDrawField(int col, int row, CellState state) {
 
   if (row == 0) {
     if (col == 0) {
-      gfxPrint(7, 2, "Load");
+      gfxPrint(7, 3, "Load");
     } else if (col == 1) {
-      gfxPrint(12, 2, "Save");
+      gfxPrint(12, 3, "Save");
     } else if (col == 2) {
-      gfxPrint(17, 2, "New");
+      gfxPrint(17, 3, "New");
     } else if (col == 3) {
-      gfxPrint(21, 2, "Export");
+      gfxPrint(21, 3, "Export");
     } else if (col == 4) {
-      gfxPrint(28, 2, "Manage");
+      gfxPrint(28, 3, "Manage");
     }
   } else if (row == 1) {
     // File name
-    gfxClearRect(7, 3, FILENAME_LENGTH, 1);
-    gfxPrintf(7, 3, "%s", appSettings.projectFilename);
+    gfxClearRect(7, 5, FILENAME_LENGTH, 1);
+    gfxPrintf(7, 5, "%s", appSettings.projectFilename);
   } else if (row == 2) {
     // Title
-    gfxClearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 4, "%s", chipnomadState->project.title);
+    gfxClearRect(7, 6, PROJECT_TITLE_LENGTH, 1);
+    gfxPrintf(7, 6, "%s", chipnomadState->project.title);
   } else if (row == 3) {
     // Author
-    gfxClearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 5, "%s", chipnomadState->project.author);
+    gfxClearRect(7, 7, PROJECT_TITLE_LENGTH, 1);
+    gfxPrintf(7, 7, "%s", chipnomadState->project.author);
   } else if (row == 4) {
     // Linear pitch
-    gfxPrint(13, 7, chipnomadState->project.linearPitch ? "ON " : "OFF");
+    gfxPrint(13, 9, chipnomadState->project.linearPitch ? "ON " : "OFF");
   } else if (row == 5) {
     // Tick rate and BPM
-    gfxClearRect(13, 8, 27, 1);
+    gfxClearRect(13, 10, 27, 1);
     float tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
     float bpm = tickRate * 60.0f / 24.0f;
-    gfxPrintf(13, 8, "%03d.%03dHz (%.1f BPM)", tickRateI, tickRateF, bpm);
+    gfxPrintf(13, 10, "%03d.%03dHz (%.1f BPM)", tickRateI, tickRateF, bpm);
   }
 }
 

@@ -8,7 +8,7 @@
 class AChChidVoice {
  public:
   void init(float sampleRate);
-  void configure(uint8_t wave, int8_t fine, uint8_t model, uint16_t timbre, uint16_t color,
+  void configure(uint8_t wave, int8_t fine, uint8_t model, uint16_t timbre, uint16_t color, uint8_t saturation,
                  uint16_t cutoff, uint8_t resonance, uint8_t envMod, uint16_t decay,
                  uint8_t accent, float gain);
   void noteOn(int note, bool accent, bool slide, uint8_t slideValue);
@@ -25,7 +25,9 @@ class AChChidVoice {
   uint8_t braidsSync_[24] = {};
   int braidsPosition_ = 24;
   int16_t pitch_ = 60 << 7;
+  int16_t braidsPitchOffset_ = 0;
   int8_t fine_ = 0;
+  uint8_t saturation_ = 0;
   float gain_ = 1.0f;
   bool active_ = false;
   void renderBraidsBlock();

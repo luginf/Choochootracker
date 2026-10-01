@@ -19,6 +19,7 @@ class SinteredVoice;
 class PDVoice;
 class AudioCommandQueue;
 struct MidiRouterState;
+class AudioMonitor;
 
 constexpr int VOICE_MONITOR_SAMPLES = 256;
 
@@ -96,6 +97,7 @@ struct ChipNomadState {
   VoiceMonitor voiceMonitors[PROJECT_MAX_TRACKS];
   MasterEffects* masterEffects;
   AudioCommandQueue* audioCommands;
+  AudioMonitor* audioMonitor;
   PlaybackStatus uiPlaybackStatus;
 };
 

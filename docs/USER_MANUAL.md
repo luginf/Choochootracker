@@ -146,6 +146,26 @@ Song -> Chain -> Phrase row -> Note + Instrument + FX
 
 A song has 8 tracks. Each track contains a sequence of chains, and each chain contains a sequence of phrases. Phrases are 16-step sequences of notes. A note contains a pitch, an instrument, a velocity and up to 3 track FX. An instrument is the thing that makes the sound.
 
+### Optional 16x24 fonts and NostromoAmberDa2
+
+Settings → Load font → fonts/Pixel16x24 contains TechMonoAudit (converted from Share Tech Mono), Departure Mono, Spleen and Cozette. Each supplies the complete printable ASCII set in 16×24 cells for a 640×480 display. Pixel-built fonts keep their native pixels or integer scaling with padding; Cozette remains smaller because doubling its 13-pixel ink height would exceed the cell. The NostromoAmberDa2 theme is available through Settings → Edit color theme → Load. It retains the Nostromo amber background and informational text, with red primary text, darker orange values and a teal cursor. Loading the assets does not change your selected font or theme. See the accompanying README.txt for attribution and licenses.
+
+### Project page spacing
+
+The Project page puts the application version on its own line and separates Load, Save, New, Export and Manage from the project metadata with blank rows. Cursor positions and touch targets follow the displayed fields; project settings and file operations are unchanged.
+
+### Audio display telemetry
+
+Audio readouts use a UI-owned snapshot of the final mix and individual track contributions. Track samples and stereo peaks are captured after track level and tilt, before shared effect returns and master gain. Monitoring does not change the audio signal. The audio callback publishes fixed-size snapshots without locks or allocation; display history spans about 21 ms.
+
+### Playback piano
+
+A code-drawn pixel piano below the eight right-side track rows lights sounding pitch classes, folded into one octave. It includes chord notes and respects muted/stopped tracks. The outline uses the theme value color and all active keys use the waveform color; idle keys have dark fills and subtle shadows. Its grid uses integer scaling and fixed-width borders. The piano is a playback indicator, not a note-entry control. Popups and the wavetable editor keep their own content in this area.
+
+### Mixer meters
+
+The Mixer labels its tracks with a TRK heading and numeric rows. An unlabeled one-character column before LVL shows each track’s stereo peak after level and tilt, before shared effects and master gain. The meter spans -48 to 0 dBFS and decays between updates. Its lower and middle bands use theme colors, while the top band is bright red near full scale.
+
 ## 4. Song, Chain and Phrase
 
 ### Song
@@ -437,12 +457,13 @@ Global Braids settings are available in the app settings:
 
 ### aChChid
 
-**aChChid** is a monophonic acid bass engine based on Open303. `Square` and `Saw` use its native TB-303 oscillator, filter, envelope and accent behaviour. `Braids` replaces only the oscillator, then continues through the same 303 filter and amplifier path. It exposes Model, Timbre and Color instead of Fine tune. aChChid does not use ChooChooTracker's unified post-filter or ADSR.
+**aChChid** is a monophonic acid bass engine based on Open303. `Square` and `Saw` use its native TB-303 oscillator, filter, envelope and accent behaviour. `Braids` replaces only the oscillator, then continues through the same 303 filter and amplifier path. It exposes Model, Timbre, Color and Shaper instead of Fine tune. Shaper progresses from soft saturation into wavefolding. aChChid does not use ChooChooTracker's unified post-filter or ADSR.
 
-Cutoff is displayed in Hz: **EDIT + LEFT/RIGHT** changes it by 1 Hz, and
-**EDIT + UP/DOWN** changes it by 100 Hz. Decay is displayed in milliseconds.
+Cutoff and Decay use logarithmic editing: **EDIT + LEFT/RIGHT** moves by one
+musical control step, while **EDIT + UP/DOWN** moves by sixteen steps. Cutoff
+covers 200 Hz to 20 kHz; Decay covers 200 ms to 2 s.
 
-An `F` in the note volume column triggers an accent. `ASL` slides to that note from the previous pitch without retriggering the 303 envelope. `ASL 00` gives a `60 ms` glide. Notes without `ASL` always retrigger. Modulation destinations include Decay and Accent, plus Timbre and Color in Braids wave mode.
+An `F` in the note volume column triggers an accent. Normal notes use a half-step gate (3 ticks in the default 6-tick groove). `ASL` slides to that note from the previous pitch without retriggering the 303 envelope; it automatically holds the preceding gate, and `ASL 00` gives a `60 ms` glide. `ATY` keeps its note open for the whole current step. Notes without `ASL` always retrigger. Modulation destinations include Decay and Accent, plus Timbre and Color in Braids wave mode.
 
 ### Bogie
 
@@ -550,9 +571,10 @@ Tap **Engine** to choose from categorised engine lists.
 This clean Sample engine plays mono or stereo PCM samples loaded into RAM.
 
 - Tap **Sample** to load an uncompressed `8-bit` or `16-bit` PCM WAV. Press **PLAY** in the browser to audition the highlighted file.
+- When a sample is loaded, **EDIT** appears next to its name. Tap it to open Sample Settings. **OPT** or **SELECT + [LEFT]** returns to the instrument.
+- Sample Settings shows the filename, a tall waveform, **Start**, **End**, and **Slice**. **Start** and **End** also remain available on the Sample instrument screen. They set normalised playback boundaries (`00-FF`); if Start is after End, the sample plays in reverse. **Slice** is Off, `2`, `4`, `8`, `16`, or `32` (EDIT + left/right) and is saved with the instrument. Off plays the Start/End window. A slice count divides that window evenly; phrase notes select slices chromatically from **C-0**, and notes past the last slice stay on that last slice. Sliced notes do not transpose pitch or use Scale quantization, but **CRD** keeps the selected slice and transposes its voices as a chord. Thin vertical lines mark each slice start on the waveform except the first.
 - On the Sample instrument screen, use **EDIT + [LEFT/RIGHT]** to load the previous or next WAV in the same folder.
 - **Pitch** transposes by semitones (`-48` to `+48`).
-- **Start** and **End** set normalised playback boundaries (`00-FF`). If Start is after End, the sample plays in reverse.
 - **Loop** selects Off, Loop or Ping-Pong.
 - **Speed** controls granular time-stretching from `0%` to `500%` (`100%` is normal).
 
@@ -995,7 +1017,7 @@ On desktop, key jazz lets you type the filename, title and author directly on th
 
 ### Scale / Quantize
 
-The Scale screen controls the global 12-TET playback quantizer. Phrase entry remains chromatic: when enabled, notes are rounded downward immediately before reaching the sound engine, so changing root or scale reharmonizes a song without editing its phrases. Choose a root, one of the compact built-in scales, or edit the twelve notes of **Custom**. Each of the eight track checkboxes decides which tracks are quantized. Quantization is bypassed for non-12-note pitch tables; MIDI input is not part of this version.
+The Scale screen controls the global 12-TET playback quantizer. Phrase entry remains chromatic: when enabled, notes are rounded downward immediately before reaching the sound engine, so changing root or scale reharmonizes a song without editing its phrases. Choose a root, one of the compact built-in scales, or edit the twelve notes of **Custom**. Each of the eight track checkboxes decides which tracks are quantized. Quantization is bypassed for non-12-note pitch tables and for PCM Sample instruments whose **Slice** is not Off; MIDI input is not part of this version.
 
 - **Linear pitch** selects the pitch-table mode. **Off** is the default and the hardware-validated setting for correct AY, Braids and Plaits octave tracking.
 - **Tick rate** sets tracker timing and displays the corresponding BPM (`tick rate x 60 / 24`).
