@@ -4,7 +4,12 @@
 # Compiler settings
 CXX = c++
 CFLAGS = -std=c++17 -Wall -g -O0 -DTEST -DTEST_PORTMASTER_INPUT
+ifeq ($(OS),Windows_NT)
+# Match the Windows application build: the pinned SID core uses CRT constants.
+CFLAGS += -D_USE_MATH_DEFINES
+endif
 LDFLAGS = -lm -pthread
+include Makefile.native-chip-flags
 
 # Build directory
 BUILD_DIR = build/tests
@@ -13,7 +18,7 @@ BUILD_DIR = build/tests
 # Include paths
 INCLUDES = -I. -Isrc -Isrc/corelib -Isrc/screens -Isrc/import -Itests/mocks -Iexternal \
            -I../chipnomad_lib -I../chipnomad_lib/chips -I../chipnomad_lib/external/ayumi \
-           -I../chipnomad_lib/external/mutable -I../chipnomad_lib/external/open303/Source/DSPCode \
+           -I../chipnomad_lib/external/gb_apu -I../chipnomad_lib/external/mutable -I../chipnomad_lib/external/open303/Source/DSPCode \
            -I../chipnomad_lib/external/signalsmith
 
 # Test executable
@@ -30,7 +35,9 @@ TEST_SOURCES_EXCLUDED = tests/test_project_io.cpp tests/test_screen_instrument.c
 TEST_SOURCES = $(filter-out $(TEST_SOURCES_EXCLUDED),$(TEST_SOURCES_ALL))
 
 # Common sources needed by tests - use wildcards for automatic discovery
-CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
+CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/external/msfa/*.cc) ../chipnomad_lib/external/emu76489/emu76489.c ../chipnomad_lib/external/gb_apu/gb_apu.c $(wildcard ../chipnomad_lib/external/gb_apu/blargg/*.cpp) \
+                        $(wildcard ../chipnomad_lib/external/ymfm/*.cpp) \
+                        $(wildcard ../chipnomad_lib/*.cpp) \
                         $(wildcard ../chipnomad_lib/chips/*.cpp) \
                         $(wildcard ../chipnomad_lib/synth/*.cpp) \
                         $(wildcard ../chipnomad_lib/export/*.cpp) \
@@ -57,18 +64,19 @@ CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/mutable/plaits_alt/dsp/physical_modelling/*.cc) \
                         $(wildcard ../chipnomad_lib/external/mutable/plaits_alt/dsp/speech/*.cc)
 
-TRACKER_SRC_SOURCES = src/screens/screen_insert_fx.cpp \
+TRACKER_SRC_SOURCES = src/fm_catalog.cpp src/app.cpp \
+                      src/screens/instrument_fm_controls.cpp \
+                      src/screens/screen_insert_fx.cpp \
                       src/screens/selection_popup.cpp \
-                      src/app.cpp \
                       src/corelib/corelib_gfx_layout.cpp \
+                      src/screens/screen_layout.cpp \
+                      src/scope_display.cpp \
+                      src/screens/screen_track_visuals.cpp \
                       src/meter_display.cpp \
                       src/monitor_display.cpp \
                       src/piano_display.cpp \
-                      src/scope_display.cpp \
-                      src/screens/screen_layout.cpp \
                       src/screens/screen_settings.cpp \
                       src/screens/screen_settings_submenus.cpp \
-                      src/screens/screen_track_visuals.cpp \
                       src/screens/screen_midi.cpp \
                       src/screens/screen_midi_channel_map.cpp \
                       src/string_utils.cpp \
@@ -95,6 +103,7 @@ MOCK_SOURCES = $(wildcard tests/mocks/*.cpp)
 # Combined common sources
 COMMON_SOURCES = $(CHIPNOMAD_LIB_SOURCES) $(TRACKER_SRC_SOURCES)
 
+
 # All sources
 ALL_SOURCES = $(TEST_SOURCES) $(COMMON_SOURCES) $(MOCK_SOURCES)
 MEASURE_SOURCES = tests/render_engine_measurements.cpp $(filter-out src/copy_paste.cpp,$(COMMON_SOURCES)) $(MOCK_SOURCES)
@@ -110,9 +119,9 @@ BENCHMARK_OBJECTS := $(foreach source,$(BENCHMARK_SOURCES),$(call object_for,$(s
 DEPS := $(sort $(OBJECTS:.o=.d) $(MEASURE_OBJECTS:.o=.d) $(BENCHMARK_OBJECTS:.o=.d))
 
 define compile_source
-$(call object_for,$(1)): $(1) Makefile.test
+$(call object_for,$(1)): $(1) Makefile.test Makefile.native-chip-flags
 	@mkdir -p $$(dir $$@)
-	@$(CXX) $(CFLAGS) $(INCLUDES) -MMD -MP -c $$< -o $$@
+	@$(CXX) $(CFLAGS) $(call native_chip_opt_flags,$(1)) $(INCLUDES) -MMD -MP -c $$< -o $$@
 endef
 
 $(foreach source,$(ALL_COMPILE_SOURCES),$(eval $(call compile_source,$(source))))
@@ -173,3 +182,29 @@ help:
 	@echo "  $(TEST_EXECUTABLE) --help                 See all doctest options"
 
 .PHONY: all build clean help debug measurements
+
+# Offline factory conversion uses the same canonical writer/readers as the app.
+FACTORY_OBJECTS = $(foreach source,tests/chip_factory.cpp $(filter-out src/copy_paste.cpp,$(COMMON_SOURCES)) $(MOCK_SOURCES),$(call object_for,$(source)))
+$(eval $(call compile_source,tests/chip_factory.cpp))
+$(BUILD_DIR)/chip_factory: $(FACTORY_OBJECTS)
+	@$(CXX) $(FACTORY_OBJECTS) $(LDFLAGS) -o $@
+.PHONY: chip-factory
+chip-factory: $(BUILD_DIR)/chip_factory
+
+CHIP_BENCH_OBJECTS = $(foreach source,tests/benchmark_native_chips.cpp $(filter-out src/copy_paste.cpp,$(COMMON_SOURCES)) $(MOCK_SOURCES),$(call object_for,$(source)))
+$(eval $(call compile_source,tests/benchmark_native_chips.cpp))
+$(BUILD_DIR)/benchmark_native_chips: $(CHIP_BENCH_OBJECTS)
+	@$(CXX) $(CHIP_BENCH_OBJECTS) $(LDFLAGS) -o $@
+.PHONY: benchmark-native-chips
+benchmark-native-chips: $(BUILD_DIR)/benchmark_native_chips
+
+CHIP_AUDITION_OBJECTS = $(foreach source,tests/chip_auditions.cpp $(filter-out src/copy_paste.cpp,$(COMMON_SOURCES)) $(MOCK_SOURCES),$(call object_for,$(source)))
+$(eval $(call compile_source,tests/chip_auditions.cpp))
+$(BUILD_DIR)/chip_auditions: $(CHIP_AUDITION_OBJECTS)
+	@$(CXX) $(CHIP_AUDITION_OBJECTS) $(LDFLAGS) -o $@
+.PHONY: chip-auditions
+chip-auditions: $(BUILD_DIR)/chip_auditions
+
+# Host tools own voice objects too; their header dependencies must participate
+# in incremental rebuilds when a native adapter's layout changes.
+-include $(FACTORY_OBJECTS:.o=.d) $(CHIP_BENCH_OBJECTS:.o=.d) $(CHIP_AUDITION_OBJECTS:.o=.d)

@@ -1,8 +1,8 @@
 #ifndef __SCREENS_H__
 #define __SCREENS_H__
+#include "screen_layout.h"
 
 #include "common.h"
-#include "screen_layout.h"
 #include "../chipnomad_lib/playback.h"
 
 #define MESSAGE_TIME (60)
@@ -180,6 +180,7 @@ char charEditInput(int keys, int tapCount, char* str, int idx, int maxLen);
 
 // FX edit
 int editFX(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx);
+void selectInstrumentFX(uint8_t* fx, uint8_t selected, uint8_t instrumentIdx);
 int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx);
 int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX);
 void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx, int isTable);

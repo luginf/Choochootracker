@@ -10,8 +10,8 @@
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "waveform_display.h"
-#include "monitor_display.h"
 #include "piano_display.h"
+#include "monitor_display.h"
 #include "corelib_input.h"
 #include "corelib_keymap.h"
 #include "screens/screen_quick_help.h"
@@ -292,7 +292,9 @@ static void appInput(int isKeyDown, int keys, int tapCount) {
     }
   }
   // The UI owns Project. Coalesce edits into one snapshot for the next audio tick.
-  if (isKeyDown) audioProjectDirty = 1;
+  // Popup choices (including native presets) commit on release. Publish those
+  // edits too, even if no further button is pressed while the song plays.
+  audioProjectDirty = 1;
 }
 
 
@@ -448,7 +450,7 @@ void appDraw(void) {
   screenDraw();
 
   if (currentScreen == &screenTitle ||
-      (currentScreen == &screenSelectionPopup && selectionPopupIsFullWidth())) return;
+      currentScreen == &screenSelectionPopup) return;
 
   if (!chipnomadState) return;
 

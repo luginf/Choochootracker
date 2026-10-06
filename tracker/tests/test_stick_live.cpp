@@ -78,6 +78,19 @@ struct StickLiveFixture {
 }
 
 TEST_SUITE("Stick live") {
+TEST_CASE_FIXTURE(StickLiveFixture, "FM motion records one native command without a selector") {
+  auto& row=chipnomadState->project.phrases[0].rows[0];
+  phraseClear(&chipnomadState->project.phrases[0]);
+  REQUIRE(chipnomadMotionPushEvent({0,0,fxOMU,7,0}));
+  appOnEvent({MainLoopEvent::tick});
+  CHECK(row.fx[2][0]==fxOMU);CHECK(row.fx[2][1]==7);
+  CHECK(row.fx[0][0]==EMPTY_VALUE_8);CHECK(row.fx[1][0]==EMPTY_VALUE_8);
+  REQUIRE(chipnomadMotionPushEvent({0,0,fxOMU,9,0}));
+  appOnEvent({MainLoopEvent::tick});CHECK(row.fx[2][1]==9);
+  REQUIRE(chipnomadMotionPushEvent({0,0,fxOMU,0,1}));
+  appOnEvent({MainLoopEvent::tick});CHECK(row.fx[2][0]==EMPTY_VALUE_8);
+}
+
 TEST_CASE_FIXTURE(StickLiveFixture, "HOLD and TOGGLE use keyboard, gamepad and logical presses") {
   for (InputCode code : {keyboardLive, gamepadLive, logicalLive}) {
     appSetStickLiveMode(StickLiveMode::hold);
@@ -456,11 +469,14 @@ TEST_CASE_FIXTURE(StickLiveFixture, "midiChannelInstrument round-trips through s
   CHECK(appSettings.midiChannelInstrument[2] == 3);
 }
 
-TEST_CASE_FIXTURE(StickLiveFixture, "Persistent waveform toggle is in Graphics settings") {
+}
+
+TEST_CASE_FIXTURE(StickLiveFixture, "Persistent waveform is opt-in and its Settings toggle persists") {
   CHECK(appSettings.persistentWaveform == 0);
   screenGraphicsSettings.fullRedraw();
   REQUIRE(mockScreenData != nullptr);
   auto* screen = mockScreenData;
+  int modified = projectModified;
   CHECK(screen->rows == 6);
   screen->drawField(0, 2, CellState::focus);
   CHECK(std::string(mockGfxCells[4] + 23, 3) == "OFF");
@@ -468,6 +484,28 @@ TEST_CASE_FIXTURE(StickLiveFixture, "Persistent waveform toggle is in Graphics s
   CHECK(appSettings.persistentWaveform == 1);
   REQUIRE(settingsLoad() == 0);
   CHECK(appSettings.persistentWaveform == 1);
+  REQUIRE(screen->onEdit(0, 2, CellEditAction::tap) == 1);
+  REQUIRE(settingsLoad() == 0);
+  CHECK(appSettings.persistentWaveform == 0);
+  CHECK(projectModified == modified);
 }
 
+TEST_CASE_FIXTURE(StickLiveFixture, "Personal visual settings coexist and survive saving either option") {
+  mockQuitTriggered = 0;
+  appSettings.trackVisuals[0].mode = TrackVisualMode::audio;
+  screenGraphicsSettings.fullRedraw();
+  REQUIRE(mockScreenData != nullptr);
+  auto* settings = mockScreenData;
+  REQUIRE(settings->onEdit(0, 2, CellEditAction::tap) == 1);
+  REQUIRE(settingsLoad() == 0);
+  CHECK(appSettings.persistentWaveform == 1);
+  CHECK(appSettings.trackVisuals[0].mode == TrackVisualMode::audio);
+  settings->onEdit(0, 3, CellEditAction::tap);
+  CHECK(currentScreen == &screenTrackVisuals);
+  CHECK_FALSE(mockQuitTriggered);
+  appSettings.trackVisuals[1].mode = TrackVisualMode::audio;
+  REQUIRE(settingsSave() == 0);
+  REQUIRE(settingsLoad() == 0);
+  CHECK(appSettings.persistentWaveform == 1);
+  CHECK(appSettings.trackVisuals[1].mode == TrackVisualMode::audio);
 }

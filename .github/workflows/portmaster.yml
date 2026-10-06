@@ -16,17 +16,14 @@ permissions:
 
 jobs:
   portmaster:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-24.04-arm
     steps:
       - uses: actions/checkout@v4
-      - uses: docker/setup-qemu-action@v3
-        with:
-          platforms: arm64
       - name: Build PortMaster package
         run: |
           image=ghcr.io/monkeyx-net/portmaster-build-templates/portmaster-builder:aarch64-latest
-          docker pull --platform linux/arm64 "$image"
-          docker run --rm --platform linux/arm64 \
+          docker pull "$image"
+          docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -w /workspace/tracker "$image" bash -lc \
             "apt-get update && apt-get install -y cmake curl pkg-config && \

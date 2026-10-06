@@ -2,6 +2,7 @@
 #include "corelib_gfx.h"
 #include "help.h"
 #include "chord.h"
+#include <algorithm>
 
 // State for FX selection screen
 int currentGroup;      // Current group being navigated
@@ -26,7 +27,49 @@ static const Instrument* getCurrentInstrument() {
     ? &chipnomadState->project.instruments[currentInstrumentIdx] : NULL;
 }
 
+static bool nativeInfo(uint8_t instrumentIdx,int fx,NativeFXInfo& info) {
+  return instrumentIdx!=EMPTY_VALUE_8 && instrumentIdx<PROJECT_MAX_INSTRUMENTS && instrumentFXAvailableForInstrument(&chipnomadState->project.instruments[instrumentIdx],fx) && instrumentNativeFXInfo(&chipnomadState->project.instruments[instrumentIdx],fx,&info);
+}
+
+static const char* nativeControlDescription(int fx) {
+  switch(fx) {
+    case fxOAR:return "How quickly the operator attacks";
+    case fxODR:return "How quickly the operator decays";
+    case fxORR:return "Decay rate after note release";
+    case fxOSL:return "Held-note attenuation; more=softer";
+    case fxOMU:return "Operator frequency multiplier";
+    case fxLFR:return "How quickly the native LFO cycles";
+    case fxLAD:return "Amount of native LFO tremolo";
+    case fxLPD:return "Amount of native LFO vibrato";
+    case fxLAS:return "Volume response to native LFO";
+    case fxLPS:return "Pitch response to native LFO";
+    case fxLEN:return "Turns the chip LFO on or off";
+    case fxSMR:return "How fast SID macro steps advance";
+    case fxSWV:return "Selects the SID oscillator wave";
+    case fxSPR:return "Ring/sync partner frequency ratio";
+    default:return "";
+  }
+}
+void selectInstrumentFX(uint8_t* fx,uint8_t selected,uint8_t instrumentIdx) {
+  NativeFXInfo info{};
+  bool native=nativeInfo(instrumentIdx,selected,info);
+  if(selected>=fxFBR&&selected<fxTotalCount&&!native)return;
+  if(fx[0]==selected) {
+    if(native)fx[1]=std::clamp(int(fx[1]),info.minimum,info.maximum);
+    return; // Preserve legal edits; repair values from a different engine.
+  }
+  fx[0]=selected;
+  if(native)fx[1]=info.preset;
+}
+
 static const char* contextualFXHint(uint8_t* fx,int table,uint8_t instrument) {
+  NativeFXInfo native{};
+  if(nativeInfo(instrument,fx[0],native) && native.label) {
+    static char text[80];
+    if(fx[0]>=fxOAR&&fx[0]<=fxOE4)snprintf(text,sizeof(text),"OP1 %s: %02X",native.label,fx[1]);
+    else snprintf(text,sizeof(text),"%s: %02X",native.label,fx[1]);
+    return text;
+  }
   if(fx[0]<fxF11 || fx[0]>fxF28)return helpFXHint(fx,table,instrument);
   static char text[80];int a=fx[0]-fxF11;
   const auto& c=chipnomadState->project.trackInserts[*pSongTrack][a/8];
@@ -35,10 +78,13 @@ static const char* contextualFXHint(uint8_t* fx,int table,uint8_t instrument) {
   return text;
 }
 static bool isFXAvailable(enum FX fx, uint8_t instrumentIdx, int isTable) {
+  if(fx==fxFBR||(fx>=fxFET&&fx<=fxFLD))return false;
+  if((fx>=fxFO1&&fx<=fxFO6)||fx==fxFFB)return false; // Retired personal commands.
   if (isTable && (fx == fxSCL || fx == fxCRD)) return false;
   InstrumentType instrumentType = getInstrumentType(instrumentIdx);
   const Instrument* instrument = instrumentIdx != EMPTY_VALUE_8 && instrumentIdx < PROJECT_MAX_INSTRUMENTS
     ? &chipnomadState->project.instruments[instrumentIdx] : NULL;
+  if(fx>=fxFBR)return instrument && instrumentFXAvailableForInstrument(instrument,fx);
   if (instrument && instrumentFXAvailableForInstrument(instrument, (uint8_t)fx)) return true;
   for (int groupIdx = 0; groupIdx < fxGroupCount; groupIdx++) {
     FXGroup* group = &fxGroups[groupIdx];
@@ -56,7 +102,7 @@ static void stepFX(uint8_t* fx, int direction, uint8_t instrumentIdx, int isTabl
   for (int candidate = (int)fx[0] + direction;
        candidate >= 0 && candidate < fxTotalCount; candidate += direction) {
     if (isFXAvailable((enum FX)candidate, instrumentIdx, isTable)) {
-      fx[0] = candidate;
+      selectInstrumentFX(fx,candidate,instrumentIdx);
       return;
     }
   }
@@ -64,10 +110,10 @@ static void stepFX(uint8_t* fx, int direction, uint8_t instrumentIdx, int isTabl
 
 static int visibleFXCount(const FXGroup* group) {
   const Instrument* instrument = getCurrentInstrument();
-  if ((!instrument || group->instType != InstrumentType::DrumSynth) && !currentIsTable) return group->count;
   int count = 0;
   for (int i = 0; i < group->count; ++i) {
     if (currentIsTable && (group->fxList[i].fx == fxSCL || group->fxList[i].fx == fxCRD)) continue;
+    if(group->fxList[i].fx>=fxFBR && (!instrument || !instrumentFXAvailableForInstrument(instrument,group->fxList[i].fx)))continue;
     if (!instrument || group->instType != InstrumentType::DrumSynth || instrumentFXAvailableForInstrument(instrument, group->fxList[i].fx)) ++count;
   }
   return count;
@@ -75,10 +121,9 @@ static int visibleFXCount(const FXGroup* group) {
 
 static const FXName* visibleFXAt(const FXGroup* group, int visibleIndex) {
   const Instrument* instrument = getCurrentInstrument();
-  if ((!instrument || group->instType != InstrumentType::DrumSynth) && !currentIsTable) return
-    visibleIndex >= 0 && visibleIndex < group->count ? &group->fxList[visibleIndex] : NULL;
   for (int i = 0; i < group->count; ++i) {
     if (currentIsTable && (group->fxList[i].fx == fxSCL || group->fxList[i].fx == fxCRD)) continue;
+    if(group->fxList[i].fx>=fxFBR && (!instrument || !instrumentFXAvailableForInstrument(instrument,group->fxList[i].fx)))continue;
     if (instrument && group->instType == InstrumentType::DrumSynth && !instrumentFXAvailableForInstrument(instrument, group->fxList[i].fx)) continue;
     if (visibleIndex-- == 0) return &group->fxList[i];
   }
@@ -103,8 +148,8 @@ int editFX(CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable, 
   } else if (action == CellEditAction::tap) {
     // Insert last FX
     if (fx[0] == EMPTY_VALUE_8) {
-      fx[0] = lastValue[0];
       fx[1] = lastValue[1];
+      selectInstrumentFX(fx,lastValue[0],instrumentIdx);
     }
     lastValue[0] = fx[0];
     lastValue[1] = fx[1];
@@ -127,6 +172,15 @@ int editFX(CellEditAction action, uint8_t* fx, uint8_t* lastValue, int isTable, 
 }
 
 int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable, uint8_t instrumentIdx) {
+  NativeFXInfo native{};
+  if(nativeInfo(instrumentIdx,fx[0],native)) {
+    bool multi=action==CellEditAction::multiIncrease || action==CellEditAction::multiDecrease || action==CellEditAction::multiIncreaseBig || action==CellEditAction::multiDecreaseBig;
+    fx[1]=std::clamp(int(fx[1]),native.minimum,native.maximum);
+    int handled=edit8noLast(action,&fx[1],native.maximum<16?1:16,native.minimum,native.maximum);
+    if(handled&&!multi)lastFX[1]=fx[1];
+    screenMessage(0,"%s",contextualFXHint(fx,isTable,instrumentIdx));
+    return handled;
+  }
   if (fx[0] == fxCRD) {
     int isNotMultiAction = action != CellEditAction::multiIncrease && action != CellEditAction::multiDecrease &&
       action != CellEditAction::multiIncreaseBig && action != CellEditAction::multiDecreaseBig;
@@ -341,10 +395,29 @@ void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx, int isTable) {
   }
 
   // Draw help for current FX at top (with instrument context)
-  drawFXHelp((enum FX)currentFX, instrumentIdx);
+  NativeFXInfo direct{};
+  int presetRow=6;
+  if(nativeInfo(instrumentIdx,currentFX,direct) && direct.label) {
+    gfxSetFgColor(appSettings.colorScheme.textValue);gfxPrint(1,1,direct.label);
+    gfxSetFgColor(appSettings.colorScheme.textDefault);
+    gfxPrint(1,2,nativeControlDescription(currentFX));
+    int nextRow=3;
+    if(currentFX>=fxOAR&&currentFX<=fxOE4)gfxPrint(1,nextRow++,"Operator 1");
+    gfxPrint(1,nextRow++,"Absolute native value");
+    presetRow=nextRow;
+  } else drawFXHelp((enum FX)currentFX, instrumentIdx);
+  NativeFXInfo info{};
+  if(nativeInfo(instrumentIdx,currentFX,info)) {
+    gfxSetFgColor(appSettings.colorScheme.textInfo);
+    gfxPrintf(1,presetRow,"%s %02X   Range %02X-%02X",info.relative?"Preset FX":"Preset",info.preset,info.minimum,info.maximum);
+  }
 
   // Draw all visible groups (headers + expanded group's FX list)
-  int y = 7;  // Start below help text
+  int y = presetRow+1;
+  FXGroup* expanded = getVisibleGroup(expandedGroup, getCurrentInstrumentType());
+  int expandedRows = expanded ? (visibleFXCount(expanded) + expanded->columns - 1) / expanded->columns : 0;
+  bool separateGroups = !screenScopeRows(currentScreen) &&
+    y + visibleGroupCount + expandedRows + visibleGroupCount - 1 <= 20 - gfxGetContentRowOffset();
   for (int g = 0; g < visibleGroupCount; g++) {
     // Draw group header
     int isCurrent = (g == currentGroup);
@@ -355,8 +428,8 @@ void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx, int isTable) {
       y = drawFXList(g, y);
     }
 
-    // The persistent scope uses the former blank rows between groups.
-    if (!screenScopeRows(currentScreen)) y++;
+    // Spend blank rows only when the entire expanded group fits on screen.
+    if (separateGroups) y++;
   }
 }
 
@@ -367,8 +440,9 @@ int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX) {
     FXGroup* group = getVisibleGroup(currentGroup, getCurrentInstrumentType());
     const FXName* item = group ? visibleFXAt(group, currentIdx) : NULL;
     if (item) {
-      fx[0] = item->fx;
+      selectInstrumentFX(fx,item->fx,currentInstrumentIdx);
       lastFX[0] = fx[0];
+      lastFX[1] = fx[1];
     }
     return 1;
   }

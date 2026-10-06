@@ -7,6 +7,11 @@
 #include <utility>
 #include <vector>
 #include "project.h"
+#include "opll_presets.h"
+#include "opl_patch.h"
+#include "four_op_patch.h"
+#include "simple_chip_presets.h"
+#include <memory>
 #include "project_io_common.h"
 #include "synth/sample_voice.h"
 #include "synth/sr_wavetable_loader.h"
@@ -23,6 +28,7 @@ static char* currentLine = NULL;
 static int isConsumed = 1;
 
 static uint16_t scanPhraseVolume(char* str);
+static uint16_t legacyPhraseVolume(uint16_t value);
 
 void resetPeekConsume(void) {
   currentLine = NULL;
@@ -707,7 +713,13 @@ static int projectLoadInternal(FILE* file, Project* project) {
 
   // Detect version
   if (strlen(version) > 0) {
-    if (strncmp(version, " 6.0", 4) == 0) {
+    if (strncmp(version, " 9.0", 4) == 0) {
+      projectFileVersion = 9;
+    } else if (strncmp(version, " 8.0", 4) == 0) {
+      projectFileVersion = 8;
+    } else if (strncmp(version, " 7.0", 4) == 0) {
+      projectFileVersion = 7;
+    } else if (strncmp(version, " 6.0", 4) == 0) {
       projectFileVersion = 6;
     } else if (strncmp(version, " 5.0", 4) == 0) {
       projectFileVersion = 5;
@@ -1023,12 +1035,17 @@ static int pathIsAbsolute(const char* path) {
 #endif
 }
 
+static uint16_t legacyPhraseVolume(uint16_t value) {
+  if (value == EMPTY_VALUE_16 || value == EMPTY_VALUE_8) return EMPTY_VALUE_16;
+  return (std::min(value, uint16_t(15)) * PHRASE_VOLUME_MAX + 7) / 15;
+}
+
 static uint16_t scanPhraseVolume(char* str) {
   if (str[0] == '-' && str[1] == '-') return EMPTY_VALUE_16;
   uint8_t value;
   if (sscanf(str, "%2hhX", &value) != 1) return EMPTY_VALUE_16;
   if (projectFileVersion < 6)
-    return ((uint16_t)value * PHRASE_VOLUME_MAX + 7) / 15;
+    return legacyPhraseVolume(value);
   return value > PHRASE_VOLUME_MAX ? PHRASE_VOLUME_MAX : value;
 }
 
@@ -1123,7 +1140,8 @@ static int cctReadFile(const char* path, std::vector<uint8_t>* data) {
   int ok = fread(data->data(), 1, data->size(), file) == data->size(); fclose(file); return ok ? 0 : 1;
 }
 
-static void cctAppendSampleWav(const InstrumentSample* sample, std::vector<uint8_t>* wav) {
+static void cctAppendSampleWav(const InstrumentSample* sample, std::vector<uint8_t>* wav,
+                               uint16_t wavetableFrameSize = 0) {
   uint32_t channels = sample->channels >= 2 ? 2 : 1;
   uint32_t dataBytes = sample->frameCount * channels * 2;
   wav->resize(44 + dataBytes); uint8_t* p = wav->data();
@@ -1135,6 +1153,20 @@ static void cctAppendSampleWav(const InstrumentSample* sample, std::vector<uint8
   p[32] = channels * 2; p[34] = 16; memcpy(p + 36, "data", 4);
   for (int i = 0; i < 4; ++i) p[40 + i] = dataBytes >> (i * 8);
   memcpy(p + 44, sample->data, dataBytes);
+  // Keep the wavetable's cycle length in the WAV itself, using the same
+  // Serum metadata understood by the normal loader. PCM alone loses it.
+  if (wavetableFrameSize) {
+    char layout[32];
+    uint32_t length = (uint32_t)snprintf(layout, sizeof(layout), "<!>%u", wavetableFrameSize);
+    size_t offset = wav->size();
+    wav->resize(offset + 8 + length + (length & 1), 0);
+    p = wav->data();
+    memcpy(p + offset, "clm ", 4);
+    for (int i = 0; i < 4; ++i) p[offset + 4 + i] = length >> (i * 8);
+    memcpy(p + offset + 8, layout, length);
+    riffSize = (uint32_t)wav->size() - 8;
+    for (int i = 0; i < 4; ++i) p[4 + i] = riffSize >> (i * 8);
+  }
 }
 
 static bool cctHasSamples(const Project* project) {
@@ -1229,7 +1261,13 @@ int projectLoad(Project* p, const char* path) {
         }
         rewind(sampleFile);
         char error[64];
-        sampleLoadWav16File(sampleFile, samples[j]->path, samples[j], error, sizeof(error));
+        if (instrument->type == InstrumentType::BYOWTBL) {
+          srWavetableLoadWavFile(sampleFile, samples[j]->path, samples[j],
+                                &instrument->chip.byowtbl.frameSize[j],
+                                &instrument->chip.byowtbl.tableFrames[j], error, sizeof(error));
+        } else {
+          sampleLoadWav16File(sampleFile, samples[j]->path, samples[j], error, sizeof(error));
+        }
         fclose(sampleFile);
       }
     }
@@ -1440,7 +1478,13 @@ static int projectSaveAYWavetables(FILE* file, Project* project) {
 }
 
 static int projectSaveInternal(FILE* file, Project* project) {
-  fprintf(file, "# ChooChooTracker Module 6.0\n\n");
+  bool nativeChips = false;
+  for (const auto& instrument : project->instruments) nativeChips |= (instrument.type==InstrumentType::SID || instrument.type==InstrumentType::DX7 || isOPLL(instrument.type) || (isOPL(instrument.type) || isFourOp(instrument.type)) || isSimpleChip(instrument.type));
+  for (const auto& phrase : project->phrases) for (const auto& row : phrase.rows) for (const auto& fx : row.fx) nativeChips |= fx[0] >= fxFBR && fx[0] < fxTotalCount;
+  for (const auto& table : project->tables) for (const auto& row : table.rows) for (const auto& fx : row.fx) nativeChips |= fx[0] >= fxFBR && fx[0] < fxTotalCount;
+  // Native formats 6-8 predate upstream's expanded phrase volume. Format 9
+  // distinguishes new 00-7F songs while retaining their native patches and FX.
+  fprintf(file, "# ChooChooTracker Module %d.0\n\n", nativeChips ? 9 : 6);
 
   fprintf(file, "- Title: %s\n", project->title);
   fprintf(file, "- Author: %s\n", project->author);
@@ -1537,7 +1581,9 @@ int projectSave(Project* p, const char* path) {
       }
       for (int j = 0; j < count; ++j, ++sampleIndex) if (samples[j]->data && samples[j]->frameCount) {
         CctZipEntry sample; char name[32]; snprintf(name, sizeof(name), "samples/%03d.wav", sampleIndex); sample.name = name;
-        cctAppendSampleWav(samples[j], &sample.data); entries.push_back(std::move(sample));
+        cctAppendSampleWav(samples[j], &sample.data,
+                           instrument->type == InstrumentType::BYOWTBL ? instrument->chip.byowtbl.frameSize[j] : 0);
+        entries.push_back(std::move(sample));
       }
     }
     FILE* file = fopen(path, "wb");
@@ -1565,7 +1611,11 @@ int instrumentSave(Project* project, const char* path, int instrumentIdx) {
     return 1;
   }
 
-  fprintf(file, "# ChipNomad Instrument 5.0\n\n");
+  bool nativeFormat = (project->instruments[instrumentIdx].type==InstrumentType::SID || project->instruments[instrumentIdx].type==InstrumentType::DX7 || isOPLL(project->instruments[instrumentIdx].type) || (isOPL(project->instruments[instrumentIdx].type) || isFourOp(project->instruments[instrumentIdx].type)) || isSimpleChip(project->instruments[instrumentIdx].type));
+  for (const auto& row : project->tables[instrumentIdx].rows) for (const auto& fx : row.fx) nativeFormat |= fx[0] >= fxFBR && fx[0] < fxTotalCount;
+  bool absoluteLevels=false;
+  for(const auto& row:project->tables[instrumentIdx].rows)for(const auto& fx:row.fx)absoluteLevels |= fx[0]>=fxOL1&&fx[0]<=fxFBK;
+  fprintf(file, "# ChipNomad Instrument %d.0\n\n", absoluteLevels ? 8 : nativeFormat ? 7 : 5);
   instrumentSaveData(file, 0, &project->instruments[instrumentIdx]);
   saveTable(file, 0, &project->tables[instrumentIdx]);
 
@@ -1583,7 +1633,13 @@ static int instrumentLoadInternal(FILE* file, Project* project, int instrumentId
 
   // Detect version
   if (strlen(line) > 22) {
-    if (strncmp(line + 22, " 5.0", 4) == 0) {
+    if (strncmp(line + 22, " 8.0", 4) == 0) {
+      projectFileVersion = 8;
+    } else if (strncmp(line + 22, " 7.0", 4) == 0) {
+      projectFileVersion = 7;
+    } else if (strncmp(line + 22, " 6.0", 4) == 0) {
+      projectFileVersion = 6;
+    } else if (strncmp(line + 22, " 5.0", 4) == 0) {
       projectFileVersion = 5;
     } else if (strncmp(line + 22, " 4.0", 4) == 0) {
       projectFileVersion = 4;
@@ -1638,7 +1694,21 @@ int instrumentLoad(Project* project, const char* path, int instrumentIdx) {
     return 1;
   }
 
-  int result = instrumentLoadInternal(file, project, instrumentIdx);
+  int result;
+  const char* header = peekLine(file);
+  if (header && (strncmp(header, "# ChipNomad Instrument 6.0", 25) == 0 || strncmp(header, "# ChipNomad Instrument 7.0", 25) == 0)) {
+    auto temporary = std::make_unique<Project>();
+    projectInit(temporary.get());
+    result = instrumentLoadInternal(file, temporary.get(), instrumentIdx);
+    if (!result && projectFileVersion==6 && !(temporary->instruments[instrumentIdx].type==InstrumentType::SID || temporary->instruments[instrumentIdx].type==InstrumentType::DX7 || isOPLL(temporary->instruments[instrumentIdx].type) || (isOPL(temporary->instruments[instrumentIdx].type) || isFourOp(temporary->instruments[instrumentIdx].type)) || isSimpleChip(temporary->instruments[instrumentIdx].type))) result = 1;
+    if (!result) {
+      instrumentClear(&project->instruments[instrumentIdx]);
+      project->instruments[instrumentIdx] = temporary->instruments[instrumentIdx];
+      project->tables[instrumentIdx] = temporary->tables[instrumentIdx];
+      temporary->instruments[instrumentIdx] = {}; // Ownership moved, including sample buffers.
+    }
+    projectFree(temporary.get());
+  } else result = instrumentLoadInternal(file, project, instrumentIdx);
   fclose(file);
   return result;
 }

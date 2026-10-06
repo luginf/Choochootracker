@@ -451,7 +451,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
         if (isSingleColumnSelection(&screen)) {
           uint8_t selectedFX = tableRows[screen.cursorRow - 1].fx[fxIdx][0];
           for (int r = startRow; r <= endRow; r++) {
-            if (r > 0) tableRows[r - 1].fx[fxIdx][0] = selectedFX;
+            if (r > 0) selectInstrumentFX(tableRows[r - 1].fx[fxIdx],selectedFX,getTableInstrumentIdx());
           }
         }
       }

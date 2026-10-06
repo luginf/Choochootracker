@@ -486,7 +486,8 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
         if (isSingleColumnSelection(&screen)) {
           uint8_t selectedFX = phraseRows[screen.cursorRow].fx[fxIdx][0];
           for (int r = startRow; r <= endRow; r++) {
-            phraseRows[r].fx[fxIdx][0] = selectedFX;
+            selectInstrumentFX(phraseRows[r].fx[fxIdx],selectedFX,
+              lookupInstrument(&chipnomadState->project,*pSongRow,*pChainRow,r,*pSongTrack));
           }
         }
       }
