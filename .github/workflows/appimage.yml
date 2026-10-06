@@ -34,18 +34,34 @@ jobs:
           echo "$APPIMAGETOOL_SHA256  $RUNNER_TEMP/appimagetool" | sha256sum --check
           chmod +x "$RUNNER_TEMP/appimagetool"
 
+      # Debian 10 ships SDL 2.0.9, too old for the code (SDL_RenderFlush needs
+      # 2.0.10): build SDL from source in the container and bundle that one.
+      - name: Download pinned SDL2 source
+        env:
+          SDL2_SHA256: 8b8d4aef2038533da814965220f88f77d60dfa0f32685f80ead65e501337da7f
+        run: |
+          curl --fail --location --output "$RUNNER_TEMP/SDL2.tar.gz" \
+            https://github.com/libsdl-org/SDL/releases/download/release-2.30.11/SDL2-2.30.11.tar.gz
+          echo "$SDL2_SHA256  $RUNNER_TEMP/SDL2.tar.gz" | sha256sum --check
+
       - name: Build AppImage in a Debian 10 container
         run: |
           docker run --rm \
             -v "$GITHUB_WORKSPACE:/workspace" \
             -v "$RUNNER_TEMP/appimagetool:/opt/appimagetool:ro" \
+            -v "$RUNNER_TEMP/SDL2.tar.gz:/opt/SDL2.tar.gz:ro" \
             -w /workspace \
             debian:10 bash -euxc '
               sed -i "s|deb.debian.org|archive.debian.org|; s|security.debian.org|archive.debian.org|; /buster-updates/d" /etc/apt/sources.list
               echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99archive
               apt-get update
               DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
-                g++ make file libsdl2-dev libsamplerate0-dev libasound2-dev
+                g++ make file libsamplerate0-dev libasound2-dev \
+                libx11-dev libxext-dev libxrandr-dev libxcursor-dev libxi-dev libxss-dev \
+                libxxf86vm-dev libgl1-mesa-dev libpulse-dev libudev-dev libdbus-1-dev
+              mkdir /tmp/sdl && tar -xzf /opt/SDL2.tar.gz -C /tmp/sdl --strip-components=1
+              (cd /tmp/sdl && ./configure --prefix=/usr --libdir=/lib/x86_64-linux-gnu \
+                --disable-video-wayland --disable-video-kmsdrm && make -j2 && make install)
               printf "#!/bin/sh\nexec /opt/appimagetool --appimage-extract-and-run \"\$@\"\n" \
                 > /usr/local/bin/appimagetool
               chmod +x /usr/local/bin/appimagetool
