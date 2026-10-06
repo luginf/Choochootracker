@@ -3,6 +3,9 @@
 #include <stdlib.h>
 #include <ctype.h>
 #include <stdarg.h>
+#include <string>
+#include <utility>
+#include <vector>
 #include "project.h"
 #include "project_io_common.h"
 #include "synth/sample_voice.h"
@@ -11,13 +14,15 @@
 
 // Shared state
 char projectFileError[41];
-int projectFileVersion = 5;  // Default to current version
+int projectFileVersion = 6;  // Default to current version
 static char chipNames[][16] = { "AY8910" };
 
 // Peek/consume implementation - single global buffer (ChipNomad is single-threaded)
 static char lineBuffer[1024];
 static char* currentLine = NULL;
 static int isConsumed = 1;
+
+static uint16_t scanPhraseVolume(char* str);
 
 void resetPeekConsume(void) {
   currentLine = NULL;
@@ -478,7 +483,7 @@ static int projectLoadPhrases(FILE* file, Project* p) {
       // Instrument
       p->phrases[idx].rows[c].instrument = scanByteOrEmpty(line + 4);
       // Volume
-      p->phrases[idx].rows[c].volume = scanByteOrEmpty(line + 7);
+      p->phrases[idx].rows[c].volume = scanPhraseVolume(line + 7);
       // FX
       for (int d = 0; d < 3; d++) {
         p->phrases[idx].rows[c].fx[d][0] = scanFX(line + 10 + d * 7, p);
@@ -663,6 +668,25 @@ static int projectLoadAYWavetables(FILE* file, Project* p) {
   return 0;
 }
 
+// Strict byte CSV reader for the optional insert section. Reject overflow,
+// signs, trailing fields and truncated data before narrowing any value.
+static bool readInsertFields(const char* line, const char* prefix, unsigned* values, int count) {
+  size_t length = strlen(prefix);
+  if (!line || strncmp(line, prefix, length)) return false;
+  const char* cursor = line + length;
+  for (int field = 0; field < count; ++field) {
+    if (*cursor < '0' || *cursor > '9') return false;
+    unsigned value = 0;
+    do {
+      value = value * 10 + (*cursor++ - '0');
+      if (value > 255) return false;
+    } while (*cursor >= '0' && *cursor <= '9');
+    values[field] = value;
+    if (field + 1 < count) { if (*cursor++ != ',') return false; }
+  }
+  return *cursor == 0;
+}
+
 static int projectLoadInternal(FILE* file, Project* project) {
   char buf[128];
   Project p;
@@ -683,7 +707,9 @@ static int projectLoadInternal(FILE* file, Project* project) {
 
   // Detect version
   if (strlen(version) > 0) {
-    if (strncmp(version, " 5.0", 4) == 0) {
+    if (strncmp(version, " 6.0", 4) == 0) {
+      projectFileVersion = 6;
+    } else if (strncmp(version, " 5.0", 4) == 0) {
       projectFileVersion = 5;
     } else if (strncmp(version, " 4.0", 4) == 0) {
       projectFileVersion = 4;
@@ -738,6 +764,22 @@ static int projectLoadInternal(FILE* file, Project* project) {
   consumeLine(file);
 
   line = peekLine(file);
+  if (line && strncmp(line, "- Track inserts: ", 17) == 0) {
+    unsigned header[3];
+    if (!readInsertFields(line, "- Track inserts: ", header, 3) ||
+        header[0] != 1 || header[1] != PROJECT_MAX_TRACKS || header[2] != 2) return 1;
+    consumeLine(file);
+    for (int t = 0; t < PROJECT_MAX_TRACKS; ++t) for (int slot = 0; slot < 2; ++slot) {
+      unsigned fields[12];
+      if (!readInsertFields(peekLine(file), "- Insert: ", fields, 12) ||
+          fields[0] != (unsigned)t || fields[1] != (unsigned)slot ||
+          fields[2] >= insertModuleCount || fields[3] > 1) return 1;
+      auto& c = p.trackInserts[t][slot]; c.module = fields[2]; c.bypass = fields[3];
+      for (int i = 0; i < 8; ++i) c.values[i] = insertClamp(c.module, i, fields[i + 4]);
+      consumeLine(file);
+    }
+    line = peekLine(file);
+  }
   if (line == NULL || strncmp(line, "- Track volumes: ", 17) != 0) return 1;
   if (sscanf(line + 17, "%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu",
       &p.trackVolume[0], &p.trackVolume[1], &p.trackVolume[2], &p.trackVolume[3],
@@ -981,6 +1023,133 @@ static int pathIsAbsolute(const char* path) {
 #endif
 }
 
+static uint16_t scanPhraseVolume(char* str) {
+  if (str[0] == '-' && str[1] == '-') return EMPTY_VALUE_16;
+  uint8_t value;
+  if (sscanf(str, "%2hhX", &value) != 1) return EMPTY_VALUE_16;
+  if (projectFileVersion < 6)
+    return ((uint16_t)value * PHRASE_VOLUME_MAX + 7) / 15;
+  return value > PHRASE_VOLUME_MAX ? PHRASE_VOLUME_MAX : value;
+}
+
+struct CctZipEntry {
+  std::string name;
+  std::vector<uint8_t> data;
+  uint32_t crc = 0;
+  uint32_t offset = 0;
+};
+
+static uint32_t cctCrc32(const uint8_t* data, size_t length) {
+  uint32_t crc = 0xFFFFFFFFu;
+  for (size_t i = 0; i < length; ++i) {
+    crc ^= data[i];
+    for (int bit = 0; bit < 8; ++bit) crc = (crc >> 1) ^ (0xEDB88320u & -(crc & 1));
+  }
+  return ~crc;
+}
+
+static void cctPut16(FILE* file, uint16_t value) { fputc(value & 255, file); fputc(value >> 8, file); }
+static void cctPut32(FILE* file, uint32_t value) { cctPut16(file, value); cctPut16(file, value >> 16); }
+static uint16_t cctGet16(const uint8_t* p) { return (uint16_t)p[0] | ((uint16_t)p[1] << 8); }
+static uint32_t cctGet32(const uint8_t* p) { return cctGet16(p) | ((uint32_t)cctGet16(p + 2) << 16); }
+static bool cctLooksLikeZip(const std::vector<uint8_t>& data) {
+  return data.size() >= 4 && cctGet32(data.data()) == 0x04034b50;
+}
+
+static int cctWriteZip(FILE* file, std::vector<CctZipEntry>& entries) {
+  for (CctZipEntry& entry : entries) {
+    entry.offset = (uint32_t)ftell(file);
+    entry.crc = cctCrc32(entry.data.data(), entry.data.size());
+    cctPut32(file, 0x04034b50); cctPut16(file, 20); cctPut16(file, 0); cctPut16(file, 0);
+    cctPut16(file, 0); cctPut16(file, 0); cctPut32(file, entry.crc);
+    cctPut32(file, (uint32_t)entry.data.size()); cctPut32(file, (uint32_t)entry.data.size());
+    cctPut16(file, (uint16_t)entry.name.size()); cctPut16(file, 0);
+    fwrite(entry.name.data(), 1, entry.name.size(), file);
+    fwrite(entry.data.data(), 1, entry.data.size(), file);
+  }
+  uint32_t centralOffset = (uint32_t)ftell(file);
+  for (const CctZipEntry& entry : entries) {
+    cctPut32(file, 0x02014b50); cctPut16(file, 20); cctPut16(file, 20); cctPut16(file, 0); cctPut16(file, 0);
+    cctPut16(file, 0); cctPut16(file, 0); cctPut32(file, entry.crc);
+    cctPut32(file, (uint32_t)entry.data.size()); cctPut32(file, (uint32_t)entry.data.size());
+    cctPut16(file, (uint16_t)entry.name.size()); cctPut16(file, 0); cctPut16(file, 0); cctPut16(file, 0);
+    cctPut16(file, 0); cctPut32(file, 0); cctPut32(file, entry.offset);
+    fwrite(entry.name.data(), 1, entry.name.size(), file);
+  }
+  uint32_t centralSize = (uint32_t)ftell(file) - centralOffset;
+  cctPut32(file, 0x06054b50); cctPut16(file, 0); cctPut16(file, 0);
+  cctPut16(file, (uint16_t)entries.size()); cctPut16(file, (uint16_t)entries.size());
+  cctPut32(file, centralSize); cctPut32(file, centralOffset); cctPut16(file, 0);
+  return ferror(file) ? 1 : 0;
+}
+
+static int cctReadZip(const std::vector<uint8_t>& zip, const char* name, std::vector<uint8_t>* output) {
+  if (zip.size() < 22) return 1;
+  size_t start = zip.size() > 0xFFFF + 22 ? zip.size() - (0xFFFF + 22) : 0;
+  size_t eocd = zip.size();
+  for (size_t i = zip.size() - 22; i >= start; --i) {
+    if (cctGet32(&zip[i]) == 0x06054b50) { eocd = i; break; }
+    if (i == 0) break;
+  }
+  if (eocd == zip.size()) return 1;
+  uint16_t count = cctGet16(&zip[eocd + 10]);
+  uint32_t centralSize = cctGet32(&zip[eocd + 12]);
+  uint32_t centralOffset = cctGet32(&zip[eocd + 16]);
+  if ((uint64_t)centralOffset + centralSize > zip.size()) return 1;
+  size_t p = centralOffset;
+  for (uint16_t i = 0; i < count; ++i) {
+    if (p + 46 > zip.size() || cctGet32(&zip[p]) != 0x02014b50) return 1;
+    uint16_t nameLen = cctGet16(&zip[p + 28]), extraLen = cctGet16(&zip[p + 30]), commentLen = cctGet16(&zip[p + 32]);
+    uint32_t size = cctGet32(&zip[p + 24]), offset = cctGet32(&zip[p + 42]);
+    if (p + 46 + nameLen + extraLen + commentLen > zip.size()) return 1;
+    if (strlen(name) == nameLen && !memcmp(&zip[p + 46], name, nameLen)) {
+      if ((uint64_t)offset + 30 > zip.size() || cctGet32(&zip[offset]) != 0x04034b50) return 1;
+      uint16_t localNameLen = cctGet16(&zip[offset + 26]), localExtraLen = cctGet16(&zip[offset + 28]);
+      size_t dataOffset = offset + 30 + localNameLen + localExtraLen;
+      if ((uint64_t)dataOffset + size > zip.size() || cctGet16(&zip[offset + 8]) != 0) return 1;
+      output->assign(zip.begin() + dataOffset, zip.begin() + dataOffset + size);
+      return 0;
+    }
+    p += 46 + nameLen + extraLen + commentLen;
+  }
+  return 1;
+}
+
+static int cctReadFile(const char* path, std::vector<uint8_t>* data) {
+  FILE* file = fopen(path, "rb"); if (!file) return 1;
+  if (fseek(file, 0, SEEK_END) != 0) { fclose(file); return 1; }
+  long size = ftell(file); if (size < 0 || fseek(file, 0, SEEK_SET) != 0) { fclose(file); return 1; }
+  data->resize((size_t)size);
+  int ok = fread(data->data(), 1, data->size(), file) == data->size(); fclose(file); return ok ? 0 : 1;
+}
+
+static void cctAppendSampleWav(const InstrumentSample* sample, std::vector<uint8_t>* wav) {
+  uint32_t channels = sample->channels >= 2 ? 2 : 1;
+  uint32_t dataBytes = sample->frameCount * channels * 2;
+  wav->resize(44 + dataBytes); uint8_t* p = wav->data();
+  memcpy(p, "RIFF", 4); uint32_t riffSize = 36 + dataBytes;
+  for (int i = 0; i < 4; ++i) p[4 + i] = riffSize >> (i * 8);
+  memcpy(p + 8, "WAVEfmt ", 8); p[16] = 16; p[20] = 1; p[22] = channels;
+  uint32_t rate = sample->sampleRate, byteRate = rate * channels * 2;
+  for (int i = 0; i < 4; ++i) { p[24 + i] = rate >> (i * 8); p[28 + i] = byteRate >> (i * 8); }
+  p[32] = channels * 2; p[34] = 16; memcpy(p + 36, "data", 4);
+  for (int i = 0; i < 4; ++i) p[40 + i] = dataBytes >> (i * 8);
+  memcpy(p + 44, sample->data, dataBytes);
+}
+
+static bool cctHasSamples(const Project* project) {
+  for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; ++i) {
+    const Instrument* instrument = &project->instruments[i];
+    const InstrumentSample* samples[2] = {NULL, NULL}; int count = 0;
+    if (instrument->type == InstrumentType::Sample) samples[count++] = &instrument->chip.sample;
+    else if (instrument->type == InstrumentType::SCWF || instrument->type == InstrumentType::BYOWTBL) {
+      samples[count++] = &instrument->chip.scwf.oscillator[0]; samples[count++] = &instrument->chip.scwf.oscillator[1];
+    }
+    for (int j = 0; j < count; ++j) if (samples[j]->data && samples[j]->frameCount) return true;
+  }
+  return false;
+}
+
 static void projectLoadRelativeSamples(Project* project, const char* projectPath) {
   const char* slash = strrchr(projectPath, '/');
   const char* backslash = strrchr(projectPath, '\\');
@@ -1023,6 +1192,50 @@ static void projectLoadRelativeSamples(Project* project, const char* projectPath
 int projectLoad(Project* p, const char* path) {
   projectFileError[0] = 0;
   resetPeekConsume();  // Ensure clean state
+
+  std::vector<uint8_t> archive;
+  if (cctReadFile(path, &archive) == 0 && cctLooksLikeZip(archive)) {
+    std::vector<uint8_t> projectData;
+    if (cctReadZip(archive, "project.cct", &projectData)) {
+      snprintf(projectFileError, 40, "Invalid project archive");
+      return 1;
+    }
+    FILE* projectFile = tmpfile();
+    if (!projectFile || fwrite(projectData.data(), 1, projectData.size(), projectFile) != projectData.size()) {
+      if (projectFile) fclose(projectFile);
+      snprintf(projectFileError, 40, "Cannot read project archive");
+      return 1;
+    }
+    rewind(projectFile);
+    int result = projectLoadInternal(projectFile, p);
+    fclose(projectFile);
+    if (result) return result;
+    int sampleIndex = 0;
+    for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; ++i) {
+      Instrument* instrument = &p->instruments[i];
+      InstrumentSample* samples[2] = {NULL, NULL}; int count = 0;
+      if (instrument->type == InstrumentType::Sample) samples[count++] = &instrument->chip.sample;
+      else if (instrument->type == InstrumentType::SCWF || instrument->type == InstrumentType::BYOWTBL) {
+        samples[count++] = &instrument->chip.scwf.oscillator[0]; samples[count++] = &instrument->chip.scwf.oscillator[1];
+      }
+      for (int j = 0; j < count; ++j, ++sampleIndex) {
+        char name[32]; snprintf(name, sizeof(name), "samples/%03d.wav", sampleIndex);
+        std::vector<uint8_t> wav;
+        if (cctReadZip(archive, name, &wav)) continue;
+        FILE* sampleFile = tmpfile();
+        if (!sampleFile || fwrite(wav.data(), 1, wav.size(), sampleFile) != wav.size()) {
+          if (sampleFile) fclose(sampleFile);
+          continue;
+        }
+        rewind(sampleFile);
+        char error[64];
+        sampleLoadWav16File(sampleFile, samples[j]->path, samples[j], error, sizeof(error));
+        fclose(sampleFile);
+      }
+    }
+    projectLoadRelativeSamples(p, path);
+    return 0;
+  }
 
   FILE* file = fopen(path, "rb");
   if (file == NULL) {
@@ -1146,7 +1359,7 @@ static int projectSavePhrases(FILE* file, Project* project) {
         fprintf(file, "%s %s %s %s %s %s %s %s %s\n",
           noteName(project, project->phrases[c].rows[d].note),
           byteToHexOrEmpty(project->phrases[c].rows[d].instrument),
-          byteToHexOrEmpty(project->phrases[c].rows[d].volume),
+          volumeToHexOrEmpty(project->phrases[c].rows[d].volume),
           fxNames[project->phrases[c].rows[d].fx[0][0]].name,
           byteToHex(project->phrases[c].rows[d].fx[0][1]),
           fxNames[project->phrases[c].rows[d].fx[1][0]].name,
@@ -1227,13 +1440,20 @@ static int projectSaveAYWavetables(FILE* file, Project* project) {
 }
 
 static int projectSaveInternal(FILE* file, Project* project) {
-  fprintf(file, "# ChooChooTracker Module 5.0\n\n");
+  fprintf(file, "# ChooChooTracker Module 6.0\n\n");
 
   fprintf(file, "- Title: %s\n", project->title);
   fprintf(file, "- Author: %s\n", project->author);
 
   fprintf(file, "- Frame rate: %f\n", project->tickRate);
   fprintf(file, "- Chips count: %d\n", project->chipsCount);
+  fprintf(file, "- Track inserts: 1,8,2\n");
+  for (int t = 0; t < PROJECT_MAX_TRACKS; ++t) for (int slot = 0; slot < 2; ++slot) {
+    const auto& c = project->trackInserts[t][slot];
+    fprintf(file, "- Insert: %d,%d,%u,%u",t,slot,c.module,c.bypass);
+    for (int i = 0; i < 8; ++i) fprintf(file, ",%u", c.values[i]);
+    fprintf(file, "\n");
+  }
   fprintf(file, "- Track volumes: %hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu,%hhu\n",
     project->trackVolume[0], project->trackVolume[1], project->trackVolume[2], project->trackVolume[3],
     project->trackVolume[4], project->trackVolume[5], project->trackVolume[6], project->trackVolume[7]);
@@ -1294,6 +1514,36 @@ static int projectSaveInternal(FILE* file, Project* project) {
 
 int projectSave(Project* p, const char* path) {
   projectFileError[0] = 0;
+
+  if (cctHasSamples(p)) {
+    FILE* projectFile = tmpfile();
+    if (!projectFile) return 1;
+    projectSaveInternal(projectFile, p);
+    long projectSize = ftell(projectFile);
+    if (projectSize < 0 || fseek(projectFile, 0, SEEK_SET) != 0) { fclose(projectFile); return 1; }
+    CctZipEntry projectEntry; projectEntry.name = "project.cct"; projectEntry.data.resize((size_t)projectSize);
+    if (fread(projectEntry.data.data(), 1, projectEntry.data.size(), projectFile) != projectEntry.data.size()) {
+      fclose(projectFile); return 1;
+    }
+    fclose(projectFile);
+    std::vector<CctZipEntry> entries; entries.push_back(std::move(projectEntry));
+    int sampleIndex = 0;
+    for (int i = 0; i < PROJECT_MAX_INSTRUMENTS; ++i) {
+      Instrument* instrument = &p->instruments[i];
+      InstrumentSample* samples[2] = {NULL, NULL}; int count = 0;
+      if (instrument->type == InstrumentType::Sample) samples[count++] = &instrument->chip.sample;
+      else if (instrument->type == InstrumentType::SCWF || instrument->type == InstrumentType::BYOWTBL) {
+        samples[count++] = &instrument->chip.scwf.oscillator[0]; samples[count++] = &instrument->chip.scwf.oscillator[1];
+      }
+      for (int j = 0; j < count; ++j, ++sampleIndex) if (samples[j]->data && samples[j]->frameCount) {
+        CctZipEntry sample; char name[32]; snprintf(name, sizeof(name), "samples/%03d.wav", sampleIndex); sample.name = name;
+        cctAppendSampleWav(samples[j], &sample.data); entries.push_back(std::move(sample));
+      }
+    }
+    FILE* file = fopen(path, "wb");
+    if (!file) return 1;
+    int result = cctWriteZip(file, entries); fclose(file); return result;
+  }
 
   FILE* file = fopen(path, "wb");
   if (file == NULL) return 1;

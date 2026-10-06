@@ -5,11 +5,11 @@
 static uint8_t mockFontData[1] = {0};
 
 static const Font mockFont = {
-  .name = "Mock",
-  .resolutions = {
+  "Mock",
+  {
     {16, 24, mockFontData}
   },
-  .resolutionCount = 1
+  1
 };
 
 const Font* fontGetDefault(void) {

@@ -18,5 +18,6 @@
 #define NOTE_OFF (254)
 #define EMPTY_VALUE_8 (255)
 #define EMPTY_VALUE_16 (32767)
+#define PHRASE_VOLUME_MAX (127)
 
 #endif // __CHIPNOMAD_LIB__PROJECT_CONSTANTS_H__

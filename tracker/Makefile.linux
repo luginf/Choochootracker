@@ -4,11 +4,11 @@ PLATFORM = linux
 include Makefile.common
 
 # Linux-specific settings
-LIBS = $(COMMON_LIBS) platforms/sdl2
+LIBS = $(COMMON_LIBS) platforms/sdl2 ../chipnomad_lib/external/rtmidi
 OUTPUT_EXT =
 
-XTRA_CFLAGS = -DDESKTOP_BUILD -DGAMEPAD_SUPPORT
-XTRA_LIBS = -lSDL2 -lm
+XTRA_CFLAGS = -DDESKTOP_BUILD -DGAMEPAD_SUPPORT -D__LINUX_ALSA__ -D__LINUX_ALSASEQ__
+XTRA_LIBS = -lSDL2 -lm -lasound
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/choochootracker$(OUTPUT_EXT)
 
@@ -84,13 +84,21 @@ appimage: linux
 	@cp $(BUILD)/choochootracker $(BUILD)/$(APPNAME).AppDir/usr/bin/
 	@for lib in $(APPIMAGE_LIBS); do \
 		if [ ! -f "$$lib" ]; then echo "Error: $$lib not found - install libsdl2-2.0-0" && exit 1; fi; \
+		target="$$(basename "$$(readlink -f "$$lib")")"; \
 		cp -L "$$(readlink -f "$$lib")" $(BUILD)/$(APPNAME).AppDir/usr/lib/ || exit 1; \
+		ln -sf "$$target" "$(BUILD)/$(APPNAME).AppDir/usr/lib/$$(basename "$$lib")"; \
 	done
 	@mkdir -p $(BUILD)/$(APPNAME).AppDir/usr/share/choochootracker/common
 	@cp -r packaging/common/* $(BUILD)/$(APPNAME).AppDir/usr/share/choochootracker/common/
 	@cp packaging/linux-appimage/AppRun $(BUILD)/$(APPNAME).AppDir/
+	@sed -i 's/\r$$//' $(BUILD)/$(APPNAME).AppDir/AppRun
+	@if grep -q "$$(printf '\r')" $(BUILD)/$(APPNAME).AppDir/AppRun || ! grep -q 'readlink' $(BUILD)/$(APPNAME).AppDir/AppRun || ! grep -q '^for item in ' $(BUILD)/$(APPNAME).AppDir/AppRun; then \
+		echo "Error: generated AppRun is not a valid LF-normalized launcher."; \
+		exit 1; \
+	fi
 	@chmod +x $(BUILD)/$(APPNAME).AppDir/AppRun
 	@cp packaging/linux-appimage/choochootracker.desktop $(BUILD)/$(APPNAME).AppDir/
+	@sed -i 's/\r$$//' $(BUILD)/$(APPNAME).AppDir/choochootracker.desktop
 	@cp ../docs/play-store-assets/ChooChooTracker-play-icon-512.png $(BUILD)/$(APPNAME).AppDir/choochootracker.png
 	@mkdir -p ../releases
 	@command -v appimagetool >/dev/null 2>&1 || { \

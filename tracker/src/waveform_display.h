@@ -10,6 +10,7 @@ extern "C" {
 
 struct InstrumentSCWF;
 struct InstrumentBraids;
+struct InstrumentAChChid;
 struct InstrumentPlaits;
 struct InstrumentMME;
 
@@ -17,6 +18,8 @@ struct InstrumentMME;
  * @brief Initialize waveform display system
  */
 void waveformDisplayInit(void);
+void waveformDisplayRefresh(void);
+void waveformDisplayInvalidate(void);
 
 /**
  * @brief Get waveform bitmap for a track
@@ -25,6 +28,9 @@ void waveformDisplayInit(void);
  * @return Bitmap* Pointer to bitmap
  */
 Bitmap* waveformDisplayGetBitmap(int trackIdx);
+
+// Actual per-track audio, reduced into pixel columns with a padded centre line.
+void renderTrackAudioWaveform(Bitmap* bitmap, const float* samples, int count);
 
 /**
  * @brief Render a sample waveform preview into a bitmap
@@ -45,6 +51,7 @@ void renderSCWFPreview(Bitmap* bitmap, const struct InstrumentSCWF* instrument,
 
 /** VCO output preview for synth engines; rendered only by the instrument UI. */
 void renderBraidsPreview(Bitmap* bitmap, const struct InstrumentBraids* instrument);
+void renderAChChidPreview(Bitmap* bitmap, const struct InstrumentAChChid* instrument);
 void renderPlaitsPreview(Bitmap* bitmap, const struct InstrumentPlaits* instrument, int alt);
 void renderMMEPreview(Bitmap* bitmap, const struct InstrumentMME* instrument);
 void renderFloatPreview(Bitmap* bitmap, const float* samples, uint32_t count);

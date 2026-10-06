@@ -2,6 +2,7 @@
 #include "audio_manager.h"
 #include "common.h"
 #include "corelib_gfx.h"
+#include "meter_display.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -31,9 +32,9 @@ static void drawStatic(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
   if (mixerPage == 0) {
     gfxPrint(0, 0, "MIXER");
-    gfxPrint(3, 2, "LVL"); gfxPrint(8, 2, "REV"); gfxPrint(13, 2, "DLY");
-    gfxPrint(18, 2, "TLT"); gfxPrint(23, 2, "M"); gfxPrint(26, 2, "S");
-    gfxPrint(32, 2, "CLIP");
+    gfxPrint(0, 2, "TRK"); gfxPrint(4, 2, "LVL"); gfxPrint(9, 2, "REV"); gfxPrint(14, 2, "DLY");
+    gfxPrint(19, 2, "TLT"); gfxPrint(24, 2, "M"); gfxPrint(27, 2, "S");
+    gfxPrint(29, 2, "CLIP");
     gfxPrint(0, 12, "AUTO MIX");
   } else if (mixerPage == 1) {
     gfxPrint(0, 0, "CLOUDS REVERB");
@@ -48,14 +49,20 @@ static void drawStatic(void) {
 
 static void drawCursor(int col, int row) {
   if (mixerPage == 0) {
-    static const int x[] = {3, 8, 13, 18, 23, 26};
+    static const int x[] = {4, 9, 14, 19, 24, 27};
     static const int width[] = {2, 2, 2, 2, 1, 1};
     if (row == PROJECT_MAX_TRACKS) { gfxCursor(10, 12, 16); return; }
     if (col < 0 || col >= 6 || row < 0 || row >= PROJECT_MAX_TRACKS) return;
     gfxCursor(x[col], 3 + row, width[col]);
   } else if (row >= 0 && row < (mixerPage == 2 ? 5 : 4)) {
-    int width = row == (mixerPage == 2 ? 4 : 3) ? 8 : 4;
-    if (mixerPage == 2 && row == 2) width = 2;
+    int filterRow = mixerPage == 2 ? 4 : 3;
+    int width = 2;
+    if (row == filterRow) {
+      char value[12];
+      unsigned int cutoff = mixerPage == 1 ? chipnomadState->project.reverbFilterCutoffHz : chipnomadState->project.delayFilterCutoffHz;
+      snprintf(value, sizeof(value), "%u Hz", cutoff);
+      width = (int)strlen(value);
+    }
     gfxCursor(12, 3 + row, width);
   }
 }
@@ -69,13 +76,13 @@ static void drawField(int col, int row, CellState state) {
       return;
     }
     if (col < 0 || col >= 6 || row < 0 || row >= PROJECT_MAX_TRACKS) return;
-    gfxPrintf(0, 3 + row, "T%d", row + 1);
-    if (col == 0) gfxPrint(3, 3 + row, byteToHex(controlFromRange(chipnomadState->project.trackVolume[row], 100)));
-    else if (col == 1) gfxPrint(8, 3 + row, byteToHex(controlFromRange(chipnomadState->project.trackReverbSend[row], 100)));
-    else if (col == 2) gfxPrint(13, 3 + row, byteToHex(controlFromRange(chipnomadState->project.trackDelaySend[row], 100)));
-    else if (col == 3) gfxPrint(18, 3 + row, byteToHex(chipnomadState->project.trackTilt[row]));
-    else if (col == 4) gfxPrint(23, 3 + row, audioManager.trackStates[row] == TRACK_MUTED ? "*" : "-");
-    else gfxPrint(26, 3 + row, audioManager.trackStates[row] == TRACK_SOLO ? "*" : "-");
+    gfxPrintf(0, 3 + row, "%2d", row + 1);
+    if (col == 0) gfxPrint(4, 3 + row, byteToHex(controlFromRange(chipnomadState->project.trackVolume[row], 100)));
+    else if (col == 1) gfxPrint(9, 3 + row, byteToHex(controlFromRange(chipnomadState->project.trackReverbSend[row], 100)));
+    else if (col == 2) gfxPrint(14, 3 + row, byteToHex(controlFromRange(chipnomadState->project.trackDelaySend[row], 100)));
+    else if (col == 3) gfxPrint(19, 3 + row, byteToHex(chipnomadState->project.trackTilt[row]));
+    else if (col == 4) gfxPrint(24, 3 + row, audioManager.trackStates[row] == TRACK_MUTED ? "*" : "-");
+    else gfxPrint(27, 3 + row, audioManager.trackStates[row] == TRACK_SOLO ? "*" : "-");
     gfxSetFgColor(chipnomadState->trackClipping[row] ? appSettings.colorScheme.warning : appSettings.colorScheme.textDefault);
     gfxPrint(32, 3 + row, chipnomadState->trackClipping[row] ? "!" : " ");
     return;
@@ -86,13 +93,19 @@ static void drawField(int col, int row, CellState state) {
     if (row == 0) gfxPrint(12, 3, byteToHex(controlFromRange(p->reverbReturn, 100)));
     else if (row == 1) gfxPrint(12, 4, byteToHex(p->reverbTime));
     else if (row == 2) gfxPrint(12, 5, byteToHex(p->reverbDamping));
-    else gfxPrintf(12, 6, "%u Hz", p->reverbFilterCutoffHz);
+    else {
+      gfxClearRect(12, 6, 8, 1);
+      gfxPrintf(12, 6, "%u Hz", p->reverbFilterCutoffHz);
+    }
   } else {
     if (row == 0) gfxPrint(12, 3, byteToHex(controlFromRange(p->delayReturn, 100)));
     else if (row == 1) gfxPrint(12, 4, byteToHex(controlFromRange(p->delayReverbSend, 100)));
     else if (row == 2) gfxPrintf(12, 5, "%02X", p->delayTicks);
     else if (row == 3) gfxPrint(12, 6, byteToHex(controlFromRange(p->delayFeedback, 95)));
-    else gfxPrintf(12, 7, "%u Hz", p->delayFilterCutoffHz);
+    else {
+      gfxClearRect(12, 7, 8, 1);
+      gfxPrintf(12, 7, "%u Hz", p->delayFilterCutoffHz);
+    }
   }
 }
 
@@ -165,12 +178,15 @@ static ScreenData screen = {
 static void setup(int input) { displayedCpuLoad = -1; mixerPage = 0; screen.rows = PROJECT_MAX_TRACKS + 1; }
 static void fullRedraw(void) { screenFullRedraw(&screen); }
 static void draw(void) {
+  if (mixerPage == 0)
+    for (int track = 0; track < chipnomadState->project.tracksCount; ++track)
+      monitorDisplayDrawMeter(track, 3, 3 + track);
   int cpuLoad = audioManager.getCpuLoadPercent();
   if (cpuLoad == displayedCpuLoad) return;
   displayedCpuLoad = cpuLoad;
   gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxClearRect(31, 1, 9, 1);
-  gfxPrintf(31, 1, "CPU %03d%%", cpuLoad);
+  gfxClearRect(31, 0, 9, 1);
+  gfxPrintf(31, 0, "CPU %03d%%", cpuLoad);
 }
 
 static void setPage(int page) {

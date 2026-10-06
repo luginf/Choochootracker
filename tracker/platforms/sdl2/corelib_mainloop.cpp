@@ -220,8 +220,18 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
     start = SDL_GetTicks();
 
     while (SDL_PollEvent(&event)) {
-      if (event.type == SDL_QUIT || (event.type == SDL_KEYDOWN && (
-        (menu && event.key.keysym.sym == BTN_X)))) {
+      // The Menu+X quit combo mirrors a physical button chord on handhelds
+      // without an easy way back to a Quit menu item (PortMaster/consoles).
+      // On desktop, Menu/X happen to be bound to Ctrl/S, which makes Ctrl+S
+      // silently quit the app instead of doing nothing (or saving, in key
+      // jazz mode) - keep the combo off there and use the in-app Quit menu.
+      if (event.type == SDL_QUIT ||
+#ifndef DESKTOP_BUILD
+          (event.type == SDL_KEYDOWN && (menu && event.key.keysym.sym == BTN_X))
+#else
+          0
+#endif
+      ) {
         eventData.type = MainLoopEvent::exit;
         eventData.data.value = 0;
         onEvent(eventData);
@@ -266,15 +276,23 @@ void mainLoopRun(void (*draw)(void), void (*onEvent)(MainLoopEventData eventData
 #endif
       }
       else if (event.type == SDL_RENDER_TARGETS_RESET || event.type == SDL_RENDER_DEVICE_RESET) {
+        gfxHandleRenderReset();
+        eventData.type = MainLoopEvent::fullRedraw;
+        eventData.data.value = 0;
+        onEvent(eventData);
         wakeRedrawFrames = FPS;
       }
       else if (event.type == SDL_WINDOWEVENT) {
         if (event.window.event == SDL_WINDOWEVENT_SIZE_CHANGED ||
             event.window.event == SDL_WINDOWEVENT_RESIZED) {
-          gfxHandleResize();
+          gfxHandleResize(event.window.data1, event.window.data2);
 #ifdef TOUCH_INPUT
+#ifndef ANDROID_BUILD
           releaseFingers();
 #endif
+#endif
+          // Android can resize while it transiently reconfigures system bars.
+          // That must not cancel a finger still holding a virtual button.
           // A resize changes the explicit tracker viewport. Redraw the
           // current screen immediately instead of waiting for an input frame.
           eventData.type = MainLoopEvent::fullRedraw;

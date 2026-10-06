@@ -54,7 +54,7 @@ struct PlaybackNoteState {
   uint8_t volume1; // Instrument volume
   uint8_t volume2; // Instrument table volume
   uint8_t volume3; // Aux table volume
-  int8_t volumeOffset; // Volume offset
+  int16_t volumeOffset; // Phrase-volume offset in the 0-127 domain
 
   PlaybackTableState instrumentTable;
   PlaybackTableState auxTable;
@@ -91,10 +91,15 @@ struct PlaybackTrackState {
 
   int frameCounter;
 
+  InsertAutomation inserts;
+  uint32_t insertReset;
+
   // Persistent sequencer FX state
   uint8_t speedRatio;
   uint32_t speedPhase;
   uint8_t slewTicks;
+  uint8_t achchidGateTicks;
+  uint8_t achchidGateCounter;
   int16_t slewCurrent[fxTotalCount];
   int16_t slewTarget[fxTotalCount];
   uint8_t slewRemaining[fxTotalCount];
@@ -111,6 +116,13 @@ struct PlaybackTrackState {
   PhraseRow currentPhraseRow;
   // FX auxillary state data for the phrase (used by HOP)
   uint8_t fxAuxState[16][3];
+
+  // One-shot signal for a MIDI Out instrument's MC1-MC4 row FX (see
+  // playback_fx_midi.cpp and chipnomad_lib.cpp's applyVoiceEvents): set when
+  // that FX is freshly read from a row, consumed and cleared by the audio
+  // engine, which is the only layer that knows about real MIDI I/O.
+  uint8_t midiCCPending[4];
+  uint8_t midiCCValue[4];
 };
 
 struct PlaybackAYChipState {
@@ -132,12 +144,29 @@ struct LoopRange {
   int endPhraseRow;
 };
 
+// Stop boundary for offline rendering (bounce/export of a selection).
+// Unlike LoopRange, reaching the end STOPS the track (resetTrack) instead of
+// wrapping back to the start. Checked at the same three checkpoints in
+// moveToNextPhraseRow. Not gated by track->loop. SNG/HOP commands that would
+// jump outside the range also stop the track.
+struct StopRange {
+  int enabled;
+  int level; // 0 = song, 1 = chain, 2 = phrase
+  int startSongRow;
+  int startChainRow;
+  int startPhraseRow;
+  int endSongRow;
+  int endChainRow;
+  int endPhraseRow;
+};
+
 struct PlaybackState {
   Project* p;
   PlaybackTrackState tracks[PROJECT_MAX_TRACKS];
   PlaybackChipState chips[PROJECT_MAX_CHIPS];
   uint8_t trackEnabled[PROJECT_MAX_TRACKS];
   LoopRange loopRange;
+  StopRange stopRange;
   float liveStickAxes[4];
   int16_t liveStickRate[PROJECT_MAX_INSTRUMENTS][4];
   uint8_t liveStickWasPlaying;
@@ -220,8 +249,9 @@ void playbackStartChain(PlaybackState* state, int trackIdx, int songRow, int cha
  * @param songRow Row position in the song containing the phrase
  * @param chainRow Row position in the chain containing the phrase
  * @param loop Whether to loop when reaching the end
+ * @param startPhraseRow Phrase row to start from (0 for the top)
  */
-void playbackStartPhrase(PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop);
+void playbackStartPhrase(PlaybackState* state, int trackIdx, int songRow, int chainRow, int loop, int startPhraseRow = 0);
 
 /**
  * Starts playback of a phrase row
@@ -280,6 +310,16 @@ void playbackStopPreview(PlaybackState* state, int trackIdx);
  * @param range Loop range configuration
  */
 void playbackSetLoopRange(PlaybackState* state, LoopRange range);
+
+/**
+ * Sets a stop boundary for offline rendering (bounce). When a playing track
+ * reaches the end of the range it is stopped (notes killed) instead of
+ * looping or continuing.
+ *
+ * @param state Pointer to the playback state
+ * @param range Stop range configuration
+ */
+void playbackSetStopRange(PlaybackState* state, StopRange range);
 
 /**
  * Clears the loop range, disabling ranged loop

@@ -15,6 +15,7 @@
 #include <stdio.h>
 #include <strings.h>
 #include <math.h>
+#include <chrono>
 
 extern const AppScreen screenInstrumentPool;
 
@@ -24,6 +25,7 @@ static int typeButtonDown = 0;
 static Bitmap* envelopePreviewBitmap = NULL;
 static Bitmap* livePreviewBitmap = NULL;
 static int livePreviewWasActive = 0;
+static std::chrono::steady_clock::time_point livePreviewRefresh;
 
 static SelectionItem instrumentTypeChip[] = {
   {NULL, (int)InstrumentType::AY1, NULL, 0},
@@ -42,15 +44,19 @@ static SelectionItem instrumentTypeDrums[] = {
   {NULL, (int)InstrumentType::Sintered, NULL, 0},
 };
 static SelectionItem instrumentTypeSample[] = {
+  {NULL, (int)InstrumentType::Sample, NULL, 0},
   {NULL, (int)InstrumentType::SCWF, NULL, 0},
   {NULL, (int)InstrumentType::BYOWTBL, NULL, 0},
-  {NULL, (int)InstrumentType::Sample, NULL, 0},
+};
+static SelectionItem instrumentTypeMidi[] = {
+  {NULL, (int)InstrumentType::Midi, NULL, 0},
 };
 static const SelectionItem instrumentTypeCategories[] = {
   {"CHIP", -1, instrumentTypeChip, 3},
   {"DRUMS", -1, instrumentTypeDrums, 2},
   {"SAMPLE", -1, instrumentTypeSample, 3},
   {"SYNTH", -1, instrumentTypeSynth, 5},
+  {"MIDI", -1, instrumentTypeMidi, 1},
 };
 
 static const InstrumentType instrumentTypesQuickCycle[] = {
@@ -60,6 +66,7 @@ static const InstrumentType instrumentTypesQuickCycle[] = {
   InstrumentType::AChChid, InstrumentType::Braids,
   InstrumentType::Plaits, InstrumentType::PlaitsAlt,
   InstrumentType::MME,
+  InstrumentType::Midi,
 };
 
 static int editInstrumentType(CellEditAction action, InstrumentType* type) {
@@ -216,7 +223,8 @@ static int instrumentTypePopupInput(int isKeyDown, int keys, ScreenData* screen)
     return 0;
   }
   if (input == PopupEditInput::open) {
-    selectionPopupSetup("INSTRUMENT TYPE", instrumentTypeCategories, 4,
+    selectionPopupSetup("INSTRUMENT TYPE", instrumentTypeCategories,
+      sizeof(instrumentTypeCategories) / sizeof(instrumentTypeCategories[0]),
       (int)chipnomadState->project.instruments[cInstrument].type,
       selectInstrumentType, cancelInstrumentTypeSelection);
     screenSetup(&screenSelectionPopup, 0);
@@ -259,6 +267,7 @@ static ScreenData* instrumentScreen(void) {
     &screenInstrumentSCWF, &screenInstrumentBYOWTBL, &screenInstrumentPlaits, &screenInstrumentAChChid,
     &screenInstrumentDrumSynth, &screenInstrumentMME,
     &screenInstrumentSintered,
+    &screenInstrumentMidi,
   };
   InstrumentScreenKind kind = getInstrumentDefinition(chipnomadState->project.instruments[cInstrument].type)->screen;
   ScreenData* data = screens[(int)kind];
@@ -272,9 +281,9 @@ static void init(void) {
   typeButtonDown = 0;
   screenInstrumentNone.cursorRow = 0;
   screenInstrumentNone.cursorCol = 0;
-  SelectionItem* groups[] = {instrumentTypeChip, instrumentTypeSample, instrumentTypeSynth, instrumentTypeDrums};
-  const int counts[] = {3, 3, 5, 2};
-  for (int group = 0; group < 4; ++group)
+  SelectionItem* groups[] = {instrumentTypeChip, instrumentTypeSample, instrumentTypeSynth, instrumentTypeDrums, instrumentTypeMidi};
+  const int counts[] = {3, 3, 5, 2, 1};
+  for (int group = 0; group < 5; ++group)
     for (int item = 0; item < counts[group]; ++item)
       groups[group][item].label = getInstrumentDefinition((InstrumentType)groups[group][item].value)->uiName;
 }
@@ -520,6 +529,7 @@ void instrumentCommonDrawEnvelopePreview(uint8_t attack, uint8_t decay, uint8_t 
 }
 
 void instrumentCommonDrawLivePreview(void) {
+  if (!appSettings.persistentWaveform) {
   const PlaybackStatus* playback = chipnomadGetPlaybackStatus(chipnomadState);
   int track = -1;
   for (int i = 0; i < chipnomadState->project.tracksCount; ++i) {
@@ -530,14 +540,25 @@ void instrumentCommonDrawLivePreview(void) {
   if (track < 0) {
     if (livePreviewWasActive) currentScreen->fullRedraw();
     livePreviewWasActive = 0;
+    livePreviewRefresh = {};
     return;
   }
   if (!livePreviewBitmap) livePreviewBitmap = gfxBitmapCreate(32, 3);
-  gfxClearRect(0, 16, 32, 3);
-  renderFloatPreview(livePreviewBitmap, chipnomadState->voiceMonitors[track].samples,
-                     VOICE_MONITOR_SAMPLES);
+  const auto now = std::chrono::steady_clock::now();
+  int hz = appSettings.waveformRefreshHz;
+  if (hz < 1 || hz > 60) hz = 30;
+  if (livePreviewRefresh == std::chrono::steady_clock::time_point() ||
+      std::chrono::duration<float>(now - livePreviewRefresh).count() >= 1.0f / hz) {
+    gfxClearRect(0, 16, 32, 3);
+    renderFloatPreview(livePreviewBitmap, chipnomadState->voiceMonitors[track].samples,
+                       VOICE_MONITOR_SAMPLES);
+    livePreviewRefresh = now;
+  }
   gfxSetFgColor(appSettings.colorScheme.textInfo);
   gfxDrawBitmap(livePreviewBitmap, 0, 16);
+  livePreviewWasActive = 1;
+  return;
+  }
   Instrument* instrument = &chipnomadState->project.instruments[cInstrument];
   InstrumentVoicePostSettings* post = voicePostSettings(instrument, instrument->type);
   if (post && instrument->type != InstrumentType::DrumSynth && instrument->type != InstrumentType::Sintered &&
@@ -547,7 +568,6 @@ void instrumentCommonDrawLivePreview(void) {
     instrumentCommonDrawEnvelopePreview(post->attack, post->decay, post->sustain,
                                         post->release, post->envelopeShape);
   }
-  livePreviewWasActive = 1;
 }
 
 int instrumentCommonOnEdit(int col, int row, enum CellEditAction action) {

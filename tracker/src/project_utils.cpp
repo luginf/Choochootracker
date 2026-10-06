@@ -68,7 +68,7 @@ const char* instrumentTypeName(InstrumentType type) {
     case InstrumentType::Braids:
       return "Braids";
     case InstrumentType::Sample:
-      return "Sample";
+      return "Sampler";
     case InstrumentType::SCWF:
       return "2xSCWF";
     case InstrumentType::BYOWTBL:
@@ -85,6 +85,8 @@ const char* instrumentTypeName(InstrumentType type) {
       return "MME";
     case InstrumentType::Sintered:
       return "Sintered";
+    case InstrumentType::Midi:
+      return "MIDI Out";
     case InstrumentType::none:
       return "None";
     default:

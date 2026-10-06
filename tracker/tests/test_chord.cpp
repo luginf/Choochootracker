@@ -16,15 +16,17 @@ TEST_CASE("fixed chord palette and inversions") {
   CHECK(pitches[2] == 48);
   CHECK(chordBuild(36, 7, 0, 96, pitches) == 4);
   CHECK(pitches[3] == 47);
+  CHECK(chordMaxInversion(0) == 2);
+  CHECK(chordMaxInversion(7) == 3);
   for (uint8_t slot = 0; slot < 16; ++slot) {
     int count = chordBuild(36, slot, 0, 96, pitches);
     CHECK(count >= 2);
     CHECK(count <= CHORD_MAX_VOICES);
   }
   CHECK(chordBuild(36, 0, 0x0f, 96, pitches) == 3);
-  CHECK(pitches[0] == 24);
+  CHECK(pitches[0] == 43);
   CHECK(chordBuild(0, 0, 0x0f, 96, pitches) == 3);
-  CHECK(pitches[0] == 0);
+  CHECK(pitches[0] == 7);
 }
 
 TEST_CASE("CRD is same-row only and quantizes every chord note") {
@@ -38,7 +40,7 @@ TEST_CASE("CRD is same-row only and quantizes every chord note") {
   playbackInit(&state, &project);
   state.tracks[0].mode = PlaybackMode::phraseRow;
   PhraseRow row = {};
-  row.note = 36; row.instrument = EMPTY_VALUE_8; row.volume = EMPTY_VALUE_8;
+  row.note = 36; row.instrument = EMPTY_VALUE_8; row.volume = EMPTY_VALUE_16;
   for (int i = 0; i < 3; ++i) row.fx[i][0] = EMPTY_VALUE_8;
   row.fx[0][0] = fxCRD; row.fx[0][1] = 0x00;
   readPhraseRowDirect(&state, 0, &row, 0);
@@ -64,7 +66,7 @@ TEST_CASE("CRD is ignored by AY instruments") {
   playbackInit(&state, &project);
   state.tracks[0].mode = PlaybackMode::phraseRow;
   PhraseRow row = {};
-  row.note = 36; row.instrument = 0; row.volume = EMPTY_VALUE_8;
+  row.note = 36; row.instrument = 0; row.volume = EMPTY_VALUE_16;
   for (int i = 0; i < 3; ++i) row.fx[i][0] = EMPTY_VALUE_8;
   row.fx[0][0] = fxCRD; row.fx[0][1] = 0x00;
   readPhraseRowDirect(&state, 0, &row, 0);

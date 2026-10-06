@@ -11,7 +11,7 @@
 #define PRINT_BUFFER_SIZE (256)
 
 #define CHAR_X(x) ((x) * fontW * 8)
-#define CHAR_Y(y) ((y) * fontH)
+#define CHAR_Y(y) (((y) + gfxGetContentRowOffset()) * fontH)
 
 extern uint8_t font16x24[];
 
@@ -160,7 +160,7 @@ void gfxPoint(int x, int y, uint32_t color) {
 }
 
 void gfxClearRect(int x, int y, int w, int h) {
-  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), CHAR_Y(h) };
+  SDL_Rect rect = { CHAR_X(x), CHAR_Y(y), CHAR_X(w), h * fontH };
 #ifdef MIYOOPORTS_BUILD
   SDL_FillRect(offscreenSurface, &rect, bgColor);
 #else
@@ -259,7 +259,7 @@ void gfxRect(int x, int y, int w, int h) {
   int cx = CHAR_X(x);
   int cy = CHAR_Y(y);
   int cw = CHAR_X(w);
-  int ch = CHAR_Y(h);
+  int ch = h * fontH;
 
   SDL_Rect rects[4] = {
     {cx, cy, cw, 1},           // top

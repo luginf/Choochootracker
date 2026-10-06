@@ -22,6 +22,10 @@ const char* chordName(uint8_t slot) {
   return slot < 16 ? chords[slot].name : "Invalid";
 }
 
+uint8_t chordMaxInversion(uint8_t slot) {
+  return slot < 16 ? chords[slot].count - 1 : 0;
+}
+
 int chordBuild(uint8_t root, uint8_t slot, uint8_t inversion, uint8_t pitchCount,
                uint8_t pitches[CHORD_MAX_VOICES]) {
   if (slot >= 16 || pitchCount == 0) return 0;
@@ -29,11 +33,10 @@ int chordBuild(uint8_t root, uint8_t slot, uint8_t inversion, uint8_t pitchCount
   int values[CHORD_MAX_VOICES];
   for (int i = 0; i < chord.count; ++i) values[i] = root + chord.intervals[i];
 
-  int steps = inversion < 8 ? inversion : 16 - inversion;
+  int steps = std::min((int)inversion, (int)chordMaxInversion(slot));
   for (int step = 0; step < steps; ++step) {
     std::sort(values, values + chord.count);
-    if (inversion < 8) values[0] += 12;
-    else values[0] -= 12;
+    values[0] += 12;
   }
   std::sort(values, values + chord.count);
   for (int i = 0; i < chord.count; ++i) {

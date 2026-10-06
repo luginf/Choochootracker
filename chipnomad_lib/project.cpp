@@ -20,7 +20,7 @@ FXName fxNamesSequencer[] = {
 };
 int fxSequencerCount = sizeof(fxNamesSequencer) / sizeof(FXName);
 
-FXName fxNamesTrack[] = {{fxRSN, "RSN"}, {fxDSN, "DSN"}, {fxSCL, "SCL"}, {fxCRD, "CRD"}, {fxSTA, "STA"}};
+FXName fxNamesTrack[] = {{fxRSN, "RSN"}, {fxDSN, "DSN"}, {fxSCL, "SCL"}, {fxCRD, "CRD"}};
 int fxTrackCount = sizeof(fxNamesTrack) / sizeof(FXName);
 
 FXName fxNamesEnvelope[] = {
@@ -38,10 +38,29 @@ FXName fxNamesModulation[] = {
 };
 int fxModulationCount = sizeof(fxNamesModulation) / sizeof(FXName);
 
+FXName fxNamesInsert[] = {
+  {fxF11, "F11"},
+  {fxF12, "F12"},
+  {fxF13, "F13"},
+  {fxF14, "F14"},
+  {fxF15, "F15"},
+  {fxF16, "F16"},
+  {fxF17, "F17"},
+  {fxF18, "F18"},
+  {fxF21, "F21"},
+  {fxF22, "F22"},
+  {fxF23, "F23"},
+  {fxF24, "F24"},
+  {fxF25, "F25"},
+  {fxF26, "F26"},
+  {fxF27, "F27"},
+  {fxF28, "F28"}
+};
+
 // FX Groups array. FX counts are filled in fillFXNames()
 FXGroup fxGroups[] = {
   {"Sequencer FX", fxNamesSequencer, 0, 8, InstrumentType::none},
-  {"Track FX", fxNamesTrack, 0, 2, InstrumentType::none},
+  {"Track FX", fxNamesTrack, 0, 4, InstrumentType::none},
   {"AY Classic FX", NULL, 0, 8, InstrumentType::AY1},
   {"AY Plus FX", NULL, 0, 8, InstrumentType::AY2},
   {"AYSample FX", NULL, 0, 8, InstrumentType::AYSample},
@@ -51,12 +70,14 @@ FXGroup fxGroups[] = {
   {"BYOWTBL FX", NULL, 0, 6, InstrumentType::BYOWTBL},
   {"Plaits FX", NULL, 0, 7, InstrumentType::Plaits},
   {"Plaits-Alt FX", NULL, 0, 7, InstrumentType::PlaitsAlt},
-  {"aChChid FX", NULL, 0, 8, InstrumentType::AChChid},
+  {"aChChid FX", NULL, 0, 9, InstrumentType::AChChid},
   {"Bogie FX", NULL, 0, 8, InstrumentType::DrumSynth},
   {"ADSR / Trigger FX", fxNamesEnvelope, 0, 7, InstrumentType::none},
   {"Modulation FX", fxNamesModulation, 0, 5, InstrumentType::none},
   {"MME FX", NULL, 0, 8, InstrumentType::MME},
   {"Sintered FX", NULL, 0, 8, InstrumentType::Sintered},
+  {"MIDI FX", NULL, 0, 4, InstrumentType::Midi},
+  {"Insert FX", fxNamesInsert, 16, 8, InstrumentType::none},
 };
 int fxGroupCount = sizeof(fxGroups) / sizeof(FXGroup);
 
@@ -100,6 +121,13 @@ void fillFXNames() {
     const InstrumentDefinition* definition = getInstrumentDefinition(InstrumentType::Sintered);
     FXName* names = instrumentGroupNames[(int)InstrumentType::Sintered];
     fxGroups[16].fxList = names; fxGroups[16].count = definition->fxCount;
+    for (int i = 0; i < definition->fxCount; ++i) { names[i].fx = (FX)definition->fxList[i].fx; strcpy(names[i].name, definition->fxList[i].name); }
+  }
+  for (int group = 17; group < 18; ++group) {
+    InstrumentType type = fxGroups[group].instType;
+    const InstrumentDefinition* definition = getInstrumentDefinition(type);
+    FXName* names = instrumentGroupNames[(int)type];
+    fxGroups[group].fxList = names; fxGroups[group].count = definition->fxCount;
     for (int i = 0; i < definition->fxCount; ++i) { names[i].fx = (FX)definition->fxList[i].fx; strcpy(names[i].name, definition->fxList[i].name); }
   }
 
@@ -207,7 +235,7 @@ int8_t phraseIsEmpty(Project* project, int phrase) {
   for (int c = 0; c < 16; c++) {
     if (project->phrases[phrase].rows[c].note != EMPTY_VALUE_8) return 0;
     if (project->phrases[phrase].rows[c].instrument != EMPTY_VALUE_8) return 0;
-    if (project->phrases[phrase].rows[c].volume != EMPTY_VALUE_8) return 0;
+    if (project->phrases[phrase].rows[c].volume != EMPTY_VALUE_16) return 0;
     for (int d = 0; d < 3; d++) {
       if (project->phrases[phrase].rows[c].fx[d][0] != EMPTY_VALUE_8) return 0;
       if (project->phrases[phrase].rows[c].fx[d][1] != 0) return 0;
@@ -284,7 +312,7 @@ void phraseClear(Phrase* phrase) {
   for (int d = 0; d < 16; d++) {
     phrase->rows[d].note = EMPTY_VALUE_8;
     phrase->rows[d].instrument = EMPTY_VALUE_8;
-    phrase->rows[d].volume = EMPTY_VALUE_8;
+    phrase->rows[d].volume = EMPTY_VALUE_16;
     for (int e = 0; e < 3; e++) {
       phrase->rows[d].fx[e][0] = EMPTY_VALUE_8;
       phrase->rows[d].fx[e][1] = 0;

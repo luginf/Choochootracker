@@ -79,6 +79,59 @@ int fileIsRunningFromAppImage(void) {
 #endif
 }
 
+int fileCreateDirectoryRecursive(const char* path) {
+  if (path == NULL || path[0] == 0) return -1;
+  if (fileDirectoryExists(path)) return 0;
+
+  char tmp[4096];
+  snprintf(tmp, sizeof(tmp), "%s", path);
+  size_t len = strlen(tmp);
+  if (len == 0) return -1;
+#ifdef _WIN32
+  // Callers commonly build paths with '/', while the Windows APIs and the
+  // drive-prefix check below use '\\'. Normalize once so recursive creation
+  // behaves consistently for both spellings.
+  for (size_t i = 0; i < len; i++) {
+    if (tmp[i] == '/') tmp[i] = '\\';
+  }
+#endif
+  if (tmp[len - 1] == '/' || tmp[len - 1] == '\\') tmp[len - 1] = 0;
+  if (tmp[0] == 0) return -1;
+
+  // Create each path level in turn; existing levels report EEXIST and are fine
+  char* firstSeparator = tmp + 1;
+#ifdef _WIN32
+  if (tmp[1] == ':' && (tmp[2] == '/' || tmp[2] == '\\')) firstSeparator = tmp + 3;
+#endif
+  for (char* p = firstSeparator; *p; p++) {
+    if (*p == '/' || *p == '\\') {
+      *p = 0;
+      if (!fileDirectoryExists(tmp)) {
+        if (fileCreateDirectory(tmp) != 0) return -1;
+      }
+      *p = PATH_SEPARATOR;
+    }
+  }
+  if (!fileDirectoryExists(tmp)) {
+    if (fileCreateDirectory(tmp) != 0) return -1;
+  }
+  return 0;
+}
+
+int fileRename(const char* oldPath, const char* newPath) {
+  if (oldPath == NULL || newPath == NULL || oldPath[0] == 0 || newPath[0] == 0) return -1;
+#ifdef WEB_BUILD
+  // The virtual FS has no rename; callers must treat failure as non-fatal
+  (void)oldPath;
+  (void)newPath;
+  return -1;
+#elif defined(_WIN32)
+  return MoveFileA(oldPath, newPath) ? 0 : -1;
+#else
+  return rename(oldPath, newPath) == 0 ? 0 : -1;
+#endif
+}
+
 int fileGetDefaultDirectory(char* buffer, int bufferSize) {
 #ifdef ANDROID_BUILD
   extern int androidGetWorkspacePath(char*, int);

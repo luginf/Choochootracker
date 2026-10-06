@@ -153,7 +153,7 @@ static void drawStatic(void) {
 }
 
 static void drawField(int col, int row, CellState state) {
-  if (row < screen.topRow || row >= (screen.topRow + 16)) return; // Don't draw outside of the viewing area
+  if (row < screen.topRow || row >= (screen.topRow + screenVisibleRows())) return; // Don't draw outside of the viewing area
 
   int chain = chipnomadState->project.song[row][col];
   int isHighlighted = chipnomadState->project.songHighlight[row][col];
@@ -206,11 +206,11 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   for (int c = 0; c < chipnomadState->project.tracksCount; c++) {
-    gfxClearRect(2 + c * 3, 3, 1, 16);
+    gfxClearRect(2 + c * 3, 3, 1, screenVisibleRows());
     const PlaybackTrackState* track = &chipnomadGetPlaybackStatus(chipnomadState)->tracks[c];
     if (track->songRow != EMPTY_VALUE_16) {
       int row = track->songRow - screen.topRow;
-      if (row >= 0 && row < 16) {
+      if (row >= 0 && row < screenVisibleRows()) {
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
         gfxPrint(2 + c * 3, 3 + row, ">");
       }
@@ -219,7 +219,7 @@ static void draw(void) {
       int stop = track->queue.liveAction == LiveQueueAction::stopNormal || track->queue.liveAction == LiveQueueAction::stopUrgent;
       int urgent = track->queue.liveAction == LiveQueueAction::urgent || track->queue.liveAction == LiveQueueAction::stopUrgent;
       int row = (stop ? track->songRow : track->queue.songRow) - screen.topRow;
-      if (row >= 0 && row < 16) {
+      if (row >= 0 && row < screenVisibleRows()) {
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
         gfxPrint(2 + c * 3, 3 + row, stop ? "-" : (urgent ? "!" : "+"));
       }
@@ -341,7 +341,7 @@ static int onEdit(int col, int row, CellEditAction action) {
         screen.selectStartRow++;
         screen.cursorRow++;
         // Scroll down if selection moved below visible area
-        if (screen.cursorRow >= screen.topRow + 16) {
+        if (screen.cursorRow >= screen.topRow + screenVisibleRows()) {
           screen.topRow++;
         }
       }
@@ -545,6 +545,166 @@ static LoopRange getLoopRange(void) {
 }
 
 ///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type a chain's hex index directly instead of
+// incrementing with Up/Down. Toggled with Esc, independent of the Phrase
+// screen's key jazz (see screen_phrase.cpp for the note-entry version of
+// this same pattern). Also brings Phrase's structure-editing shortcuts
+// here: Shift+arrows select rows/columns, Delete/Backspace/Insert edit the
+// song structure the same way. While key jazz is active this takes over
+// Shift (so Shift+Right/Up no longer navigate to Chain/Project - Esc to
+// get those back), same tradeoff as Phrase already makes.
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+static int keyJazzEditRow = -1;
+static int keyJazzEditCol = -1;
+
+// The selection's row/column bounds if one is active, else just the
+// cursor's single cell.
+static void keyJazzGetActiveRange(int* startCol, int* startRow, int* endCol, int* endRow) {
+  if (screen.selectMode) {
+    getSelectionBounds(&screen, startCol, startRow, endCol, endRow);
+  } else {
+    *startCol = *endCol = screen.cursorCol;
+    *startRow = *endRow = screen.cursorRow;
+  }
+}
+
+int songKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown) {
+      keyJazzEnabled = !keyJazzEnabled;
+      if (!keyJazzEnabled) screen.selectMode = 0;
+      screenMessage(MESSAGE_TIME, keyJazzEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (!keyJazzEnabled) return 0;
+  if (inputIsShiftKey(input)) return 1; // Swallow: see screen_phrase.cpp's inputIsShiftKey comment
+
+  int arrowDir = inputArrowKeyDirection(input);
+  if (arrowDir != 0) {
+    if (inputIsShiftHeld()) {
+      if (isDown && !screen.selectMode) {
+        screen.selectStartRow = screen.cursorRow;
+        screen.selectStartCol = screen.cursorCol;
+        screen.selectAnchorRow = screen.cursorRow;
+        screen.selectAnchorCol = screen.cursorCol;
+        screen.selectMode = 1;
+      }
+    } else if (screen.selectMode) {
+      if (isDown) {
+        screen.selectMode = 0;
+        fullRedraw();
+      }
+    }
+    return 0; // Let normal cursor movement happen (and extend/render the selection)
+  }
+
+  if (inputIsCtrlHeld()) {
+    if (inputIsCopyKey(input) || inputIsCutKey(input)) {
+      if (isDown) {
+        int startCol, startRow, endCol, endRow;
+        keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
+        int isCut = inputIsCutKey(input);
+        copySong(startCol, startRow, endCol, endRow, isCut);
+        int count = endRow - startRow + 1;
+        screenMessage(MESSAGE_TIME, "KEY JAZZ: %s %d row%s", isCut ? "cut" : "copied", count, count == 1 ? "" : "s");
+        if (isCut) {
+          screen.selectMode = 0;
+          fullRedraw();
+        }
+      }
+      return 1;
+    }
+    if (inputIsPasteKey(input)) {
+      if (isDown) {
+        int rowsPasted = pasteSong(screen.cursorCol, screen.cursorRow);
+        if (rowsPasted > 0) {
+          screenMessage(MESSAGE_TIME, "KEY JAZZ: pasted %d row%s", rowsPasted, rowsPasted == 1 ? "" : "s");
+          fullRedraw();
+        }
+      }
+      return 1;
+    }
+    return 0; // Other Ctrl+key combos: not our concern
+  }
+
+  if (inputIsDeleteKey(input)) {
+    // Whole row(s), every track column - the song-row equivalent of
+    // Phrase's Delete.
+    if (isDown) {
+      int startCol, startRow, endCol, endRow;
+      keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
+      int count = endRow - startRow + 1;
+      int tracksCount = chipnomadState->project.tracksCount;
+      for (int c = 0; c < tracksCount; c++)
+        for (int i = 0; i < count; i++) shiftSongColumnUp(c, startRow);
+      screen.cursorRow = startRow;
+      screen.selectMode = 0;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (inputIsBackspaceKey(input)) {
+    // Just the current/selected column(s), like Phrase's Backspace.
+    if (isDown) {
+      int startCol, startRow, endCol, endRow;
+      keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
+      int count = endRow - startRow + 1;
+      for (int c = startCol; c <= endCol; c++)
+        for (int i = 0; i < count; i++) shiftSongColumnUp(c, startRow);
+      screen.cursorRow = startRow > 0 ? startRow - 1 : 0;
+      screen.selectMode = 0;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (inputIsInsertKey(input)) {
+    if (isDown) {
+      int row = screen.cursorRow;
+      int lastRow = screen.rows - 1;
+      int tracksCount = chipnomadState->project.tracksCount;
+      for (int r = lastRow; r > row; r--)
+        for (int c = 0; c < tracksCount; c++)
+          chipnomadState->project.song[r][c] = chipnomadState->project.song[r - 1][c];
+      for (int c = 0; c < tracksCount; c++) chipnomadState->project.song[row][c] = EMPTY_VALUE_16;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  int digit = inputHexDigitValue(input);
+  if (digit < 0) return 0;
+
+  if (isDown) {
+    int row = screen.cursorRow;
+    int col = screen.cursorCol;
+    uint16_t current = chipnomadState->project.song[row][col];
+    // A cursor move since the last digit starts a fresh value; consecutive
+    // digits on the same cell shift into the existing one (typing "3F").
+    uint16_t base = (row == keyJazzEditRow && col == keyJazzEditCol && current != EMPTY_VALUE_16) ? current : 0;
+    int value = base * 16 + digit;
+    if (value > PROJECT_MAX_CHAINS - 1) value = PROJECT_MAX_CHAINS - 1;
+    chipnomadState->project.song[row][col] = (uint16_t)value;
+    lastChainValue = (uint16_t)value;
+    keyJazzEditRow = row;
+    keyJazzEditCol = col;
+    drawField(col, row, CellState::normal);
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
 
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::song;

@@ -2,9 +2,39 @@
 #include "chipnomad_lib.h"
 #include "playback_internal.h"
 #include "pitch_table_utils.h"
+#include "midi/midi_router.h"
 
 #include <cstring>
 #include <cmath>
+#include <vector>
+
+namespace {
+// Minimal fake MidiBackend for the two MIDI Out integration tests below:
+// captures every scheduled event so the tests can assert on what actually
+// got sent, without reaching into the router's now-encapsulated internal
+// state (see test_midi_router.cpp for router-level unit tests through this
+// same fake-backend mechanism).
+struct SentMidiEvent { uint8_t type, channel, data1, data2; };
+std::vector<SentMidiEvent> g_sentMidiEvents;
+
+void fakeScheduleOutput(void*, const MidiEvent* event, uint64_t) {
+  g_sentMidiEvents.push_back({event->type, event->channel, event->data1, event->data2});
+}
+void fakeFlushOutputQueue(void*) {}
+uint64_t fakeNowMicros(void*) { return 0; }
+
+const MidiBackend kFakeMidiBackend = {
+  nullptr, // userdata
+  nullptr, nullptr, nullptr, nullptr, // port enumeration - unused here
+  nullptr, nullptr, nullptr, nullptr, // open/close - unused here
+  nullptr, // pollInput - unused here (Out-path only)
+  fakeScheduleOutput,
+  fakeFlushOutputQueue,
+  nullptr, // droppedCount - unused here
+  fakeNowMicros,
+  1, 1, 0, 0,
+};
+}
 
 TEST_SUITE("playback") {
 
@@ -141,6 +171,38 @@ TEST_CASE("playback stop command applies on the audio tick") {
   CHECK_FALSE(playbackIsPlaying(&fixture.state->playbackState));
 }
 
+TEST_CASE("playback stop sends MIDI Note Off instead of leaving the note stuck") {
+  midiRouterSetBackend(&kFakeMidiBackend);
+  g_sentMidiEvents.clear();
+
+  PlaybackFixture fixture;
+  ChipNomadState* state = fixture.state;
+  getInstrumentFunctions(InstrumentType::Midi).init(&state->project.instruments[0]);
+  REQUIRE(chipnomadQueueProjectRefresh(state));
+  playbackPreviewNote(&state->playbackState, 0, 60, 0);
+
+  // Render a full tick's worth of samples (not just 1) so frameSampleCounter
+  // actually cycles back to 0 within each call and advancePlaybackFrame -
+  // where the preview command, then later the queued stop, are consumed -
+  // runs both times, rather than only on the very first sample ever rendered.
+  float buffer[2048] = {};
+  chipnomadRender(state, buffer, 1024);
+  REQUIRE(g_sentMidiEvents.size() >= 1);
+  CHECK(g_sentMidiEvents.back().type == 0x90); // Note On
+
+  // resetTrack() (called from playbackStop) clears noteTriggered/noteReleased
+  // directly, bypassing the normal path applyVoiceEvents uses to notice a
+  // release and send Note Off - the stop command must still flush it via
+  // chipnomadMidiPanic, or the note stays stuck on the external device.
+  g_sentMidiEvents.clear();
+  chipnomadQueuePlaybackStop(state);
+  chipnomadRender(state, buffer, 1024);
+
+  int sawNoteOff = 0;
+  for (const SentMidiEvent& e : g_sentMidiEvents) if (e.type == 0x80) sawNoteOff = 1;
+  CHECK(sawNoteOff);
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "playback init all tracks stopped") {
   CHECK_FALSE(playbackIsPlaying(&state->playbackState));
 }
@@ -175,11 +237,11 @@ TEST_CASE_FIXTURE(PlaybackFixture, "Live chains loop and switch at the requested
 
 TEST_CASE_FIXTURE(PlaybackFixture, "table volume and VOL apply to the shared voice gain") {
   PlaybackTrackState* track = &state->playbackState.tracks[0];
-  track->note.volume = 15;
+  track->note.volume = PHRASE_VOLUME_MAX;
   track->note.volumeOffset = -1;
   tableInit(&state->playbackState, 0, &track->note.instrumentTable, 0, 0, 1);
   state->project.tables[0].rows[0].volume = 15;
-  CHECK(playbackVolumeGain(&state->playbackState, track) == doctest::Approx(14.0f / 15.0f));
+  CHECK(playbackVolumeGain(&state->playbackState, track) == doctest::Approx(126.0f / PHRASE_VOLUME_MAX));
 
   state->project.tables[0].rows[0].volume = 0;
   CHECK(playbackVolumeGain(&state->playbackState, track) == 0.0f);
@@ -243,6 +305,70 @@ TEST_CASE_FIXTURE(PlaybackFixture, "instrument FX holds until the next note trig
   CHECK(state->playbackState.tracks[0].note.fx[fxBTM].isOn == 0);
 }
 
+static void setupAChChidGatePattern(PlaybackFixture& fixture) {
+  Project* p = &fixture.state->project;
+  getInstrumentFunctions(InstrumentType::AChChid).init(&p->instruments[0]);
+  p->song[0][0] = 0;
+  p->chains[0].rows[0].phrase = 0;
+  for (int row = 0; row < 16; ++row)
+    memset(&p->phrases[0].rows[row], EMPTY_VALUE_8, sizeof(PhraseRow));
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "aChChid normal notes release after half a six-tick step") {
+  setupAChChidGatePattern(*this);
+  PhraseRow* row = &state->project.phrases[0].rows[0];
+  row->note = 48;
+  row->instrument = 0;
+  playbackStartSong(&state->playbackState, 0, 0, 0);
+
+  playbackNextFrame(state);
+  advanceFrames(2);
+  CHECK_FALSE(state->playbackState.tracks[0].note.noteReleased);
+  playbackNextFrame(state);
+  CHECK(state->playbackState.tracks[0].note.noteReleased);
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "aChChid ATY keeps a note open for its full step") {
+  setupAChChidGatePattern(*this);
+  PhraseRow* row = &state->project.phrases[0].rows[0];
+  row->note = 48;
+  row->instrument = 0;
+  row->fx[0][0] = fxATY;
+  row->fx[0][1] = 0;
+  playbackStartSong(&state->playbackState, 0, 0, 0);
+
+  playbackNextFrame(state);
+  advanceFrames(5);
+  CHECK_FALSE(state->playbackState.tracks[0].note.noteReleased);
+  playbackNextFrame(state);
+  CHECK(state->playbackState.tracks[0].note.noteReleased);
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "aChChid holds the preceding note for ASL across a chain boundary") {
+  setupAChChidGatePattern(*this);
+  Project* p = &state->project;
+  p->chains[0].rows[1].phrase = 1;
+  for (int row = 0; row < 16; ++row)
+    memset(&p->phrases[1].rows[row], EMPTY_VALUE_8, sizeof(PhraseRow));
+  PhraseRow* source = &p->phrases[0].rows[15];
+  source->note = 48;
+  source->instrument = 0;
+  PhraseRow* target = &p->phrases[1].rows[0];
+  target->note = 50;
+  target->fx[0][0] = fxASL;
+  target->fx[0][1] = 6;
+
+  PlaybackTrackState* track = &state->playbackState.tracks[0];
+  track->mode = PlaybackMode::song;
+  track->songRow = 0;
+  track->chainRow = 0;
+  track->phraseRow = 15;
+  readPhraseRowDirect(&state->playbackState, 0, source, 0);
+  advanceFrames(4);
+  CHECK_FALSE(track->note.noteReleased);
+  CHECK(track->achchidGateTicks == 0);
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "instrument table FX applies on the trigger row") {
   state->project.instruments[0].type = InstrumentType::Braids;
   state->project.instruments[0].tableSpeed = 1;
@@ -301,7 +427,7 @@ TEST_CASE_FIXTURE(PlaybackFixture, "single note outputs to registers") {
   // Put a note in phrase 0, row 0
   state->project.phrases[0].rows[0].note = 48; // C-4
   state->project.phrases[0].rows[0].instrument = 0;
-  state->project.phrases[0].rows[0].volume = 15;
+  state->project.phrases[0].rows[0].volume = PHRASE_VOLUME_MAX;
 
   // Put phrase 0 in chain 0
   state->project.chains[0].rows[0].phrase = 0;
@@ -354,7 +480,7 @@ TEST_CASE_FIXTURE(PlaybackFixture, "auto mix relieves an octave-band pileup") {
   for (int track = 0; track < 3; ++track) {
     p->phrases[track].rows[0].note = track < 2 ? 36 : 72;
     p->phrases[track].rows[0].instrument = 0;
-    p->phrases[track].rows[0].volume = 15;
+  p->phrases[track].rows[0].volume = PHRASE_VOLUME_MAX;
     for (int row = 0; row < 12; ++row) p->chains[track].rows[row].phrase = track;
     p->song[0][track] = track;
   }
@@ -375,7 +501,7 @@ TEST_CASE_FIXTURE(PlaybackFixture, "ADSR volume envelope ranges") {
   // Put a note in phrase 0
   state->project.phrases[0].rows[0].note = 48;
   state->project.phrases[0].rows[0].instrument = 0;
-  state->project.phrases[0].rows[0].volume = 15;
+  state->project.phrases[0].rows[0].volume = PHRASE_VOLUME_MAX;
 
   // Put phrase in chain and song
   state->project.chains[0].rows[0].phrase = 0;
@@ -457,6 +583,31 @@ TEST_CASE_FIXTURE(PlaybackFixture, "Plaits instrument renders and receives note 
   CHECK(state->playbackState.tracks[0].note.pitchBase == EMPTY_VALUE_8);
 }
 
+TEST_CASE_FIXTURE(PlaybackFixture, "MIDI Out instrument tracks its active note and panic sends Note Off") {
+  midiRouterSetBackend(&kFakeMidiBackend);
+  g_sentMidiEvents.clear();
+
+  getInstrumentFunctions(InstrumentType::Midi).init(&state->project.instruments[0]);
+  state->project.instruments[0].chip.midi.channel = 3;
+  REQUIRE(chipnomadQueueProjectRefresh(state));
+  playbackPreviewNote(&state->playbackState, 0, 60, 0);
+
+  float buffer[2] = {};
+  chipnomadRender(state, buffer, 1);
+
+  REQUIRE(g_sentMidiEvents.size() >= 1);
+  CHECK(g_sentMidiEvents.back().type == 0x90); // Note On
+  CHECK(g_sentMidiEvents.back().channel == 3);
+
+  g_sentMidiEvents.clear();
+  chipnomadMidiPanic(state);
+  int sawNoteOff = 0;
+  for (const SentMidiEvent& e : g_sentMidiEvents) if (e.type == 0x80 && e.channel == 3) sawNoteOff = 1;
+  CHECK(sawNoteOff);
+  // Router-level cache invalidation (Program/Bank resend after panic) is
+  // covered directly in test_midi_router.cpp.
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "SLE reaches every BYOWTBL engine FX destination") {
   getInstrumentFunctions(InstrumentType::BYOWTBL).init(&state->project.instruments[0]);
   REQUIRE(chipnomadQueueProjectRefresh(state));
@@ -467,7 +618,7 @@ TEST_CASE_FIXTURE(PlaybackFixture, "SLE reaches every BYOWTBL engine FX destinat
   PlaybackTrackState* track = &state->playbackState.tracks[0];
   track->note.instrument = 0;
   track->note.pitchFinal = 60;
-  track->note.volume = 15;
+  track->note.volume = PHRASE_VOLUME_MAX;
   track->slewTicks = 8;
   const FX destinations[] = {fxSDT, fxSMX, fxBIA, fxBIB, fxSCF2, fxSRS2};
   for (FX fx : destinations) {

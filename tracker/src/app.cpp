@@ -6,12 +6,21 @@
 #include "audio_manager.h"
 #include "app.h"
 #include "screens.h"
+#include "screens/selection_popup.h"
 #include "chipnomad_lib.h"
 #include "project_utils.h"
 #include "waveform_display.h"
+#include "monitor_display.h"
+#include "piano_display.h"
 #include "corelib_input.h"
 #include "corelib_keymap.h"
 #include "screens/screen_quick_help.h"
+#include "screens/screen_instrument.h"
+#include "midi/midi_router.h"
+#include "midi/midi_backend_desktop.h"
+#ifdef ANDROID_BUILD
+#include "midi/midi_backend_android.h"
+#endif
 
 #ifdef WEB_BUILD
 #include <emscripten/emscripten.h>
@@ -41,6 +50,60 @@ static int motionLiveLatched;
 static int quickHelpSelectHeld;
 static int quickHelpSelectAlone;
 static int audioProjectDirty;
+
+// Port indices aren't saved (see common.h's AppSettings comment): this
+// resolves the saved device name back to whatever live port currently has
+// that name, or leaves it unresolved (index -1, name kept as-is so this
+// keeps retrying on future launches) if none matches - never silently picks
+// a different port just because one happens to be available.
+static int findMidiPortByName(int isInput, const char* name) {
+  if (!name || !name[0]) return -1;
+  int count = isInput ? midiRouterInputPortCount() : midiRouterOutputPortCount();
+  char portName[MIDI_DEVICE_NAME_LENGTH + 1];
+  for (int i = 0; i < count; i++) {
+    int ok = isInput ? midiRouterInputPortName(i, portName, sizeof(portName)) : midiRouterOutputPortName(i, portName, sizeof(portName));
+    if (ok == 0 && strcmp(portName, name) == 0) return i;
+  }
+  return -1;
+}
+
+#ifdef ANDROID_BUILD
+static void refreshAndroidMidiConnections(void) {
+  // Android closes a port when its device disappears. Reconcile the saved
+  // index with the live name list, then retry the saved name when it returns.
+  int inputCount = midiRouterInputPortCount();
+  if (appSettings.midiInputDevice >= 0) {
+    char name[MIDI_DEVICE_NAME_LENGTH + 1];
+    if (appSettings.midiInputDevice >= inputCount ||
+        midiRouterInputPortName(appSettings.midiInputDevice, name, sizeof(name)) != 0 ||
+        strcmp(name, appSettings.midiInputDeviceName) != 0) {
+      midiRouterResetHeldNotes(chipnomadState->midiRouter);
+      midiRouterCloseInput();
+      appSettings.midiInputDevice = -1;
+    }
+  }
+  if (appSettings.midiInputDevice < 0 && appSettings.midiInputDeviceName[0]) {
+    int index = findMidiPortByName(1, appSettings.midiInputDeviceName);
+    if (index >= 0 && midiRouterOpenInput(index) == 0) appSettings.midiInputDevice = index;
+  }
+
+  int outputCount = midiRouterOutputPortCount();
+  if (appSettings.midiOutputDevice >= 0) {
+    char name[MIDI_DEVICE_NAME_LENGTH + 1];
+    if (appSettings.midiOutputDevice >= outputCount ||
+        midiRouterOutputPortName(appSettings.midiOutputDevice, name, sizeof(name)) != 0 ||
+        strcmp(name, appSettings.midiOutputDeviceName) != 0) {
+      chipnomadMidiPanic(chipnomadState);
+      midiRouterCloseOutput();
+      appSettings.midiOutputDevice = -1;
+    }
+  }
+  if (appSettings.midiOutputDevice < 0 && appSettings.midiOutputDeviceName[0]) {
+    int index = findMidiPortByName(0, appSettings.midiOutputDeviceName);
+    if (index >= 0 && midiRouterOpenOutput(index) == 0) appSettings.midiOutputDevice = index;
+  }
+}
+#endif
 
 static int applyMotionRecordEvent(const MotionRecordEvent& event) {
   if (event.phrase >= PROJECT_MAX_PHRASES || event.row >= 16 || event.fx >= fxTotalCount) return 0;
@@ -162,6 +225,8 @@ static int inputPlayback(int keys, int tapCount) {
     }
 
     chipnomadQueuePlaybackStop(chipnomadState);
+    waveformDisplayInvalidate();
+    waveformDisplayRefresh();
     LoopRange range = screenGetLoopRange(currentScreen);
 
     if (playbackLevel == ScreenPlaybackLevel::song) {
@@ -185,6 +250,8 @@ static int inputPlayback(int keys, int tapCount) {
     }
 
     chipnomadQueuePlaybackStop(chipnomadState);
+    waveformDisplayInvalidate();
+    waveformDisplayRefresh();
     LoopRange range = screenGetLoopRange(currentScreen);
 
     if (playbackLevel == ScreenPlaybackLevel::song) {
@@ -236,10 +303,29 @@ static int autosaveCounter = 0;
 ///////////////////////////////////////////////////////////////////////////////
 //
 
+void appResetInputState(void) {
+  pressedButtons = 0;
+  tapTimerCount = 0;
+  tapButton = 0;
+  tapCount = 0;
+  keyRepeatCount = 0;
+  quickHelpSelectHeld = 0;
+  quickHelpSelectAlone = 0;
+}
+
 /**
 * @brief Initialize the application: setup audio system, load auto-saved project, show the first screen
 */
 void appSetup(void) {
+  // Registered before anything else touches MIDI: chipnomad_lib's engine
+  // path (applyVoiceEvents/chipnomadMidiPanic) now goes through the router,
+  // which does nothing until a backend is registered.
+#ifdef ANDROID_BUILD
+  midiRouterSetBackend(midiBackendAndroidGet());
+#else
+  midiRouterSetBackend(midiBackendDesktopGet());
+#endif
+
   // LOGD("--- ChipNomad started ---");
   // Initialize default key mappings if not loaded from settings
   if (appSettings.keyMapping.keyUp[0].deviceType == InputDeviceType::none) {
@@ -255,11 +341,7 @@ void appSetup(void) {
   }
 
   // Keyboard input reset
-  pressedButtons = 0;
-  tapTimerCount = 0;
-  tapButton = 0;
-  tapCount = 0;
-  keyRepeatCount = 0;
+  appResetInputState();
   motionRecordHeld = 0;
   motionEraseHeld = 0;
   motionLiveHeld = 0;
@@ -274,6 +356,7 @@ void appSetup(void) {
 
   // Initialize waveform display
   waveformDisplayInit();
+  monitorDisplayInit();
 
   // Create ChipNomad state
   chipnomadState = chipnomadCreate();
@@ -322,6 +405,12 @@ void appSetup(void) {
   audioManager.start(appSettings.audioSampleRate, appSettings.audioBufferSize);
   audioManager.resume();
 
+  int savedInputPort = findMidiPortByName(1, appSettings.midiInputDeviceName);
+  if (savedInputPort >= 0 && midiRouterOpenInput(savedInputPort) == 0) appSettings.midiInputDevice = savedInputPort;
+  int savedOutputPort = findMidiPortByName(0, appSettings.midiOutputDeviceName);
+  if (savedOutputPort >= 0 && midiRouterOpenOutput(savedOutputPort) == 0) appSettings.midiOutputDevice = savedOutputPort;
+  midiRouterSetChannelInstrumentMap(chipnomadState->midiRouter, appSettings.midiChannelInstrument);
+
   screenSetup(&screenTitle, 0);
 }
 
@@ -337,6 +426,14 @@ extern "C" EMSCRIPTEN_KEEPALIVE int webSaveProject(const char* path) {
 */
 void appCleanup(void) {
   audioManager.stop();
+  // Explicitly flush and close MIDI I/O rather than relying on process exit:
+  // the output port owns a worker thread that must be stopped and joined
+  // cleanly, and any still-sounding note must get a Note Off while the port
+  // is still open.
+  chipnomadMidiPanic(chipnomadState);
+  midiRouterCloseInput();
+  midiRouterCloseOutput();
+  midiRouterResetHeldNotes(chipnomadState->midiRouter);
   chipnomadDestroy(chipnomadState);
   chipnomadState = NULL;
 }
@@ -347,11 +444,16 @@ void appCleanup(void) {
 void appDraw(void) {
   const ColorScheme cs = appSettings.colorScheme;
 
+  monitorDisplayUpdate();
   screenDraw();
 
-  if (currentScreen == &screenTitle) return;
+  if (currentScreen == &screenTitle ||
+      (currentScreen == &screenSelectionPopup && selectionPopupIsFullWidth())) return;
 
   if (!chipnomadState) return;
+
+  pianoDisplayDraw();
+  waveformDisplayRefresh();
 
   // Tracks
   char digit[2] = "0";
@@ -431,6 +533,17 @@ void appOnEvent(MainLoopEventData eventData) {
 
     if (quickHelpSelectHeld && !rawInputActive && value != keyShift) quickHelpSelectAlone = 0;
 
+#ifdef DESKTOP_BUILD
+    // After the quick-help-alone bookkeeping above (it must see every key,
+    // even ones key jazz fully consumes below - otherwise releasing Shift
+    // after e.g. Shift+S to type an uppercase S would wrongly open Quick
+    // Help, since that key never reached the normal pipeline to cancel it).
+    if (currentScreen == &screenPhrase && phraseKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+    if (currentScreen == &screenSong && songKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+    if (currentScreen == &screenChain && chainKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+    if (currentScreen == &screenProject && projectKeyJazzHandleRawKey(eventData.data.input, 1)) break;
+#endif
+
     if (!rawInputActive && (isMotionRecordTrigger(eventData.data.input) ||
         (eventData.data.input.deviceType == InputDeviceType::logical && eventData.data.input.code == keyMotionRecord))) {
       motionRecordHeld = 1;
@@ -504,6 +617,12 @@ void appOnEvent(MainLoopEventData eventData) {
     break;
   }
   case MainLoopEvent::keyUp: {
+#ifdef DESKTOP_BUILD
+    if (currentScreen == &screenPhrase && phraseKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+    if (currentScreen == &screenSong && songKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+    if (currentScreen == &screenChain && chainKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+    if (currentScreen == &screenProject && projectKeyJazzHandleRawKey(eventData.data.input, 0)) break;
+#endif
     int value = inputCodeToKey(eventData.data.input);
     int rawInputActive = inputRawCallback != NULL;
 
@@ -571,6 +690,44 @@ void appOnEvent(MainLoopEventData eventData) {
       if (currentScreen == &screenPhrase) currentScreen->fullRedraw();
     }
     if (audioProjectDirty && chipnomadQueueProjectRefresh(chipnomadState)) audioProjectDirty = 0;
+
+#ifdef ANDROID_BUILD
+    refreshAndroidMidiConnections();
+#endif
+
+    // MIDI-in sound preview: an external MIDI keyboard auditions a sound on
+    // the current track - not note entry into the song - the same way the
+    // on-screen Edit+Play preview shortcut does on the Instrument screen.
+    // Available on every screen so a multi-channel keyboard (channel mapping
+    // is Settings > MIDI > Channel mapping) can be played live regardless of
+    // what's on screen. Channel routing, last-note-priority legato and the
+    // held-note stack all live in the router now (see midi/midi_router.h);
+    // this just applies the resulting intents to the current track.
+    //
+    // midiRouterTick always drains the backend's poll queue even when we
+    // won't act on the result (below), so a keyboard held/played while the
+    // song is actually playing doesn't back up in the backend's own queue
+    // and dump a burst of stale notes once the song stops. Previewing itself
+    // puts the track in PlaybackMode::phraseRow, which must stay "safe"
+    // here - gating on the track being merely "not stopped" (e.g.
+    // chipnomadGetPlaybackStatus's isPlaying) would block every note after
+    // the first, since the first note's own preview never fully lets go of
+    // the track between key presses.
+    {
+      PlaybackMode trackMode = chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode;
+      int previewSafe = trackMode == PlaybackMode::stopped || trackMode == PlaybackMode::phraseRow;
+      MidiPreviewIntent intents[16];
+      int intentCount = midiRouterTick(chipnomadState->midiRouter, cInstrument, intents, 16);
+      if (previewSafe) {
+        for (int i = 0; i < intentCount; i++) {
+          if (intents[i].stop) {
+            chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
+          } else if (!instrumentIsEmpty(&chipnomadState->project, intents[i].instrument)) {
+            chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, intents[i].note, intents[i].instrument);
+          }
+        }
+      }
+    }
     // Autosave
     if (++autosaveCounter >= AUTOSAVE_INTERVAL_FRAMES) {
       autosaveCounter = 0;

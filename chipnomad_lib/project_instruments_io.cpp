@@ -2,6 +2,7 @@
 #include "project_io_common.h"
 #include "synth/sample_voice.h"
 #include "synth/sr_wavetable_loader.h"
+#include "synth/multimode_filter.h"
 #include <stdio.h>
 #include <string.h>
 
@@ -253,6 +254,9 @@ static int loadInstrumentSample(FILE* file, Instrument* instrument) {
     else if (strncmp(line, "- Sample start: ", 16) == 0) sscanf(line, "- Sample start: %hhu", &sample->start);
     else if (strncmp(line, "- Sample end: ", 14) == 0) sscanf(line, "- Sample end: %hhu", &sample->end);
     else if (strncmp(line, "- Sample loop: ", 15) == 0) sscanf(line, "- Sample loop: %hhu", &sample->loopMode);
+    else if (strncmp(line, "- Sample slice: ", 16) == 0) sscanf(line, "- Sample slice: %hhu", &sample->slice);
+    else if (strncmp(line, "- Sample stretch: ", 18) == 0) sscanf(line, "- Sample stretch: %hhu", &sample->stretchMode);
+    else if (strncmp(line, "- Speed algo: ", 14) == 0) sscanf(line, "- Speed algo: %hhu", &sample->speedAlgorithm);
     else if (strncmp(line, "- Sample volume: ", 17) == 0) sscanf(line, "- Sample volume: %hhu", &instrument->volume);
     else loadVoicePostSetting(line, sample);
     consumeLine(file);
@@ -262,6 +266,9 @@ static int loadInstrumentSample(FILE* file, Instrument* instrument) {
     sampleLoadWav16(sample->path, sample, error, sizeof(error));
   }
   if (sample->loopMode > 2) sample->loopMode = 0;
+  sample->slice = sampleNormalizeSlice(sample->slice);
+  if (sample->stretchMode > 6) sample->stretchMode = 0;
+  if (sample->speedAlgorithm > 1) sample->speedAlgorithm = 0;
   return 0;
 }
 
@@ -275,11 +282,29 @@ static int loadInstrumentAChChid(FILE* file, Instrument* instrument) {
     else if (strncmp(line, "- Model: ", 9) == 0) sscanf(line, "- Model: %hhu", &a->model);
     else if (strncmp(line, "- Timbre: ", 10) == 0) sscanf(line, "- Timbre: %hu", &a->timbre);
     else if (strncmp(line, "- Color: ", 9) == 0) sscanf(line, "- Color: %hu", &a->color);
+    else if (strncmp(line, "- Saturation: ", 14) == 0) sscanf(line, "- Saturation: %hhu", &a->saturation);
     else if (strncmp(line, "- Cutoff: ", 10) == 0) sscanf(line, "- Cutoff: %hu", &a->cutoff);
     else if (strncmp(line, "- Resonance: ", 13) == 0) sscanf(line, "- Resonance: %hhu", &a->resonance);
     else if (strncmp(line, "- Env mod: ", 11) == 0) sscanf(line, "- Env mod: %hhu", &a->envMod);
     else if (strncmp(line, "- Decay: ", 9) == 0) sscanf(line, "- Decay: %hu", &a->decay);
     else if (strncmp(line, "- Accent: ", 10) == 0) sscanf(line, "- Accent: %hhu", &a->accent);
+    consumeLine(file);
+  }
+}
+
+static int loadInstrumentMidi(FILE* file, Instrument* instrument) {
+  InstrumentMidi* m = &instrument->chip.midi;
+  while (1) {
+    char* line = peekLine(file);
+    if (line == NULL || line[0] == '#') return 0;
+    if (strncmp(line, "- Channel: ", 11) == 0) sscanf(line, "- Channel: %hhu", &m->channel);
+    else if (strncmp(line, "- Program: ", 11) == 0) sscanf(line, "- Program: %hhu", &m->program);
+    else if (strncmp(line, "- Bank high: ", 13) == 0) sscanf(line, "- Bank high: %hhu", &m->bankHigh);
+    else if (strncmp(line, "- Bank low: ", 12) == 0) sscanf(line, "- Bank low: %hhu", &m->bankLow);
+    else if (strncmp(line, "- CC1 number: ", 14) == 0) sscanf(line, "- CC1 number: %hhu", &m->ccNumber[0]);
+    else if (strncmp(line, "- CC2 number: ", 14) == 0) sscanf(line, "- CC2 number: %hhu", &m->ccNumber[1]);
+    else if (strncmp(line, "- CC3 number: ", 14) == 0) sscanf(line, "- CC3 number: %hhu", &m->ccNumber[2]);
+    else if (strncmp(line, "- CC4 number: ", 14) == 0) sscanf(line, "- CC4 number: %hhu", &m->ccNumber[3]);
     consumeLine(file);
   }
 }
@@ -313,6 +338,10 @@ static int loadInstrumentBYOWTBL(FILE* file, Instrument* instrument) {
     else if (strncmp(line, "- Oscillator B path: ", 21) == 0) sscanf(line, "- Oscillator B path: %255[^\n]", table->oscillator[1].path);
     else if (strncmp(line, "- Position A: ", 14) == 0) sscanf(line, "- Position A: %hhu", &table->frameIndex[0]);
     else if (strncmp(line, "- Position B: ", 14) == 0) sscanf(line, "- Position B: %hhu", &table->frameIndex[1]);
+    else if (strncmp(line, "- Frame size A: ", 16) == 0) sscanf(line, "- Frame size A: %hu", &table->frameSize[0]);
+    else if (strncmp(line, "- Frame size B: ", 16) == 0) sscanf(line, "- Frame size B: %hu", &table->frameSize[1]);
+    else if (strncmp(line, "- Table frames A: ", 18) == 0) sscanf(line, "- Table frames A: %hu", &table->tableFrames[0]);
+    else if (strncmp(line, "- Table frames B: ", 18) == 0) sscanf(line, "- Table frames B: %hu", &table->tableFrames[1]);
     else if (strncmp(line, "- Detune: ", 10) == 0) sscanf(line, "- Detune: %hhu", &table->detune);
     else if (strncmp(line, "- Mix: ", 7) == 0) sscanf(line, "- Mix: %hhu", &table->mix);
     else loadVoicePostSetting(line, table);
@@ -517,32 +546,35 @@ int instrumentLoadData(FILE* file, Instrument* instrument, Project* p) {
       case InstrumentType::Sintered:
         if (loadInstrumentSintered(file, instrument)) return 1;
         break;
+      case InstrumentType::Midi:
+        if (loadInstrumentMidi(file, instrument)) return 1;
+        break;
       default:
         break;
     }
   }
 
   if (instrument->type == InstrumentType::Braids &&
-      instrument->chip.braids.filterCutoffHz > 20000) {
-    instrument->chip.braids.filterCutoffHz = 20000;
+      instrument->chip.braids.filterCutoffHz > FILTER_CUTOFF_MAX_HZ) {
+    instrument->chip.braids.filterCutoffHz = FILTER_CUTOFF_MAX_HZ;
   } else if ((instrument->type == InstrumentType::Plaits || instrument->type == InstrumentType::PlaitsAlt) &&
-             instrument->chip.plaits.filterCutoffHz > 20000) {
-    instrument->chip.plaits.filterCutoffHz = 20000;
+             instrument->chip.plaits.filterCutoffHz > FILTER_CUTOFF_MAX_HZ) {
+    instrument->chip.plaits.filterCutoffHz = FILTER_CUTOFF_MAX_HZ;
   } else if (instrument->type == InstrumentType::Sample &&
-             instrument->chip.sample.filterCutoffHz > 20000) {
-    instrument->chip.sample.filterCutoffHz = 20000;
+             instrument->chip.sample.filterCutoffHz > FILTER_CUTOFF_MAX_HZ) {
+    instrument->chip.sample.filterCutoffHz = FILTER_CUTOFF_MAX_HZ;
   } else if (instrument->type == InstrumentType::DrumSynth) {
     InstrumentDrumSynth* d = &instrument->chip.drumSynth;
     if ((uint8_t)d->engine >= (uint8_t)DrumSynthEngine::totalCount) d->engine = DrumSynthEngine::kick;
-    if (d->filterCutoffHz > 20000) d->filterCutoffHz = 20000;
+    if (d->filterCutoffHz > FILTER_CUTOFF_MAX_HZ) d->filterCutoffHz = FILTER_CUTOFF_MAX_HZ;
   } else if (instrument->type == InstrumentType::MME) {
     InstrumentMME* m = &instrument->chip.mme;
     if ((uint8_t)m->model >= (uint8_t)MMEModel::totalCount) m->model = MMEModel::ring;
-    if (m->filterCutoffHz > 20000) m->filterCutoffHz = 20000;
+    if (m->filterCutoffHz > FILTER_CUTOFF_MAX_HZ) m->filterCutoffHz = FILTER_CUTOFF_MAX_HZ;
   } else if (instrument->type == InstrumentType::Sintered) {
     InstrumentSintered* s = &instrument->chip.sintered;
     if ((uint8_t)s->model >= (uint8_t)SinteredModel::totalCount) s->model = SinteredModel::knot;
-    if (s->filterCutoffHz > 20000) s->filterCutoffHz = 20000;
+    if (s->filterCutoffHz > FILTER_CUTOFF_MAX_HZ) s->filterCutoffHz = FILTER_CUTOFF_MAX_HZ;
   }
 
   return 0;
@@ -643,6 +675,9 @@ static int saveInstrumentSample(FILE* file, Instrument* instrument) {
   fprintf(file, "- Sample start: %hhu\n", sample->start);
   fprintf(file, "- Sample end: %hhu\n", sample->end);
   fprintf(file, "- Sample loop: %hhu\n", sample->loopMode);
+  fprintf(file, "- Sample slice: %hhu\n", sampleNormalizeSlice(sample->slice));
+  fprintf(file, "- Sample stretch: %hhu\n", sample->stretchMode > 6 ? 0 : sample->stretchMode);
+  fprintf(file, "- Speed algo: %hhu\n", sample->speedAlgorithm > 1 ? 0 : sample->speedAlgorithm);
   saveVoicePostSettings(file, sample);
   return 0;
 }
@@ -654,11 +689,25 @@ static int saveInstrumentAChChid(FILE* file, Instrument* instrument) {
   fprintf(file, "- Model: %hhu\n", a->model);
   fprintf(file, "- Timbre: %hu\n", a->timbre);
   fprintf(file, "- Color: %hu\n", a->color);
+  fprintf(file, "- Saturation: %hhu\n", a->saturation);
   fprintf(file, "- Cutoff: %hu\n", a->cutoff);
   fprintf(file, "- Resonance: %hhu\n", a->resonance);
   fprintf(file, "- Env mod: %hhu\n", a->envMod);
   fprintf(file, "- Decay: %hu\n", a->decay);
   fprintf(file, "- Accent: %hhu\n", a->accent);
+  return 0;
+}
+
+static int saveInstrumentMidi(FILE* file, Instrument* instrument) {
+  InstrumentMidi* m = &instrument->chip.midi;
+  fprintf(file, "- Channel: %hhu\n", m->channel);
+  fprintf(file, "- Program: %hhu\n", m->program);
+  fprintf(file, "- Bank high: %hhu\n", m->bankHigh);
+  fprintf(file, "- Bank low: %hhu\n", m->bankLow);
+  fprintf(file, "- CC1 number: %hhu\n", m->ccNumber[0]);
+  fprintf(file, "- CC2 number: %hhu\n", m->ccNumber[1]);
+  fprintf(file, "- CC3 number: %hhu\n", m->ccNumber[2]);
+  fprintf(file, "- CC4 number: %hhu\n", m->ccNumber[3]);
   return 0;
 }
 
@@ -678,6 +727,10 @@ static int saveInstrumentBYOWTBL(FILE* file, Instrument* instrument) {
   fprintf(file, "- Oscillator B path: %s\n", table->oscillator[1].path);
   fprintf(file, "- Position A: %hhu\n", table->frameIndex[0]);
   fprintf(file, "- Position B: %hhu\n", table->frameIndex[1]);
+  fprintf(file, "- Frame size A: %hu\n", table->frameSize[0]);
+  fprintf(file, "- Frame size B: %hu\n", table->frameSize[1]);
+  fprintf(file, "- Table frames A: %hu\n", table->tableFrames[0]);
+  fprintf(file, "- Table frames B: %hu\n", table->tableFrames[1]);
   fprintf(file, "- Detune: %hhu\n", table->detune);
   fprintf(file, "- Mix: %hhu\n", table->mix);
   saveVoicePostSettings(file, table);
@@ -798,6 +851,9 @@ int instrumentSaveData(FILE* file, int idx, Instrument* instrument) {
       break;
     case InstrumentType::Sintered:
       saveInstrumentSintered(file, instrument);
+      break;
+    case InstrumentType::Midi:
+      saveInstrumentMidi(file, instrument);
       break;
     default:
       break;

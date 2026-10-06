@@ -3,6 +3,7 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include "app_ui_mock.h"
 
 char mockGfxCells[20][40];
@@ -31,12 +32,19 @@ void gfxPrintf(int x, int y, const char* format, ...) {
   gfxPrint(x, y, text);
 }
 void gfxDrawCharBitmap(uint8_t* bitmap, int col, int row) {}
-Bitmap* gfxBitmapCreate(int widthChars, int heightChars) { return NULL; }
-void gfxBitmapClear(Bitmap* bitmap) {}
-void gfxBitmapFree(Bitmap* bitmap) {}
+Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
+  Bitmap* bitmap = (Bitmap*)calloc(1, sizeof(Bitmap));
+  bitmap->widthChars = widthChars; bitmap->heightChars = heightChars;
+  bitmap->widthPixels = widthChars * gfxGetCharWidth(); bitmap->heightPixels = heightChars * gfxGetCharHeight();
+  bitmap->data = (uint8_t*)calloc(bitmap->widthPixels * bitmap->heightPixels, 1);
+  return bitmap;
+}
+void gfxBitmapClear(Bitmap* bitmap) { if (bitmap) memset(bitmap->data, 0, bitmap->widthPixels * bitmap->heightPixels); }
+void gfxBitmapFree(Bitmap* bitmap) { if (bitmap) { free(bitmap->data); free(bitmap); } }
 void gfxDrawBitmap(Bitmap* bitmap, int col, int row) {}
 int gfxGetCharWidth(void) { return 8; }
 int gfxGetCharHeight(void) { return 16; }
 void gfxReloadFont(void) {}
+const char* gfxGetRendererType(void) { return "Software"; }
 void gfxDrawHUD(void) {}
 void gfxSetButtonPressed(int buttonIndex, int pressed) {}

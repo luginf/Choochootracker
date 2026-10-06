@@ -47,7 +47,9 @@ static KeyboardLayout detectKeyboardLayout(void) {
       localeLower[i] = tolower(localeLower[i]);
     }
 
-    // QWERTZ regions
+    // QWERTZ regions. Polish is intentionally excluded: the common Polish
+    // layout ("Polish programmers", the pl_PL default) is QWERTY, and binding
+    // OPT to Y there left the B key unmapped (broke SELECT+OPT selection).
     if (strstr(localeLower, "de_") || strstr(localeLower, "de.") ||
         strstr(localeLower, "_at") || strstr(localeLower, ".at") ||
         strstr(localeLower, "_ch") || strstr(localeLower, ".ch") ||
@@ -55,8 +57,6 @@ static KeyboardLayout detectKeyboardLayout(void) {
         strstr(localeLower, "_cz") || strstr(localeLower, ".cz") ||
         strstr(localeLower, "sk_") || strstr(localeLower, "sk.") ||
         strstr(localeLower, "_sk") || strstr(localeLower, ".sk") ||
-        strstr(localeLower, "pl_") || strstr(localeLower, "pl.") ||
-        strstr(localeLower, "_pl") || strstr(localeLower, ".pl") ||
         strstr(localeLower, "hu_") || strstr(localeLower, "hu.") ||
         strstr(localeLower, "_hu") || strstr(localeLower, ".hu")) {
       return LAYOUT_QWERTZ;
@@ -190,4 +190,119 @@ const char* inputGetKeyName(InputCode input) {
   #endif
 
   return "???";
+}
+
+int inputKeyJazzNoteOffset(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return -1;
+
+  SDL_Scancode scancode = SDL_GetScancodeFromKey((SDL_Keycode)input.code);
+
+  switch (scancode) {
+    case SDL_SCANCODE_Z: return 0;
+    case SDL_SCANCODE_S: return 1;
+    case SDL_SCANCODE_X: return 2;
+    case SDL_SCANCODE_D: return 3;
+    case SDL_SCANCODE_C: return 4;
+    case SDL_SCANCODE_V: return 5;
+    case SDL_SCANCODE_G: return 6;
+    case SDL_SCANCODE_B: return 7;
+    case SDL_SCANCODE_H: return 8;
+    case SDL_SCANCODE_N: return 9;
+    case SDL_SCANCODE_J: return 10;
+    case SDL_SCANCODE_M: return 11;
+    case SDL_SCANCODE_Q: return 12;
+    case SDL_SCANCODE_2: return 13;
+    case SDL_SCANCODE_W: return 14;
+    case SDL_SCANCODE_3: return 15;
+    case SDL_SCANCODE_E: return 16;
+    case SDL_SCANCODE_R: return 17;
+    case SDL_SCANCODE_5: return 18;
+    case SDL_SCANCODE_T: return 19;
+    case SDL_SCANCODE_6: return 20;
+    case SDL_SCANCODE_Y: return 21;
+    case SDL_SCANCODE_7: return 22;
+    case SDL_SCANCODE_U: return 23;
+    case SDL_SCANCODE_I: return 24;
+    case SDL_SCANCODE_9: return 25;
+    case SDL_SCANCODE_O: return 26;
+    case SDL_SCANCODE_0: return 27;
+    case SDL_SCANCODE_P: return 28;
+    default: return -1;
+  }
+}
+
+int inputIsKeyJazzToggle(InputCode input) {
+  return input.deviceType == InputDeviceType::keyboard && input.code == SDLK_ESCAPE;
+}
+
+int inputKeyJazzOctaveDelta(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+  if (input.code == SDLK_LEFTBRACKET) return -1;
+  if (input.code == SDLK_RIGHTBRACKET) return 1;
+  return 0;
+}
+
+int inputIsCtrlHeld(void) {
+  return (SDL_GetModState() & KMOD_CTRL) != 0;
+}
+
+int inputIsShiftHeld(void) {
+  return (SDL_GetModState() & KMOD_SHIFT) != 0;
+}
+
+int inputIsShiftKey(InputCode input) {
+  return input.deviceType == InputDeviceType::keyboard &&
+         (input.code == SDLK_LSHIFT || input.code == SDLK_RSHIFT);
+}
+
+static SDL_Scancode inputToScancode(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return SDL_SCANCODE_UNKNOWN;
+  return SDL_GetScancodeFromKey((SDL_Keycode)input.code);
+}
+
+int inputIsCopyKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_C; }
+int inputIsCutKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_X; }
+int inputIsPasteKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_V; }
+int inputIsSaveKey(InputCode input) { return inputToScancode(input) == SDL_SCANCODE_S; }
+
+int inputIsDeleteKey(InputCode input) {
+  return inputToScancode(input) == SDL_SCANCODE_DELETE;
+}
+
+int inputIsBackspaceKey(InputCode input) {
+  return inputToScancode(input) == SDL_SCANCODE_BACKSPACE;
+}
+
+int inputIsInsertKey(InputCode input) {
+  return inputToScancode(input) == SDL_SCANCODE_INSERT;
+}
+
+int inputArrowKeyDirection(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+  if (input.code == SDLK_UP) return keyUp;
+  if (input.code == SDLK_DOWN) return keyDown;
+  if (input.code == SDLK_LEFT) return keyLeft;
+  if (input.code == SDLK_RIGHT) return keyRight;
+  return 0;
+}
+
+int inputHexDigitValue(InputCode input) {
+  if (input.deviceType != InputDeviceType::keyboard) return -1;
+  if (input.code >= SDLK_0 && input.code <= SDLK_9) return (int)(input.code - SDLK_0);
+  if (input.code >= SDLK_a && input.code <= SDLK_f) return 10 + (int)(input.code - SDLK_a);
+  return -1;
+}
+
+char inputTypedCharacter(InputCode input, int shiftHeld) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+  if (input.code >= SDLK_a && input.code <= SDLK_z) {
+    char c = (char)input.code;
+    return shiftHeld ? (char)(c - 'a' + 'A') : c;
+  }
+  if (input.code >= SDLK_0 && input.code <= SDLK_9) return (char)input.code;
+  if (input.code == SDLK_SPACE) return ' ';
+  if (input.code == SDLK_MINUS) return '-';
+  if (input.code == SDLK_PERIOD) return '.';
+  if (input.code == SDLK_UNDERSCORE) return '_';
+  return 0;
 }

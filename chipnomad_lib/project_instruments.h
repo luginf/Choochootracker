@@ -25,6 +25,7 @@ enum class InstrumentType : uint8_t {
   DrumSynth = 11,
   MME = 12,
   Sintered = 13,
+  Midi = 16,
   totalCount,
 };
 
@@ -186,6 +187,7 @@ struct InstrumentAChChid {
   uint8_t model;
   uint16_t timbre;
   uint16_t color;
+  uint8_t saturation;
   uint16_t cutoff;
   uint8_t resonance;
   uint8_t envMod;
@@ -252,7 +254,22 @@ struct InstrumentSample : InstrumentVoicePostSettings {
   uint8_t start;
   uint8_t end;
   uint8_t loopMode; // 0: off, 1: loop, 2: ping-pong
+  uint8_t slice; // 0: off, else even divisions 2/4/8/16/32
+  uint8_t stretchMode; // 0: off, 1: 1 beat, 2: 2 beats, 3: 1 bar, 4: 2 bars, 5: 4 bars, 6: 8 bars
+  uint8_t speedAlgorithm; // 0: dirty granular playback, 1: clean Signalsmith stretch
 };
+
+// Playback window mapping: Start/End are stored as 0-255 normalized values;
+// these convert them to absolute frame positions. Shared by the sample
+// voice, the stretch processor and the sample editor screen - do not fork
+// the formulas.
+static inline uint32_t sampleMarkerToStartFrame(uint32_t frameCount, uint8_t start) {
+  return frameCount ? (uint32_t)((uint64_t)start * (frameCount - 1) / 255) : 0;
+}
+
+static inline uint32_t sampleMarkerToEndFrame(uint32_t frameCount, uint8_t end) {
+  return end == 255 ? frameCount : (uint32_t)((uint64_t)(end + 1) * frameCount / 256);
+}
 
 // 2xSCWF is a pair of forward-looping, one-cycle PCM waveforms.  It shares
 // the sample loader and post-processing settings, but is a synthesizer voice,
@@ -269,6 +286,25 @@ struct InstrumentBYOWTBL : InstrumentSCWF {
   uint8_t frameIndex[2];
 };
 
+// Drives an external MIDI device instead of synthesizing audio: triggering a
+// note sends a MIDI Note On/Off on this channel (see chipnomad_lib/midi_io.h).
+// Program/bank select are sent once, whenever they're about to differ from
+// what that channel was last told (see applyVoiceEvents in chipnomad_lib.cpp) -
+// not before every note, which would needlessly retrigger the receiving
+// device's own envelopes.
+struct InstrumentMidi {
+  uint8_t channel;  // 0-15 (shown to the user as 1-16)
+  uint8_t program;  // 0-127, or EMPTY_VALUE_8 to not send Program Change
+  uint8_t bankHigh; // CC0 (Bank Select MSB), 0-127 or EMPTY_VALUE_8 for none
+  uint8_t bankLow;  // CC32 (Bank Select LSB), 0-127 or EMPTY_VALUE_8 for none
+  // Which CC number each of the 4 generic MC1-MC4 row FX sends to (0-127,
+  // or EMPTY_VALUE_8 to leave that FX slot unconfigured/inert). A single FX
+  // byte only carries one 0-255 value, not a CC number and a value, so the
+  // number is fixed per instrument here and the per-row FX just carries the
+  // value (0-255, rescaled to 0-127 on send) - same idea as Braids' BTM/BCL.
+  uint8_t ccNumber[4];
+};
+
 union InstrumentChipData {
   InstrumentAY1 ay;
   InstrumentAY2 ay2;
@@ -282,6 +318,7 @@ union InstrumentChipData {
   InstrumentDrumSynth drumSynth;
   InstrumentMME mme;
   InstrumentSintered sintered;
+  InstrumentMidi midi;
 };
 
 struct Instrument {
@@ -305,8 +342,8 @@ struct InstrumentFunctions {
 
 // This is metadata, not an audio abstraction: renderers keep their typed
 // paths while screens, validation and motion routing share this one catalogue.
-enum class InstrumentCategory : uint8_t { none, chip, sample, synth, drums };
-enum class InstrumentScreenKind : uint8_t { none, ay1, ay2, aySample, braids, sample, scwf, byowtbl, plaits, achchid, drumSynth, mme, sintered };
+enum class InstrumentCategory : uint8_t { none, chip, sample, synth, drums, midi };
+enum class InstrumentScreenKind : uint8_t { none, ay1, ay2, aySample, braids, sample, scwf, byowtbl, plaits, achchid, drumSynth, mme, sintered, midi };
 enum class InstrumentMotionValue : uint8_t { raw, speed, cutoff };
 
 static constexpr uint8_t instrumentNoFX = 0xff;
@@ -365,7 +402,8 @@ enum GenericModDestination {
   genericModTriggerDecay,
   genericModTriggerColor,
   genericModFirstP5,
-  genericModTotalCount = genericModFirstP5 + 4,
+  genericModFirstInsert = genericModFirstP5 + 4,
+  genericModTotalCount = genericModFirstInsert + 16,
 };
 
 #endif // __CHIPNOMAD_LIB__PROJECT_INSTRUMENTS_H__

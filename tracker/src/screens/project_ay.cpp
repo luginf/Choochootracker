@@ -41,26 +41,26 @@ static int getColumnCount(int row) {
 static void drawStatic(void) {
   projectCommonDrawStatic();
   gfxSetFgColor(appSettings.colorScheme.textDefault);
-  gfxPrint(0, 9, "AY subtype");
-  gfxPrint(0, 10, "PWM range");
-  gfxPrint(0, 11, "AY clock");
-  gfxPrint(0, 12, "Pitch table");
-  gfxPrint(0, 14, "Scale");
+  gfxPrint(0, 11, "AY subtype");
+  gfxPrint(0, 12, "PWM range");
+  gfxPrint(0, 13, "AY clock");
+  gfxPrint(0, 14, "Pitch table");
+  gfxPrint(0, 16, "Scale");
 }
 
 static void drawCursor(int col, int row) {
   if (row < SCR_PROJECT_ROWS) return projectCommonDrawCursor(col, row);
   if (row == SCR_PROJECT_ROWS) {
     // Chip type
-    gfxCursor(13, 9, chipnomadState->project.chipSetup.ay.isYM ? 7 : 9);
+    gfxCursor(13, 11, chipnomadState->project.chipSetup.ay.isYM ? 7 : 9);
   } else if (row == SCR_PROJECT_ROWS + 1) {
-    gfxCursor(13, 10, 3);
+    gfxCursor(13, 12, 3);
   } else if (row == SCR_PROJECT_ROWS + 2) {
-    gfxCursor(13, 11, chipClockLength);
+    gfxCursor(13, 13, chipClockLength);
   } else if (row == SCR_PROJECT_ROWS + 3) {
-    gfxCursor(13, 12, strlen(chipnomadState->project.pitchTable.name));
+    gfxCursor(13, 14, strlen(chipnomadState->project.pitchTable.name));
   } else if (row == SCR_PROJECT_ROWS + 4) {
-    gfxCursor(0, 14, 5);
+    gfxCursor(0, 16, 5);
   }
 }
 
@@ -70,11 +70,11 @@ static void drawField(int col, int row, CellState state) {
   gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
 
   if (row == SCR_PROJECT_ROWS) {
-    gfxClearRect(13, 9, 9, 1);
-    gfxPrint(13, 9, chipnomadState->project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
+    gfxClearRect(13, 11, 9, 1);
+    gfxPrint(13, 11, chipnomadState->project.chipSetup.ay.isYM ? "YM2149F" : "AY-3-8910");
   } else if (row == SCR_PROJECT_ROWS + 1) {
-    gfxClearRect(13, 10, 3, 1);
-    gfxPrint(13, 10, chipnomadState->project.chipSetup.ay.pwmFullRange ? "256" : "16");
+    gfxClearRect(13, 12, 3, 1);
+    gfxPrint(13, 12, chipnomadState->project.chipSetup.ay.pwmFullRange ? "256" : "16");
   } else if (row == SCR_PROJECT_ROWS + 2) {
     int presetIndex = getClockPresetIndex(chipnomadState->project.chipSetup.ay.clock);
     char clockText[20];
@@ -86,13 +86,13 @@ static void drawField(int col, int row, CellState state) {
     }
 
     chipClockLength = strlen(clockText);
-    gfxClearRect(13, 11, 20, 1);
-    gfxPrint(13, 11, clockText);
+    gfxClearRect(13, 13, 20, 1);
+    gfxPrint(13, 13, clockText);
   } else if (row == SCR_PROJECT_ROWS + 3) {
-    gfxClearRect(13, 12, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
-    gfxPrint(13, 12, chipnomadState->project.pitchTable.name);
+    gfxClearRect(13, 14, PROJECT_PITCH_TABLE_TITLE_LENGTH, 1);
+    gfxPrint(13, 14, chipnomadState->project.pitchTable.name);
   } else if (row == SCR_PROJECT_ROWS + 4) {
-    gfxPrint(0, 14, "Scale");
+    gfxPrint(0, 16, "Scale");
   }
 }
 

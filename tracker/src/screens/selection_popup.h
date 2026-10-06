@@ -13,7 +13,10 @@ struct SelectionItem {
 
 void selectionPopupSetup(const char* title, const SelectionItem* items,
                          int count, int currentValue,
-                         void (*selected)(int), void (*cancelled)(void));
+                         void (*selected)(int), void (*cancelled)(void),
+                         bool fullWidth = false);
+
+bool selectionPopupIsFullWidth(void);
 
 extern const AppScreen screenSelectionPopup;
 

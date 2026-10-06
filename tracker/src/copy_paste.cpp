@@ -176,7 +176,7 @@ void copyPhrase(int phraseIdx, int startCol, int startRow, int endCol, int endRo
     if (isCut) {
       if (startCol <= 0 && endCol >= 0) chipnomadState->project.phrases[phraseIdx].rows[startRow + row].note = EMPTY_VALUE_8;
       if (startCol <= 1 && endCol >= 1) chipnomadState->project.phrases[phraseIdx].rows[startRow + row].instrument = EMPTY_VALUE_8;
-      if (startCol <= 2 && endCol >= 2) chipnomadState->project.phrases[phraseIdx].rows[startRow + row].volume = EMPTY_VALUE_8;
+      if (startCol <= 2 && endCol >= 2) chipnomadState->project.phrases[phraseIdx].rows[startRow + row].volume = EMPTY_VALUE_16;
       int fxStart = startCol > 3 ? startCol : 3, fxEnd = endCol < 8 ? endCol : 8;
       if (fxStart <= fxEnd) clearFXCells(chipnomadState->project.phrases[phraseIdx].rows[startRow + row].fx, fxStart, fxEnd);
     }

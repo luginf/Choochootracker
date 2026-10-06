@@ -3,7 +3,7 @@
 PLATFORM = portmaster
 include Makefile.common
 
-LIBS = $(COMMON_LIBS) platforms/sdl2
+LIBS = $(COMMON_LIBS) platforms/sdl2 ../chipnomad_lib/external/rtmidi
 CXX = aarch64-linux-gnu-g++
 STRIP = aarch64-linux-gnu-strip
 PKG_CONFIG ?= pkg-config
@@ -19,7 +19,7 @@ else
 SDL_CFLAGS := $(shell PKG_CONFIG_LIBDIR=$(PKG_CONFIG_LIBDIR) $(PKG_CONFIG) --cflags sdl2)
 SDL_LIBS := $(shell PKG_CONFIG_LIBDIR=$(PKG_CONFIG_LIBDIR) $(PKG_CONFIG) --libs sdl2)
 endif
-CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SDL_CFLAGS) -DPORTMASTER_BUILD -DGAMEPAD_SUPPORT -DTOUCH_INPUT
+CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SDL_CFLAGS) -DPORTMASTER_BUILD -D__LINUX_ALSASEQ__ -DGAMEPAD_SUPPORT -DTOUCH_INPUT
 TARGET = $(BUILD)/choochootracker.aarch64
 OUTPUT = -o $(TARGET)
 
@@ -45,7 +45,7 @@ PortMaster: $(BUILD)/choochootracker.aarch64
 
 $(BUILD)/choochootracker.aarch64: $(OBJECTS)
 	mkdir -p $(BUILD)
-	$(CXX) $(COMMON_CFLAGS) $(OBJECTS) $(SDL_LIBS) -lm $(OUTPUT)
+	$(CXX) $(COMMON_CFLAGS) $(OBJECTS) $(SDL_LIBS) -lasound -pthread -lm $(OUTPUT)
 	$(STRIP) $(BUILD)/choochootracker.aarch64
 
 .PHONY: PortMaster-deploy

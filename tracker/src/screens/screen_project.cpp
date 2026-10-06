@@ -9,7 +9,10 @@
 #include "version.h"
 #include "audio_manager.h"
 #include "file_browser.h"
+#include "export_path.h"
 #include "import/import_vt2.h"
+#include "import/import_midi.h"
+#include "string_utils.h"
 #include <string.h>
 #include <strings.h>
 
@@ -51,6 +54,9 @@ int projectLoadFromPath(const char* path) {
     if (strcasecmp(ext, ".vt2") == 0) {
       // Load VT2 file
       loadResult = projectLoadVT2(&replacement, path);
+    } else if (strcasecmp(ext, ".mid") == 0 || strcasecmp(ext, ".midi") == 0) {
+      // Import a Standard MIDI File as a new project
+      loadResult = projectLoadMidi(&replacement, path);
     } else if (strcasecmp(ext, ".cct") == 0) {
       // Load ChooChooTracker native format
       loadResult = projectLoad(&replacement, path);
@@ -70,6 +76,8 @@ int projectLoadFromPath(const char* path) {
 
     // Store filename without extension
     extractFilenameWithoutExtension(path, appSettings.projectFilename, FILENAME_LENGTH + 1);
+    // The loaded project's export folder (if any) is adopted on next export
+    exportResetFolderTracking();
     settingsSave();
 
     // Reset all screen states (including song position)
@@ -109,6 +117,9 @@ static void onProjectSaved(const char* folderPath) {
     projectModified = 0; // Clear modified flag after saving
     strncpy(appSettings.projectPath, folderPath, PATH_LENGTH);
     appSettings.projectPath[PATH_LENGTH] = 0;
+    // If exports were made under a previous project name, move that folder
+    // to match the name the project was just saved with
+    exportSyncFolderWithProjectName();
     settingsSave();
   }
   screenSetup(&screenProject, 0);
@@ -119,7 +130,7 @@ static void onProjectCancelled(void) {
 }
 
 static void doLoadProject(void) {
-  fileBrowserSetup("LOAD PROJECT", ".cct,.vt2", appSettings.projectPath,
+  fileBrowserSetup("LOAD PROJECT", ".cct,.vt2,.mid,.midi", appSettings.projectPath,
     onProjectLoaded, onProjectCancelled);
   screenSetup(&screenFileBrowser, 0);
 }
@@ -130,6 +141,7 @@ static void doNewProject(void) {
   audioManager.replaceProject(&replacement);
   projectModified = 0;
   appSettings.projectFilename[0] = 0;
+  exportResetFolderTracking();
   settingsSave();
   screensInitAll();
   screenSetup(projectReturnScreen, 0);
@@ -142,7 +154,7 @@ void projectOpenFromScreen(const AppScreen* returnScreen) {
 
 void projectOpenFromScreenAtPath(const AppScreen* returnScreen, const char* path) {
   projectReturnScreen = returnScreen ? returnScreen : &screenProject;
-  fileBrowserSetup("LOAD PROJECT", ".cct,.vt2", path,
+  fileBrowserSetup("LOAD PROJECT", ".cct,.vt2,.mid,.midi", path,
     onProjectLoaded, onProjectCancelled);
   screenSetup(&screenFileBrowser, 0);
 }
@@ -239,41 +251,42 @@ void projectCommonDrawStatic(void) {
   gfxPrint(0, 0, "PROJECT");
 
   gfxSetFgColor(cs.textDefault);
-  gfxPrintf(8, 0, "%s v%s (%s)", appTitle, appVersion, appBuild);
+  gfxPrint(8, 0, appTitle);
+  gfxPrintf(0, 1, "v%s (%s)", appVersion, appBuild);
 
-  gfxPrint(0, 3, "File");
-  gfxPrint(0, 4, "Title");
-  gfxPrint(0, 5, "Author");
+  gfxPrint(0, 5, "File");
+  gfxPrint(0, 6, "Title");
+  gfxPrint(0, 7, "Author");
 
-  gfxPrint(0, 7, "Linear pitch");
-  gfxPrint(0, 8, "Tick rate");
+  gfxPrint(0, 9, "Linear pitch");
+  gfxPrint(0, 10, "Tick rate");
 }
 
 void projectCommonDrawCursor(int col, int row) {
   if (row == 0) {
     if (col == 0) {
-      gfxCursor(7, 2, 4); // Load
+      gfxCursor(7, 3, 4); // Load
     } else if (col == 1) {
-      gfxCursor(12, 2, 4); // Save
+      gfxCursor(12, 3, 4); // Save
     } else if (col == 2) {
-      gfxCursor(17, 2, 3); // New
+      gfxCursor(17, 3, 3); // New
     } else if (col == 3) {
-      gfxCursor(21, 2, 6); // Export
+      gfxCursor(21, 3, 6); // Export
     } else if (col == 4) {
-      gfxCursor(28, 2, 6); // Manage
+      gfxCursor(28, 3, 6); // Manage
     }
   } else if (row >= 1 && row <= 3) {
     // Text fields: file name, title, author
-    gfxCursor(7 + col, 2 + row, 1);
+    gfxCursor(7 + col, 4 + row, 1);
   } else if (row == 4) {
     // Linear pitch
-    gfxCursor(13, 7, 3);
+    gfxCursor(13, 9, 3);
   } else if (row == 5) {
     // Tick rate
     if (col == 0) {
-      gfxCursor(13, 8, 3);
+      gfxCursor(13, 10, 3);
     } else {
-      gfxCursor(17, 8, 3);
+      gfxCursor(17, 10, 3);
     }
   }
 }
@@ -283,37 +296,37 @@ void projectCommonDrawField(int col, int row, CellState state) {
 
   if (row == 0) {
     if (col == 0) {
-      gfxPrint(7, 2, "Load");
+      gfxPrint(7, 3, "Load");
     } else if (col == 1) {
-      gfxPrint(12, 2, "Save");
+      gfxPrint(12, 3, "Save");
     } else if (col == 2) {
-      gfxPrint(17, 2, "New");
+      gfxPrint(17, 3, "New");
     } else if (col == 3) {
-      gfxPrint(21, 2, "Export");
+      gfxPrint(21, 3, "Export");
     } else if (col == 4) {
-      gfxPrint(28, 2, "Manage");
+      gfxPrint(28, 3, "Manage");
     }
   } else if (row == 1) {
     // File name
-    gfxClearRect(7, 3, FILENAME_LENGTH, 1);
-    gfxPrintf(7, 3, "%s", appSettings.projectFilename);
+    gfxClearRect(7, 5, FILENAME_LENGTH, 1);
+    gfxPrintf(7, 5, "%s", appSettings.projectFilename);
   } else if (row == 2) {
     // Title
-    gfxClearRect(7, 4, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 4, "%s", chipnomadState->project.title);
+    gfxClearRect(7, 6, PROJECT_TITLE_LENGTH, 1);
+    gfxPrintf(7, 6, "%s", chipnomadState->project.title);
   } else if (row == 3) {
     // Author
-    gfxClearRect(7, 5, PROJECT_TITLE_LENGTH, 1);
-    gfxPrintf(7, 5, "%s", chipnomadState->project.author);
+    gfxClearRect(7, 7, PROJECT_TITLE_LENGTH, 1);
+    gfxPrintf(7, 7, "%s", chipnomadState->project.author);
   } else if (row == 4) {
     // Linear pitch
-    gfxPrint(13, 7, chipnomadState->project.linearPitch ? "ON " : "OFF");
+    gfxPrint(13, 9, chipnomadState->project.linearPitch ? "ON " : "OFF");
   } else if (row == 5) {
     // Tick rate and BPM
-    gfxClearRect(13, 8, 27, 1);
+    gfxClearRect(13, 10, 27, 1);
     float tickRate = (float)tickRateI + (float)tickRateF / 1000.0f;
     float bpm = tickRate * 60.0f / 24.0f;
-    gfxPrintf(13, 8, "%03d.%03dHz (%.1f BPM)", tickRateI, tickRateF, bpm);
+    gfxPrintf(13, 10, "%03d.%03dHz (%.1f BPM)", tickRateI, tickRateF, bpm);
   }
 }
 
@@ -457,6 +470,87 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   }
   return 0;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type the filename/title/author directly on the
+// keyboard instead of using the on-screen virtual keyboard popup. Toggled
+// with Esc, independent of the other screens' key jazz modes. The popup
+// (isCharEdit) still works normally when this is off.
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+
+static void keyJazzTextField(int row, char** str, int* maxLen) {
+  if (row == 1) { *str = appSettings.projectFilename; *maxLen = FILENAME_LENGTH; }
+  else if (row == 2) { *str = chipnomadState->project.title; *maxLen = PROJECT_TITLE_LENGTH; }
+  else { *str = chipnomadState->project.author; *maxLen = PROJECT_TITLE_LENGTH; }
+}
+
+int projectKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown && !isCharEdit) {
+      keyJazzEnabled = !keyJazzEnabled;
+      screenMessage(MESSAGE_TIME, keyJazzEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+    }
+    return 1;
+  }
+
+  // Shift is read live via inputIsShiftHeld() for uppercase below, but its
+  // own keydown/keyup are NOT swallowed here (unlike Phrase): Shift+Down
+  // navigates to the Song screen (inputScreenNavigation) and must keep
+  // working while key jazz is active on these rows.
+  ScreenData* screen = projectScreen();
+  if (!keyJazzEnabled || screen->cursorRow < 1 || screen->cursorRow > 3) return 0;
+
+  char* str;
+  int maxLen;
+  keyJazzTextField(screen->cursorRow, &str, &maxLen);
+
+  if (inputIsBackspaceKey(input)) {
+    // Text fields rest the cursor one past the last typed character
+    // (unlike a grid cell), so Backspace deletes the character BEFORE the
+    // cursor - classic text editor behavior - not "at" it.
+    if (isDown) {
+      int col = screen->cursorCol;
+      int len = (int)strlen(str);
+      if (col > 0) {
+        if (col - 1 < len) {
+          memmove(&str[col - 1], &str[col], len - col + 1);
+          trimString(str);
+          projectModified = 1;
+        }
+        screen->cursorCol = col - 1;
+      }
+      screen->drawField(0, screen->cursorRow, CellState::normal);
+    }
+    return 1;
+  }
+
+  char c = inputTypedCharacter(input, inputIsShiftHeld());
+  if (c == 0) return 0;
+
+  if (isDown) {
+    int col = screen->cursorCol;
+    int len = (int)strlen(str);
+    if (col >= len) {
+      for (int i = len; i < col; i++) str[i] = ' ';
+      str[col + 1] = 0;
+    }
+    str[col] = c;
+    trimString(str);
+    projectModified = 1;
+    if (col < maxLen - 1) screen->cursorCol = col + 1;
+    screen->drawField(0, screen->cursorRow, CellState::normal);
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
 
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::song;

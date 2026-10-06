@@ -19,7 +19,7 @@
 #define TEXT_ROWS (20)
 
 #define CHAR_X(x) ((x) * charW + offsetX)
-#define CHAR_Y(y) ((y) * charH + offsetY)
+#define CHAR_Y(y) (((y) + gfxGetContentRowOffset()) * charH + offsetY)
 
 #ifdef TOUCH_INPUT
 #define VPAD_BUTTON_SIZE 110
@@ -66,8 +66,9 @@ static SDL_Rect getTrackerViewport(void) {
     return (SDL_Rect){(physicalW - canvasW) / 2, (physicalH - groupH) / 2,
       canvasW, canvasH};
   }
-  // Wide displays fill their height. Square and near-square handhelds fit
-  // the 4:3 tracker canvas to their width so neither side is cropped.
+  // Wide displays fill their height.  Square and near-square handhelds must
+  // instead fit the 4:3 tracker canvas to their width; filling the height
+  // would make the viewport wider than the display and crop both sides.
   if (physicalW * 3 >= physicalH * 4) {
     const int canvasW = physicalH * 4 / 3;
     return (SDL_Rect){(physicalW - canvasW) / 2, 0, canvasW, physicalH};
@@ -76,14 +77,12 @@ static SDL_Rect getTrackerViewport(void) {
   return (SDL_Rect){0, (physicalH - canvasH) / 2, physicalW, canvasH};
 }
 
-static void useTrackerCanvas(void) {
-  // SDL resets its viewport when changing render targets. The viewport is
-  // explicit so portrait can centre the canvas + controls as one composition.
-  SDL_Rect viewport = getTrackerViewport();
+static void useWindowPixels(void) {
+  // SDL renderer state survives target switches on some Android drivers.
+  // Present overlays and the composition target in unscaled physical pixels.
   SDL_RenderSetLogicalSize(renderer, 0, 0);
-  SDL_RenderSetViewport(renderer, &viewport);
-  SDL_RenderSetScale(renderer, (float)viewport.w / logicalW,
-    (float)viewport.h / logicalH);
+  SDL_RenderSetViewport(renderer, NULL);
+  SDL_RenderSetScale(renderer, 1.0f, 1.0f);
 }
 #endif
 static int charW;
@@ -95,6 +94,15 @@ static const FontResolution* currentResolution = NULL;
 static SDL_Texture* fontTexture = NULL;
 static SDL_Rect charRects[95];
 
+// Window backbuffers are not persistent on every SDL backend (notably
+// Android/EGL). Keep the tracker frame in an application-owned render target.
+#ifndef WEB_BUILD
+static SDL_Texture* compositionTexture = NULL;
+static int rendererUsesGpu = 0;
+static int compositionW = 0;
+static int compositionH = 0;
+#endif
+
 struct GfxImage {
   SDL_Texture* texture;
   int width;
@@ -103,6 +111,69 @@ struct GfxImage {
 
 static int titleLogicalSizeActive = 0;
 static SDL_Texture* titleTexture = NULL;
+static void drawTrackerLabel(const char* text, int centerX, int y, int color);
+
+static void setTextureNearest(SDL_Texture* texture) {
+#if SDL_VERSION_ATLEAST(2, 0, 12)
+  if (texture) SDL_SetTextureScaleMode(texture, SDL_ScaleModeNearest);
+#else
+  // Older PortMaster SDL2 releases have no per-texture scale mode. The
+  // renderer-wide nearest-neighbor hint below is their equivalent.
+  (void)texture;
+#endif
+}
+
+#ifndef WEB_BUILD
+static void useCompositionTarget(void) {
+  SDL_SetRenderTarget(renderer, compositionTexture);
+  // A render target already has the tracker canvas's native dimensions.
+  // Do not inherit the physical window's logical viewport or scale after a
+  // present: on Android/EGL that state can otherwise clip the first tracker
+  // frame after leaving the title screen.
+  SDL_RenderSetLogicalSize(renderer, 0, 0);
+  SDL_RenderSetViewport(renderer, NULL);
+  SDL_RenderSetScale(renderer, 1.0f, 1.0f);
+}
+
+static int createCompositionTexture(void) {
+  compositionTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888,
+    SDL_TEXTUREACCESS_TARGET, logicalW, logicalH);
+  if (!compositionTexture) return 0;
+  compositionW = logicalW;
+  compositionH = logicalH;
+  SDL_SetTextureBlendMode(compositionTexture, SDL_BLENDMODE_NONE);
+  setTextureNearest(compositionTexture);
+  useCompositionTarget();
+  return 1;
+}
+
+static void destroyCompositionTexture(void) {
+  if (compositionTexture) SDL_DestroyTexture(compositionTexture);
+  compositionTexture = NULL;
+  compositionW = compositionH = 0;
+}
+
+static int createSoftwareRenderer(void) {
+  if (renderer) SDL_DestroyRenderer(renderer);
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+  rendererUsesGpu = 0;
+  return renderer != NULL && SDL_RenderTargetSupported(renderer);
+}
+
+#ifdef ANDROID_BUILD
+static void getAndroidSurfaceSize(int* width, int* height) {
+  // SDL_RendererOutputSize describes the active target. Temporarily select the
+  // window so a 640x480 composition texture cannot masquerade as the phone.
+  SDL_Texture* target = SDL_GetRenderTarget(renderer);
+  SDL_SetRenderTarget(renderer, NULL);
+  SDL_GetRendererOutputSize(renderer, width, height);
+  SDL_SetRenderTarget(renderer, target);
+  if (target == compositionTexture) useCompositionTarget();
+  else if (target) SDL_RenderSetLogicalSize(renderer, logicalW, logicalH);
+}
+#endif
+
+#endif
 
 #ifdef TOUCH_INPUT
 static void layoutVirtualPad(void) {
@@ -199,6 +270,7 @@ GfxImage* gfxImageLoadBMP(const char* path) {
     image->width = width;
     image->height = height;
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    setTextureNearest(texture);
   } else if (texture) {
     SDL_DestroyTexture(texture);
   }
@@ -231,6 +303,7 @@ void gfxTitleBegin(void) {
       SDL_TEXTUREACCESS_TARGET, 256, 224);
     if (!titleTexture) return;
     SDL_SetTextureBlendMode(titleTexture, SDL_BLENDMODE_NONE);
+    setTextureNearest(titleTexture);
     SDL_RenderSetLogicalSize(renderer, 640, 480);
     titleLogicalSizeActive = 1;
   }
@@ -252,6 +325,13 @@ void gfxTitleFadeBlack(uint8_t alpha) {
 }
 
 void gfxTitlePresent(void) {
+#ifndef WEB_BUILD
+  if (!titleTexture) return;
+  SDL_RenderFlush(renderer);
+  useCompositionTarget();
+  SDL_Rect destination = {0, 0, logicalW, logicalH};
+  SDL_RenderCopy(renderer, titleTexture, NULL, &destination);
+#else
   if (!titleTexture) return;
   SDL_SetRenderTarget(renderer, NULL);
 #ifdef ANDROID_BUILD
@@ -274,10 +354,16 @@ void gfxTitlePresent(void) {
 #ifndef ANDROID_BUILD
   SDL_RenderSetLogicalSize(renderer, logicalW, logicalH);
 #endif
+#endif
   isDirty = 1;
 }
 
 void gfxTitleEnd(void) {
+#ifndef WEB_BUILD
+  if (titleTexture) SDL_DestroyTexture(titleTexture);
+  titleTexture = NULL;
+  useCompositionTarget();
+#else
   SDL_SetRenderTarget(renderer, NULL);
   SDL_RenderSetScale(renderer, 1.0f, 1.0f);
   if (titleTexture) SDL_DestroyTexture(titleTexture);
@@ -289,20 +375,44 @@ void gfxTitleEnd(void) {
     SDL_RenderSetLogicalSize(renderer, logicalW, logicalH);
 #endif
   }
+#endif
   titleLogicalSizeActive = 0;
 }
 
 void gfxTitlePrint(int x, int y, const char* text) {
-  if (!text || !fontTexture) return;
+  if (!text || !currentResolution || !currentResolution->data) return;
   int cx = x * 8;
   int cy = y * 12;
-  SDL_SetTextureColorMod(fontTexture, (fgColor >> 16) & 0xFF,
-    (fgColor >> 8) & 0xFF, fgColor & 0xFF);
+  const int sourceW = currentResolution->charWidth;
+  const int sourceH = currentResolution->charHeight;
+  const int sourceBytes = (sourceW + 7) / 8;
+  SDL_SetRenderDrawColor(renderer, (fgColor >> 16) & 0xFF,
+    (fgColor >> 8) & 0xFF, fgColor & 0xFF, 255);
   for (int i = 0; text[i]; i++) {
     uint8_t c = text[i];
     if (c >= 32 && c <= 126) {
-      SDL_Rect dst = {cx, cy, 8, 12};
-      SDL_RenderCopy(renderer, fontTexture, &charRects[c - 32], &dst);
+      const uint8_t* glyph = currentResolution->data +
+        (c - 32) * sourceBytes * sourceH;
+      // Downsample with coverage, not nearest sampling: thin stems such as
+      // the E's vertical bar must survive the 16x24 -> 8x12 title font.
+      for (int dy = 0; dy < 12; dy++) {
+        const int y0 = dy * sourceH / 12;
+        const int y1 = ((dy + 1) * sourceH - 1) / 12;
+        for (int dx = 0; dx < 8; dx++) {
+          const int x0 = dx * sourceW / 8;
+          const int x1 = ((dx + 1) * sourceW - 1) / 8;
+          int set = 0;
+          for (int sy = y0; sy <= y1 && !set; sy++) {
+            for (int sx = x0; sx <= x1; sx++) {
+              if (glyph[sy * sourceBytes + sx / 8] & (0x80 >> (sx & 7))) {
+                set = 1;
+                break;
+              }
+            }
+          }
+          if (set) SDL_RenderDrawPoint(renderer, cx + dx, cy + dy);
+        }
+      }
     }
     cx += 8;
   }
@@ -329,6 +439,7 @@ static void createFontTexture(void) {
 
   fontTexture = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, charW * 95, charH);
   SDL_SetTextureBlendMode(fontTexture, SDL_BLENDMODE_BLEND);
+  setTextureNearest(fontTexture);
 
   SDL_SetRenderTarget(renderer, fontTexture);
   SDL_SetRenderDrawColor(renderer, 0, 0, 0, 0);
@@ -380,6 +491,14 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 
   snprintf(printBuffer, PRINT_BUFFER_SIZE, "%s v%s (%s)", appTitle, appVersion, appBuild);
 
+  // Desktop deliberately uses the tracker's native window size.  Do not
+  // restore a DPI-scaled drawable size from a prior run as a window size.
+#ifdef DESKTOP_BUILD
+  screenW = 640;
+  screenH = 480;
+  if (screenWidth != NULL) *screenWidth = screenW;
+  if (screenHeight != NULL) *screenHeight = screenH;
+#else
   // Detect screen resolution if not provided or zero
   if (screenWidth == NULL || screenHeight == NULL || *screenWidth == 0 || *screenHeight == 0) {
     #if defined(DESKTOP_BUILD) || defined(WEB_BUILD)
@@ -405,6 +524,7 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     screenW = *screenWidth;
     screenH = *screenHeight;
   }
+#endif
 
   window = SDL_CreateWindow(printBuffer,
     SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
@@ -424,14 +544,30 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
     return 1;
   }
 
-  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+  // Also covers older SDL2 builds without SDL_SetTextureScaleMode.
+  SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, "0");
 
-  // Check for high-DPI display and get actual drawable size. HTML5 uses a
-  // software canvas, so SDL_GL_GetDrawableSize is not meaningful there.
-  int drawableW, drawableH;
+  // Prefer a VSync'd GPU renderer. The composition target below removes any
+  // dependency on the platform retaining window-backbuffer contents.
 #ifdef WEB_BUILD
-  // Keep the tracker grid at its native 40x20 character layout. CSS scales
-  // the 640x480 canvas for portrait phones without changing the font size.
+  renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_SOFTWARE);
+#else
+  renderer = SDL_CreateRenderer(window, -1,
+    SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
+  rendererUsesGpu = renderer != NULL && SDL_RenderTargetSupported(renderer);
+  if (!rendererUsesGpu && !createSoftwareRenderer()) renderer = NULL;
+#endif
+  if (!renderer) {
+    fprintf(stderr, "SDL2 Create Renderer Error: %s\n", SDL_GetError());
+    SDL_DestroyWindow(window);
+    SDL_Quit();
+    return 1;
+  }
+
+  // Desktop and web keep the requested logical window size. SDL's drawable
+  // size may be the physical monitor size with the software renderer.
+  int drawableW, drawableH;
+#if defined(DESKTOP_BUILD) || defined(WEB_BUILD)
   drawableW = screenW;
   drawableH = screenH;
 #else
@@ -453,10 +589,23 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 #endif
   logicalW = screenW;
   logicalH = screenH;
+#ifndef WEB_BUILD
+  if (!createCompositionTexture()) {
+    if (!createSoftwareRenderer() || !createCompositionTexture()) {
+      fprintf(stderr, "SDL2 composition target error: %s\n", SDL_GetError());
+      SDL_DestroyRenderer(renderer);
+      SDL_DestroyWindow(window);
+      SDL_Quit();
+      return 1;
+    }
+  }
+#endif
 #ifdef ANDROID_BUILD
-  useTrackerCanvas();
+  useCompositionTarget();
 #else
+#ifdef WEB_BUILD
   SDL_RenderSetLogicalSize(renderer, logicalW, logicalH);
+#endif
 #endif
 
 #ifdef WEB_BUILD
@@ -486,6 +635,9 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 #endif
 
   createFontTexture();
+#ifndef WEB_BUILD
+  useCompositionTarget();
+#endif
   isDirty = 1;
 
 #ifdef TOUCH_INPUT
@@ -502,7 +654,11 @@ int gfxSetup(int *screenWidth, int *screenHeight) {
 }
 
 void gfxCleanup(void) {
+  if (titleTexture) SDL_DestroyTexture(titleTexture);
   if (fontTexture) SDL_DestroyTexture(fontTexture);
+#ifndef WEB_BUILD
+  destroyCompositionTexture();
+#endif
   SDL_DestroyRenderer(renderer);
   SDL_DestroyWindow(window);
 }
@@ -632,6 +788,14 @@ void gfxRect(int x, int y, int w, int h) {
 
 void gfxUpdateScreen(void) {
 #ifdef ANDROID_BUILD
+  // Android can rotate the native surface without delivering a window event.
+  int windowW = 0;
+  int windowH = 0;
+  getAndroidSurfaceSize(&windowW, &windowH);
+  if (windowW > 0 && windowH > 0 &&
+      (windowW != physicalW || windowH != physicalH)) {
+    gfxHandleResize(windowW, windowH);
+  }
   // SDL can report the new dimensions before Android has attached the new
   // surface. Presenting in that short window crashes inside SDL_RenderPresent.
   if (resizePresentDelay > 0) {
@@ -641,8 +805,26 @@ void gfxUpdateScreen(void) {
   }
 #endif
   if (isDirty) {
+#ifndef WEB_BUILD
+    SDL_SetRenderTarget(renderer, NULL);
+    setColor(bgColor);
+    SDL_RenderClear(renderer);
+#ifdef ANDROID_BUILD
+    useWindowPixels();
+    SDL_Rect viewport = getTrackerViewport();
+    SDL_RenderCopy(renderer, compositionTexture, NULL, &viewport);
+#else
+    SDL_RenderSetLogicalSize(renderer, logicalW, logicalH);
+    SDL_Rect destination = {0, 0, logicalW, logicalH};
+    SDL_RenderCopy(renderer, compositionTexture, NULL, &destination);
+#endif
     gfxDrawHUD();
     SDL_RenderPresent(renderer);
+    useCompositionTarget();
+#else
+    gfxDrawHUD();
+    SDL_RenderPresent(renderer);
+#endif
   }
   isDirty = 0;
 }
@@ -699,6 +881,7 @@ Bitmap* gfxBitmapCreate(int widthChars, int heightChars) {
   );
   if (texture) {
     SDL_SetTextureBlendMode(texture, SDL_BLENDMODE_BLEND);
+    setTextureNearest(texture);
   }
   bitmap->userdata = texture;
 
@@ -790,13 +973,20 @@ void gfxReloadFont(void) {
 #endif
 
   createFontTexture();
+#ifndef WEB_BUILD
+  useCompositionTarget();
+#endif
   isDirty = 1;
 }
 
-void gfxHandleResize(void) {
+void gfxHandleResize(int width, int height) {
   if (!window || !renderer) return;
-  int width, height;
-  if (SDL_GetRendererOutputSize(renderer, &width, &height) != 0 || width <= 0 || height <= 0) return;
+#ifdef ANDROID_BUILD
+  getAndroidSurfaceSize(&width, &height);
+#endif
+  if (width <= 0 || height <= 0) {
+    if (SDL_GetRendererOutputSize(renderer, &width, &height) != 0 || width <= 0 || height <= 0) return;
+  }
 #ifdef ANDROID_BUILD
   if (width == physicalW && height == physicalH) return;
   physicalW = width;
@@ -811,10 +1001,14 @@ void gfxHandleResize(void) {
 #endif
   logicalW = screenW;
   logicalH = screenH;
-#ifdef ANDROID_BUILD
-  useTrackerCanvas();
-#else
+#ifdef WEB_BUILD
   SDL_RenderSetLogicalSize(renderer, logicalW, logicalH);
+#endif
+#ifndef WEB_BUILD
+  if (compositionTexture && (compositionW != logicalW || compositionH != logicalH)) {
+    destroyCompositionTexture();
+    if (!createCompositionTexture()) return;
+  }
 #endif
   gfxReloadFont();
 #ifdef TOUCH_INPUT
@@ -823,14 +1017,37 @@ void gfxHandleResize(void) {
   isDirty = 1;
 }
 
+void gfxHandleRenderReset(void) {
+#ifndef WEB_BUILD
+  if (!renderer) return;
+  if (titleTexture) SDL_DestroyTexture(titleTexture);
+  titleTexture = NULL;
+  titleLogicalSizeActive = 0;
+  if (fontTexture) SDL_DestroyTexture(fontTexture);
+  fontTexture = NULL;
+  destroyCompositionTexture();
+  if (createCompositionTexture()) gfxReloadFont();
+#endif
+  isDirty = 1;
+}
+
+const char* gfxGetRendererType(void) {
+#ifndef WEB_BUILD
+  return rendererUsesGpu ? "GPU" : "Software";
+#else
+  return "Software";
+#endif
+}
+
 void gfxGetPhysicalSize(int* width, int* height) {
   int outputW = 0;
   int outputH = 0;
-  if (renderer) SDL_GetRendererOutputSize(renderer, &outputW, &outputH);
 #ifdef ANDROID_BUILD
+  if (renderer) getAndroidSurfaceSize(&outputW, &outputH);
   if (outputW <= 0) outputW = physicalW;
   if (outputH <= 0) outputH = physicalH;
 #else
+  if (renderer) SDL_GetRendererOutputSize(renderer, &outputW, &outputH);
   if (outputW <= 0) outputW = screenW;
   if (outputH <= 0) outputH = screenH;
 #endif
@@ -1121,12 +1338,19 @@ void gfxDrawHUD(void) {
   extern SDL_Rect recButtonRect, delButtonRect, leftStickRect, rightStickRect;
 #endif
 
-  if (!vpadEnabled) return;
+  if (!vpadEnabled) {
+#ifdef ANDROID_BUILD
+    useWindowPixels();
+    drawTrackerLabel(appBuild, physicalW / 2, physicalH - charH - 4,
+      appSettings.colorScheme.textInfo);
+#endif
+    return;
+  }
 
 #ifdef ANDROID_BUILD
   // The tracker is a centered 640x480 canvas; controls are a physical overlay,
   // matching the Web controls placed outside that canvas.
-  SDL_RenderSetLogicalSize(renderer, physicalW, physicalH);
+  useWindowPixels();
   clearHUDBackground();
 #endif
 
@@ -1154,9 +1378,8 @@ void gfxDrawHUD(void) {
     drawStick(&leftStickRect, 0);
     drawStick(&rightStickRect, 2);
   }
-#endif
-#ifdef ANDROID_BUILD
-  useTrackerCanvas();
+  drawTrackerLabel(appBuild, physicalW / 2, physicalH - charH - 4,
+    appSettings.colorScheme.textInfo);
 #endif
 #endif
 }

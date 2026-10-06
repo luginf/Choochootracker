@@ -1,5 +1,51 @@
 # ChooChooTracker changelog
 
+## v0.1.0-prealpha.5 (October 3, 2026)
+
+- Expanded the PCM Sample screen into a sample editor: the waveform zooms
+  in around the Start/End marker while fine-adjusting and returns to the
+  full view on coarse steps.
+- Added an independent processing selection (Sel.S/Sel.E) in absolute
+  frames with zoom-aware handles, tap-to-copy from the playback markers
+  and one-key clear.
+- Added destructive process operations — Crop, Normalize, Delete, Silence,
+  Fade In, Fade Out — with a one-level toggle undo, running with the audio
+  callback suspended.
+- Added Save (overwrite with confirm), Save As (name + folder browser) and
+  Rename flows backed by a new 16-bit PCM WAV writer, plus a `*` marker
+  when the sample in RAM differs from the file on disk.
+- Added end-to-end engine tests for the editor workflows and a 32 MB
+  large-sample stress case (392 test cases total).
+- Compressed the Sample Edit screen into five rows (Region, Select, Slice,
+  Process, File) with a taller waveform: the zoom readout and the frame
+  count in the format line are gone, Region/Select show START and END
+  values side by side, process operations use their full names, and the
+  File row cycles Save/Save As with a single GO (Rename removed).
+- Rebound the Region and Select rows: Region now owns the playback
+  Start/End markers and Select is the processing selection only, and the
+  rows swapped places so playback boundaries sit on top.
+- Fixed the waveform zoom to a constant one-second window on fine
+  adjustments instead of one eighth of the sample; samples that fit inside
+  the window keep the full 1:1 view and coarse steps still return to it.
+- Made the fine-adjust zoom transient: the waveform zooms in while EDIT is
+  held and returns to the full 1:1 view when EDIT is released.
+- Stepped the fine adjustment on the Region row by 1 marker unit and on
+  the Select row by 15 frames.
+- Reset the playback Region to the full sample when a new WAV is loaded
+  into a Sampler instrument.
+- Seeded the processing selection with the playback Region span when the
+  Sample Edit screen is entered - the whole sample with the default
+  markers - so process operations act on the region out of the box.
+- Added the Reverse process operation, which plays the selected region
+  backwards in place (stereo image preserved, length and markers
+  unchanged).
+- The Sampler instrument (renamed from PCM Sample) now loads 24-bit PCM
+  WAV files in addition to 8-bit and 16-bit, and sits at the top of the
+  SAMPLE category in the instrument type picker.
+- Fixed a build failure on non-ARM hosts: the vendored stmlib dsp header
+  selected ARM `vsqrt` inline assembly whenever `TEST` was undefined;
+  the guards are now architecture-aware (398 test cases total).
+
 ## v0.1.0-prealpha.4 (August 17, 2026)
 
 - Added PCM Sample speed control and one-shot, looping and ping-pong playback.

@@ -14,7 +14,7 @@ static int isFxEdit = 0;
 static uint8_t lastNote = 48;
 static uint8_t lastInstrument = 0;
 
-static uint8_t lastVolume = 15;
+static uint16_t lastVolume = PHRASE_VOLUME_MAX;
 static uint8_t lastFX[2] = {0, 0};
 
 static int getColumnCount(int row);
@@ -57,7 +57,7 @@ static ScreenData screen = {
 static void init(void) {
   lastNote = 48;
   lastInstrument = 0;
-  lastVolume = 15;
+  lastVolume = PHRASE_VOLUME_MAX;
   lastFX[0] = 0;
   lastFX[1] = 0;
   screen.cursorRow = 0;
@@ -97,8 +97,9 @@ static void fullRedraw(void) {
 }
 
 static void drawField(int col, int row, CellState state) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   int x = columnX[col];
-  int y = 3 + row;
+  int y = 3 + row - screen.topRow;
   if (col == 0) {
     // Note
     uint8_t value = phraseRows[row].note;
@@ -106,9 +107,9 @@ static void drawField(int col, int row, CellState state) {
     gfxPrint(x, y, noteName(&chipnomadState->project, value));
   } else if (col == 1 || col == 2) {
     // Instrument and volume
-    uint8_t value = (col == 1) ? phraseRows[row].instrument : phraseRows[row].volume;
-    setCellColor(state, value == EMPTY_VALUE_8, 1);
-    gfxPrint(x, y, byteToHexOrEmpty(value));
+    uint16_t value = (col == 1) ? phraseRows[row].instrument : phraseRows[row].volume;
+    setCellColor(state, value == (col == 1 ? EMPTY_VALUE_8 : EMPTY_VALUE_16), 1);
+    gfxPrint(x, y, col == 1 ? byteToHexOrEmpty((uint8_t)value) : volumeToHexOrEmpty(value));
   } else if (col == 3 || col == 5 || col == 7) {
     // FX name
     uint8_t fx = phraseRows[row].fx[(col - 3) / 2][0];
@@ -123,9 +124,10 @@ static void drawField(int col, int row, CellState state) {
 }
 
 static void drawRowHeader(int row, CellState state) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : ((row & 3) == 0 ? cs.textValue : cs.textInfo));
-  gfxPrintf(1, 3 + row, "%X", row);
+  gfxPrintf(1, 3 + row - screen.topRow, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
@@ -160,15 +162,16 @@ static void drawColHeader(int col, CellState state) {
 }
 
 static void drawCursor(int col, int row) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   int width = 2;
   if (col == 0 || col == 3 || col == 5 || col == 7) width = 3;
-  gfxCursor(col == 0 ? 3 : 4 + col * 3, 3 + row, width);
+  gfxCursor(col == 0 ? 3 : 4 + col * 3, 3 + row - screen.topRow, width);
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
   int x = columnX[col1];
   int w = columnX[col2 + 1] - x - 1;
-  int y = 3 + row1;
+  int y = 3 + row1 - screen.topRow;
   int h = row2 - row1 + 1;
   if (col2 == 3 || col2 == 5 || col2 == 7) w++;
   gfxRect(x, y, w, h);
@@ -177,26 +180,28 @@ static void drawSelection(int col1, int row1, int col2, int row2) {
 static void draw(void) {
   if (isFxEdit) return;
 
-  gfxClearRect(0, 3, 1, 16);
+  gfxClearRect(0, 3, 1, screenVisibleRows());
   gfxSetFgColor(appSettings.colorScheme.textInfo);
-  gfxPrint(0, 3 + *pChainRow, "<");
+  if (*pChainRow >= screen.topRow && *pChainRow < screen.topRow + screenVisibleRows())
+    gfxPrint(0, 3 + *pChainRow - screen.topRow, "<");
 
-  gfxClearRect(2, 3, 1, 16);
+  gfxClearRect(2, 3, 1, screenVisibleRows());
   const PlaybackTrackState* track = &chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack];
   if (track->mode != PlaybackMode::stopped && track->mode != PlaybackMode::phraseRow && track->songRow != EMPTY_VALUE_16) {
     // Chain row
-    if (*pSongRow == track->songRow) {
+    if (*pSongRow == track->songRow && track->chainRow >= screen.topRow &&
+        track->chainRow < screen.topRow + screenVisibleRows()) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
-      gfxPrint(0, 3 + track->chainRow, "<");
+      gfxPrint(0, 3 + track->chainRow - screen.topRow, "<");
     }
 
     // Phrase row
     int playingPhrase = chipnomadState->project.chains[chipnomadState->project.song[track->songRow][*pSongTrack]].rows[track->chainRow].phrase;
     if (playingPhrase == phraseIdx) {
       int row = track->phraseRow;
-      if (row >= 0 && row < 16) {
+      if (row >= screen.topRow && row < screen.topRow + screenVisibleRows()) {
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
-        gfxPrint(2, 3 + row, ">");
+        gfxPrint(2, 3 + row - screen.topRow, ">");
       }
     }
   }
@@ -207,9 +212,25 @@ static void draw(void) {
 // Input handling
 //
 
+// Preview a row's note through the audio engine, same as any note edit does.
+static void triggerRowPreview(int row) {
+  if (chipnomadGetPlaybackStatus(chipnomadState)->isPlaying &&
+      chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode != PlaybackMode::phraseRow) {
+    return;
+  }
+  PhraseRow* previewSource = &phraseRows[row];
+  if (previewSource->note != EMPTY_VALUE_8 && previewSource->note != NOTE_OFF && previewSource->instrument == EMPTY_VALUE_8) {
+    PhraseRow previewRow = *previewSource;
+    previewRow.instrument = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, row, *pSongTrack);
+    chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, &previewRow);
+  } else {
+    chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, previewSource);
+  }
+}
+
 static int editCell(int col, int row, CellEditAction action) {
   int handled = 0;
-  uint8_t maxVolume = 15;
+  uint16_t maxVolume = PHRASE_VOLUME_MAX;
 
   if (col == 0) {
     // Note
@@ -217,13 +238,13 @@ static int editCell(int col, int row, CellEditAction action) {
       // Insert OFF
       phraseRows[row].note = NOTE_OFF;
       phraseRows[row].instrument = EMPTY_VALUE_8;
-      phraseRows[row].volume = EMPTY_VALUE_8;
+      phraseRows[row].volume = EMPTY_VALUE_16;
       handled = 1;
     } else if (action == CellEditAction::clear) {
       // Clear note
       handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
       edit8withLimit(action, &phraseRows[row].instrument, &lastInstrument, 16, PROJECT_MAX_INSTRUMENTS - 1);
-      edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
+      edit16withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
     } else if (action == CellEditAction::tap && phraseRows[row].note == EMPTY_VALUE_8) {
       phraseRows[row].note = lastNote;
       phraseRows[row].instrument = lastInstrument;
@@ -233,7 +254,7 @@ static int editCell(int col, int row, CellEditAction action) {
       handled = edit8withLimit(action, &phraseRows[row].note, &lastNote, chipnomadState->project.pitchTable.octaveSize, chipnomadState->project.pitchTable.length - 1);
       if (handled) {
         if (phraseRows[row].instrument != EMPTY_VALUE_8) lastInstrument = phraseRows[row].instrument;
-        if (phraseRows[row].volume != EMPTY_VALUE_8) lastVolume = phraseRows[row].volume;
+        if (phraseRows[row].volume != EMPTY_VALUE_16) lastVolume = phraseRows[row].volume;
       }
     }
     if (handled) {
@@ -257,7 +278,7 @@ static int editCell(int col, int row, CellEditAction action) {
     }
   } else if (col == 2) {
     // Volume
-    handled = edit8withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
+    handled = edit16withLimit(action, &phraseRows[row].volume, &lastVolume, 16, maxVolume);
   } else if (col == 3 || col == 5 || col == 7) {
     // FX
     int fxIdx = (col - 3) / 2;
@@ -280,16 +301,7 @@ static int editCell(int col, int row, CellEditAction action) {
     }
   }
 
-  if (handled && (!chipnomadGetPlaybackStatus(chipnomadState)->isPlaying || chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode == PlaybackMode::phraseRow)) {
-    PhraseRow* row = &phraseRows[screen.cursorRow];
-    if (row->note != EMPTY_VALUE_8 && row->note != NOTE_OFF && row->instrument == EMPTY_VALUE_8) {
-      PhraseRow previewRow = *row;
-      previewRow.instrument = lookupInstrument(&chipnomadState->project, *pSongRow, *pChainRow, screen.cursorRow, *pSongTrack);
-      chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, &previewRow);
-    } else {
-      chipnomadQueuePlaybackStartPhraseRow(chipnomadState, *pSongTrack, row);
-    }
-  }
+  if (handled) triggerRowPreview(screen.cursorRow);
 
   return handled;
 }
@@ -508,6 +520,252 @@ static LoopRange getLoopRange(void) {
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::phrase;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type notes directly on the QWERTY keyboard,
+// like m8c (https://github.com/laamaa/m8c). Toggled with Esc. While active,
+// this takes over the note keys entirely (they overlap with Edit/Opt/Motion
+// on this screen), so Esc again is needed to get those back.
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+static uint8_t keyJazzBaseNote = 48;
+
+static uint8_t keyJazzClampNote(int note) {
+  int maxNote = chipnomadState->project.pitchTable.length - 1;
+  if (note < 0) return 0;
+  if (note > maxNote) return (uint8_t)maxNote;
+  return (uint8_t)note;
+}
+
+// The selection's column/row bounds if one is active, else the note+
+// instrument+volume "bundle" (columns 0-2) at the cursor row - copy/cut
+// treat a single note as those 3 columns together, matching how typing
+// and Delete/Backspace already fill/clear them as one unit.
+static void keyJazzGetActiveRange(int* startCol, int* startRow, int* endCol, int* endRow) {
+  if (screen.selectMode) {
+    getSelectionBounds(&screen, startCol, startRow, endCol, endRow);
+  } else {
+    *startCol = 0;
+    *endCol = 2;
+    *startRow = *endRow = screen.cursorRow;
+  }
+}
+
+static void keyJazzClearColumn(int row, int col) {
+  if (col == 0) phraseRows[row].note = EMPTY_VALUE_8;
+  else if (col == 1) phraseRows[row].instrument = EMPTY_VALUE_8;
+  else if (col == 2) phraseRows[row].volume = EMPTY_VALUE_16;
+  // FX columns are out of scope for key jazz.
+}
+
+static void keyJazzSetColumn(int row, int col, uint16_t value) {
+  if (col == 0) phraseRows[row].note = (uint8_t)value;
+  else if (col == 1) phraseRows[row].instrument = (uint8_t)value;
+  else if (col == 2) phraseRows[row].volume = value;
+}
+
+static uint16_t keyJazzGetColumn(int row, int col) {
+  if (col == 0) return phraseRows[row].note;
+  if (col == 1) return phraseRows[row].instrument;
+  if (col == 2) return phraseRows[row].volume;
+  return EMPTY_VALUE_8;
+}
+
+// Removes one column's value at startRow and shifts the rows below it (in
+// that same column only) up to fill the gap, clearing the last row.
+// Mirrors what Delete does for a whole row, scoped to a single column.
+static void keyJazzShiftColumnUp(int col, int startRow, int count) {
+  for (int r = startRow; r <= 15 - count; r++) keyJazzSetColumn(r, col, keyJazzGetColumn(r + count, col));
+  for (int r = 16 - count; r <= 15; r++) keyJazzClearColumn(r, col);
+}
+
+static void keyJazzClearRow(int row, int includeFx) {
+  phraseRows[row].note = EMPTY_VALUE_8;
+  phraseRows[row].instrument = EMPTY_VALUE_8;
+  phraseRows[row].volume = EMPTY_VALUE_16;
+  if (includeFx) {
+    for (int i = 0; i < 3; i++) {
+      phraseRows[row].fx[i][0] = EMPTY_VALUE_8;
+      phraseRows[row].fx[i][1] = 0;
+    }
+  }
+}
+
+int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown && !isFxEdit) {
+      keyJazzEnabled = !keyJazzEnabled;
+      if (keyJazzEnabled) {
+        uint8_t currentNote = phraseRows[screen.cursorRow].note;
+        uint16_t octaveSize = chipnomadState->project.pitchTable.octaveSize;
+        uint8_t reference = (currentNote != EMPTY_VALUE_8 && currentNote != NOTE_OFF) ? currentNote : lastNote;
+        keyJazzBaseNote = octaveSize > 0 ? (reference / octaveSize) * octaveSize : reference;
+        screenMessage(MESSAGE_TIME, "KEY JAZZ ON (Esc to exit)");
+      } else {
+        screen.selectMode = 0;
+        screenMessage(MESSAGE_TIME, "KEY JAZZ OFF");
+      }
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (!keyJazzEnabled) return 0;
+
+  if (inputIsShiftKey(input)) return 1; // Swallow: see inputIsShiftKey's doc comment
+
+  int arrowDir = inputArrowKeyDirection(input);
+  if (arrowDir != 0) {
+    if (inputIsShiftHeld()) {
+      if (isDown && !screen.selectMode) {
+        screen.selectStartRow = screen.cursorRow;
+        screen.selectStartCol = screen.cursorCol;
+        screen.selectAnchorRow = screen.cursorRow;
+        screen.selectAnchorCol = screen.cursorCol;
+        screen.selectMode = 1;
+      }
+    } else if (screen.selectMode) {
+      // A plain arrow (Shift released) collapses the selection, like a
+      // regular text editor, instead of silently continuing to extend it.
+      if (isDown) {
+        screen.selectMode = 0;
+        fullRedraw();
+      }
+    }
+    return 0; // Let normal cursor movement happen (and extend/render the selection)
+  }
+
+  if (inputIsCtrlHeld()) {
+    if (inputIsSaveKey(input)) {
+      if (isDown) {
+        projectSave(&chipnomadState->project, getAutosavePath());
+        screenMessage(MESSAGE_TIME, "KEY JAZZ: project saved");
+      }
+      return 1;
+    }
+    if (inputIsCopyKey(input) || inputIsCutKey(input)) {
+      if (isDown) {
+        int startCol, startRow, endCol, endRow;
+        keyJazzGetActiveRange(&startCol, &startRow, &endCol, &endRow);
+        int isCut = inputIsCutKey(input);
+        copyPhrase(phraseIdx, startCol, startRow, endCol, endRow, isCut);
+        int count = endRow - startRow + 1;
+        screenMessage(MESSAGE_TIME, "KEY JAZZ: %s %d row%s", isCut ? "cut" : "copied", count, count == 1 ? "" : "s");
+        if (isCut) {
+          screen.selectMode = 0;
+          fullRedraw();
+        }
+      }
+      return 1;
+    }
+    if (inputIsPasteKey(input)) {
+      if (isDown) {
+        int rowsPasted = pastePhrase(phraseIdx, screen.cursorCol, screen.cursorRow);
+        if (rowsPasted > 0) {
+          screenMessage(MESSAGE_TIME, "KEY JAZZ: pasted %d row%s", rowsPasted, rowsPasted == 1 ? "" : "s");
+          fullRedraw();
+        }
+      }
+      return 1;
+    }
+    return 0; // Other Ctrl+key combos: not our concern
+  }
+
+  if (inputIsDeleteKey(input)) {
+    // Delete removes the whole row(s) (every column, not just the
+    // selection's columns) and shifts the rest of the phrase up to fill
+    // the gap; the cursor stays on the same row index.
+    if (isDown) {
+      int startRow, endRow;
+      if (screen.selectMode) {
+        int startCol, endCol;
+        getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+      } else {
+        startRow = endRow = screen.cursorRow;
+      }
+      int count = endRow - startRow + 1;
+      for (int r = startRow; r <= 15 - count; r++) phraseRows[r] = phraseRows[r + count];
+      for (int r = 16 - count; r <= 15; r++) keyJazzClearRow(r, 1);
+      screen.cursorRow = startRow;
+      screen.selectMode = 0;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (inputIsBackspaceKey(input)) {
+    // Backspace is narrower than Delete: it only touches the current
+    // column (or the selection's actual columns), not the whole row. It
+    // removes the element(s) at the cursor/selection itself (not the row
+    // above) and shifts whatever is below, in that same column, up to
+    // fill the gap - the column equivalent of what Delete does per row.
+    // Like a text editor, it also steps the cursor back one row as it
+    // erases (the reverse of typing a note advancing to the next row).
+    if (isDown) {
+      int startCol, startRow, endCol, endRow;
+      if (screen.selectMode) {
+        getSelectionBounds(&screen, &startCol, &startRow, &endCol, &endRow);
+      } else {
+        startCol = endCol = screen.cursorCol;
+        startRow = endRow = screen.cursorRow;
+      }
+      int count = endRow - startRow + 1;
+      for (int c = startCol; c <= endCol; c++) keyJazzShiftColumnUp(c, startRow, count);
+      screen.cursorRow = startRow > 0 ? startRow - 1 : 0;
+      screen.selectMode = 0;
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  if (inputIsInsertKey(input)) {
+    if (isDown) {
+      int row = screen.cursorRow;
+      if (row < 15) applyPhraseRotation(phraseIdx, row, 15, 1);
+      keyJazzClearRow(row, 1);
+      fullRedraw();
+    }
+    return 1;
+  }
+
+  int octaveDelta = inputKeyJazzOctaveDelta(input);
+  if (octaveDelta != 0) {
+    if (isDown) {
+      uint16_t octaveSize = chipnomadState->project.pitchTable.octaveSize;
+      keyJazzBaseNote = keyJazzClampNote(keyJazzBaseNote + octaveDelta * (int)octaveSize);
+      screenMessage(MESSAGE_TIME, "KEY JAZZ octave: %s", chipnomadState->project.pitchTable.noteNames[keyJazzBaseNote]);
+    }
+    return 1;
+  }
+
+  int offset = inputKeyJazzNoteOffset(input);
+  if (offset < 0) return 0; // Not a note key: let normal input handle it (arrows, Shift, Play...)
+
+  if (isDown) {
+    int row = screen.cursorRow;
+    phraseRows[row].note = keyJazzClampNote(keyJazzBaseNote + offset);
+    if (phraseRows[row].instrument == EMPTY_VALUE_8) phraseRows[row].instrument = lastInstrument;
+    if (phraseRows[row].volume == EMPTY_VALUE_16) phraseRows[row].volume = lastVolume;
+    lastNote = phraseRows[row].note;
+    triggerRowPreview(row);
+    drawField(0, row, CellState::normal);
+    drawField(1, row, CellState::normal);
+    drawField(2, row, CellState::normal);
+    if (row < 15) {
+      screen.cursorRow = row + 1;
+      fullRedraw();
+    }
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
 
 const AppScreen screenPhrase = {
   .init = init,

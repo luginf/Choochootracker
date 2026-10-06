@@ -26,7 +26,8 @@ Run `launch-alf-dance.bat` there to preview the bundled `alf dance.cct` project.
 ## Linux / Steam Deck (x86_64)
 
 For a native local test, use the existing Ubuntu-24.04 WSL distribution with
-`g++`, `make`, and `libsdl2-dev` installed. From `tracker` in that distribution:
+`g++`, `make`, `libsdl2-dev`, and `libasound2-dev` (for MIDI I/O, see below)
+installed. From `tracker` in that distribution:
 
 ```sh
 make -j4 -f Makefile.linux linux-package \
@@ -54,6 +55,17 @@ at 48 kHz, those displays advanced in visible jumps despite a 60 FPS overlay:
 the engine processes about 102 ms of audio per callback. At 512 frames this
 falls to about 10.7 ms. This observation validates that test configuration;
 it does not establish a safe buffer size for every supported device.
+
+### MIDI I/O
+
+Desktop builds (Linux/Windows/macOS) link RtMidi (vendored at
+`chipnomad_lib/external/rtmidi`) for realtime MIDI in/out - see
+`docs/USER_MANUAL.md`'s MIDI section for what it's used for. Backend
+selection is per platform Makefile: `-D__LINUX_ALSA__ -D__LINUX_ALSASEQ__`
+plus `-lasound` on Linux, `-D__WINDOWS_MM__` plus `-lwinmm` on Windows,
+`-D__MACOSX_CORE__` plus the CoreMIDI/CoreAudio/CoreFoundation frameworks on
+macOS. `Dockerfile.linux` installs `libasound2-dev` for the Docker-based
+Linux build.
 
 ### AppImage
 
@@ -223,7 +235,6 @@ Upload that AAB to Play Console's Internal testing track. Complete the values
 and artwork in `docs/play-store-listing.md` before submission.
 
 For audio traces and the separately installed debug APK, see
-[Android audio diagnosis](android-audio-debugging.md).
 
 ## Validation
 

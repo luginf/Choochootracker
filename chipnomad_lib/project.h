@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "project_instruments.h"
 #include "project_constants.h"
+#include "insert_fx.h"
 
 // Song data structures
 
@@ -195,9 +196,23 @@ enum FX {
   // Alias for PCM sample start. Appended to preserve project FX IDs.
   fxSTA,
 
+  // MIDI Out: send a CC whose number is set per-instrument (see
+  // InstrumentMidi's ccNumber[]). Appended to preserve project FX IDs.
+  // Values formerly used by PD stay reserved for file compatibility.
+  fxMC1 = fxSTA + 9, fxMC2, fxMC3, fxMC4,
+
+  // aChChid tie. Appended to preserve project FX IDs.
+  fxATY,
+
+  // Track insert addresses: appended; existing and reserved IDs remain stable.
+  fxF11, fxF12, fxF13, fxF14, fxF15, fxF16, fxF17, fxF18, fxF21, fxF22, fxF23, fxF24, fxF25, fxF26, fxF27, fxF28,
+
   // Total count - must be last
   fxTotalCount
 };
+
+static_assert(fxTotalCount < 255, "FX identifiers must not collide with FF");
+static_assert(fxF28 - fxF11 == 15, "Contiguous insert commands");
 
 enum ScalePreset : uint8_t {
   scaleChromatic,
@@ -289,7 +304,8 @@ struct Groove {
 struct PhraseRow {
   uint8_t note;
   uint8_t instrument;
-  uint8_t volume;
+  // Phrase volume is 00-7F; FFFF means an omitted/inherited volume in memory.
+  uint16_t volume;
   uint8_t fx[3][2];
 };
 
@@ -342,6 +358,7 @@ struct Project {
   uint8_t trackReverbSend[PROJECT_MAX_TRACKS];
   uint8_t trackDelaySend[PROJECT_MAX_TRACKS];
   uint8_t trackTilt[PROJECT_MAX_TRACKS];
+  InsertConfig trackInserts[PROJECT_MAX_TRACKS][2];
   uint16_t tiltPivotHz;
   uint8_t reverbReturn;
   uint8_t reverbTime;

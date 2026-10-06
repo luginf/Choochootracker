@@ -228,7 +228,7 @@ static void restartFX_VOL(PlaybackState* state, PlaybackTrackState* track, int t
 }
 
 static void handleFX_VOL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
-  track->note.volumeOffset += fx->acc;
+  track->note.volumeOffset += fx->acc * (PHRASE_VOLUME_MAX / 15);
 }
 
 // VSL - Volume slide
@@ -247,7 +247,7 @@ static void initFX_VSL(PlaybackState* state, PlaybackTrackState* track, int trac
 
 static void handleFX_VSL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   fx->acc += fx->d.bend.speed;
-  track->note.volumeOffset += fx->acc >> 8;
+  track->note.volumeOffset += (fx->acc >> 8) * (PHRASE_VOLUME_MAX / 15);
 }
 
 // GRV - Track groove
@@ -296,6 +296,8 @@ static void handleFX_OFF(PlaybackState* state, PlaybackTrackState* track, int tr
 static void handleFX_KIL(PlaybackState* state, PlaybackTrackState* track, int trackIdx, int chipIdx, PlaybackFXState* fx) {
   if (fx->counter >= fx->fxValue) {
     fx->isOn = 0;
+    track->achchidGateTicks = 0;
+    track->achchidGateCounter = 0;
     track->note.pitchBase = EMPTY_VALUE_8;
     track->note.noteKilled = 1;
   }
@@ -349,7 +351,7 @@ static void handleFX_RET(PlaybackState* state, PlaybackTrackState* track, int tr
     restartFX(state, trackIdx);
     fx->acc += volumeOffset;
   }
-  track->note.volumeOffset += fx->acc;
+  track->note.volumeOffset += fx->acc * (PHRASE_VOLUME_MAX / 15);
 }
 
 // PVB - Pitch vibrato
@@ -396,6 +398,15 @@ void initFX(PlaybackState* state, int trackIdx, uint8_t* fx, PlaybackTableState*
   if (tableState != NULL && (fx[0] == fxSCL || fx[0] == fxCRD)) return;
 
   PlaybackTrackState* track = &state->tracks[trackIdx];
+  if (fx[0] >= fxF11 && fx[0] <= fxF28) {
+    int address = fx[0] - fxF11, slot = address / 8, parameter = address % 8;
+    int module = state->p->trackInserts[trackIdx][slot].module;
+    if (parameter < insertDescriptor(module).count) {
+      track->inserts.values[slot][parameter] = insertClamp(module, parameter, fx[1]);
+      track->inserts.valid[slot] |= 1 << parameter;
+    }
+    return;
+  }
   // STA is a spelling alias for SST, so both commands share one runtime
   // state and the most recent one wins just like two SST commands would.
   uint8_t fxIdx = fx[0] == fxSTA ? fxSST : fx[0];
@@ -430,6 +441,7 @@ void initFXHandlers(void) {
   fxHandlers[fxGGR] = (PlaybackFXHandler){NULL, handleFX_GGR, NULL};
   registerFXHandlers_Modulation();
   registerFXHandlers_AY();
+  registerFXHandlers_Midi();
 }
 
 int handleFX(PlaybackState* state, int trackIdx, int chipIdx) {

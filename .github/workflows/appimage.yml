@@ -1,0 +1,43 @@
+name: AppImage
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+jobs:
+  appimage:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y g++ make libsdl2-dev libsamplerate0-dev libasound2-dev
+
+      - name: Install pinned appimagetool
+        env:
+          APPIMAGETOOL_SHA256: b90f4a8b18967545fda78a445b27680a1642f1ef9488ced28b65398f2be7add2
+        run: |
+          curl --fail --location --output /tmp/appimagetool \
+            https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+          echo "$APPIMAGETOOL_SHA256  /tmp/appimagetool" | sha256sum --check
+          chmod +x /tmp/appimagetool
+          printf '#!/bin/sh\nexec /tmp/appimagetool --appimage-extract-and-run "$@"\n' \
+            | sudo tee /usr/local/bin/appimagetool >/dev/null
+          sudo chmod +x /usr/local/bin/appimagetool
+
+      - name: Build AppImage
+        run: make -C tracker -j2 -f Makefile.linux appimage
+
+      - name: Upload AppImage
+        uses: actions/upload-artifact@v4
+        with:
+          name: choochootracker-appimage
+          path: releases/*.AppImage
+          if-no-files-found: error

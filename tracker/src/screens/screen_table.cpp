@@ -72,6 +72,10 @@ static ScreenData screen = {
   .getLoopRange = NULL,
 };
 
+// Logical row zero is the pinned retrigger control, not a table step.
+static int tableTopRow() { return screen.topRow > 0 ? screen.topRow - 1 : 0; }
+static int tableVisibleRows() { return screenVisibleRows() - (screen.topRow == 0 ? 1 : 0); }
+
 static void init(void) {
   lastPitchValue = 0;
   lastVolume = 15;
@@ -104,9 +108,11 @@ static void drawStatic(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles);
   gfxPrintf(0, 0, "TABLE %02X", tableIdx);
   gfxPrint(0, 1, "Retrig");
+  drawField(0, 0, screen.cursorRow == 0 ? CellState::focus : CellState::normal);
 }
 
 static void drawField(int col, int row, CellState state) {
+  if (row && (row < screen.topRow || row >= screen.topRow + screenVisibleRows())) return;
   if (row == 0) {
     setCellColor(state, 0, 1);
     gfxPrint(8, 1, "      ");
@@ -115,7 +121,7 @@ static void drawField(int col, int row, CellState state) {
   }
   row--;
   int x = columnX[col];
-  int y = 3 + row;
+  int y = 3 + row - tableTopRow();
 
   if (col == 0) {
     // Pitch flag
@@ -147,10 +153,11 @@ static void drawField(int col, int row, CellState state) {
   }
 }
 static void drawRowHeader(int row, CellState state) {
+  if (row && (row < screen.topRow || row >= screen.topRow + screenVisibleRows())) return;
   if (row == 0) return;
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
-  gfxPrintf(1, 2 + row, "%X", row - 1);
+  gfxPrintf(1, 2 + row - tableTopRow(), "%X", row - 1);
 }
 
 static void drawColHeader(int col, CellState state) {
@@ -184,6 +191,7 @@ static void drawColHeader(int col, CellState state) {
 }
 
 static void drawCursor(int col, int row) {
+  if (row && (row < screen.topRow || row >= screen.topRow + screenVisibleRows())) return;
   if (row == 0) {
     gfxCursor(8, 1, 6);
     return;
@@ -200,14 +208,14 @@ static void drawCursor(int col, int row) {
     width = 3;
   }
 
-  gfxCursor(x, 3 + row, width);
+  gfxCursor(x, 3 + row - tableTopRow(), width);
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
   if (row1 == 0 || row2 == 0) return;
   int x = columnX[col1];
   int w = columnX[col2 + 1] - x - 1;
-  int y = 2 + row1;
+  int y = 2 + row1 - tableTopRow();
   int h = row2 - row1 + 1;
   if (col2 == 0 || col2 == 3 || col2 == 5 || col2 == 7  || col2 == 9) w++;
   gfxRect(x, y, w, h);
@@ -220,11 +228,11 @@ static void fullRedraw(void) {
 static void draw(void) {
   if (isFxEdit) return;
 
-  gfxClearRect(2, 3, 1, 16);
-  gfxClearRect(9, 3, 1, 16);
-  gfxClearRect(15, 3, 1, 16);
-  gfxClearRect(21, 3, 1, 16);
-  gfxClearRect(27, 3, 1, 16);
+  gfxClearRect(2, 3, 1, screenVisibleRows());
+  gfxClearRect(9, 3, 1, screenVisibleRows());
+  gfxClearRect(15, 3, 1, screenVisibleRows());
+  gfxClearRect(21, 3, 1, screenVisibleRows());
+  gfxClearRect(27, 3, 1, screenVisibleRows());
 
   const PlaybackTrackState* track = &chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack];
   const PlaybackTableState* pTable = NULL;
@@ -240,16 +248,19 @@ static void draw(void) {
   if (pTable != NULL) {
     gfxSetFgColor(appSettings.colorScheme.playMarkers);
     int row = pTable->rows[0];
-    if (row >= 0 && row < 16) {
-      gfxPrint(2, 3 + row, ">");
-      gfxPrint(9, 3 + row, ">");
+    if (row >= tableTopRow() && row < tableTopRow() + tableVisibleRows()) {
+      gfxPrint(2, 3 + row - tableTopRow(), ">");
+      gfxPrint(9, 3 + row - tableTopRow(), ">");
     }
     row = pTable->rows[1];
-    gfxPrint(15, 3 + row, ">");
+    if (row >= tableTopRow() && row < tableTopRow() + tableVisibleRows())
+      gfxPrint(15, 3 + row - tableTopRow(), ">");
     row = pTable->rows[2];
-    gfxPrint(21, 3 + row, ">");
+    if (row >= tableTopRow() && row < tableTopRow() + tableVisibleRows())
+      gfxPrint(21, 3 + row - tableTopRow(), ">");
     row = pTable->rows[3];
-    gfxPrint(27, 3 + row, ">");
+    if (row >= tableTopRow() && row < tableTopRow() + tableVisibleRows())
+      gfxPrint(27, 3 + row - tableTopRow(), ">");
   }
 
   screenDrawOverlays(&screen);

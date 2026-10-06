@@ -22,6 +22,7 @@ static int usesChordNames(const InstrumentPlaits* p) {
 }
 
 static void drawPreview(const InstrumentPlaits* plaits) {
+  if (appSettings.persistentWaveform) return;
   if (!previewBitmap) previewBitmap = gfxBitmapCreate(32, 3);
   renderPlaitsPreview(previewBitmap, plaits, isAlt());
   gfxSetFgColor(appSettings.colorScheme.textInfo);

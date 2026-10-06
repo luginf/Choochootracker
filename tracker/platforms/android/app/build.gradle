@@ -14,19 +14,22 @@ def localPropsFile = rootProject.file('local.properties')
 if (localPropsFile.exists()) localPropsFile.withInputStream { localProps.load(it) }
 def androidSdk = System.getenv('ANDROID_HOME') ?: localProps['sdk.dir']
 def androidNdk = System.getenv('ANDROID_NDK_ROOT') ?: "${androidSdk}/ndk/30.0.16248370"
+def nativeShell = System.getProperty('os.name').toLowerCase().contains('windows') ? 'C:/msys64/usr/bin/bash.exe' : 'bash'
+def nativeBuildCommand = System.getProperty('os.name').toLowerCase().contains('windows') ?
+    'export PATH=/ucrt64/bin:/usr/bin:$PATH; make' : 'make'
 
 // Custom task to build native code using external makefiles and copy the results
 task buildNativeArm64(type: Exec) {
     def multiplatformProjectRoot = rootProject.projectDir.parentFile.parentFile
     workingDir multiplatformProjectRoot
-    commandLine 'C:/msys64/usr/bin/bash.exe', '-c', 'export PATH=/ucrt64/bin:/usr/bin:$PATH; make -f Makefile.android android ARCH=arm64-v8a'
+    commandLine nativeShell, '-c', "${nativeBuildCommand} -f Makefile.android android ARCH=arm64-v8a"
     environment 'ANDROID_NDK_ROOT', androidNdk
 }
 
 task buildNativeArm32(type: Exec) {
     def multiplatformProjectRoot = rootProject.projectDir.parentFile.parentFile
     workingDir multiplatformProjectRoot
-    commandLine 'C:/msys64/usr/bin/bash.exe', '-c', 'export PATH=/ucrt64/bin:/usr/bin:$PATH; make -f Makefile.android android ARCH=armeabi-v7a'
+    commandLine nativeShell, '-c', "${nativeBuildCommand} -f Makefile.android android ARCH=armeabi-v7a"
     environment 'ANDROID_NDK_ROOT', androidNdk
 }
 
@@ -51,6 +54,9 @@ task copyNativeLibs(type: Copy) {
 
 // Make the build process depend on our custom task
 preBuild.dependsOn copyNativeLibs
+tasks.matching { it.name.startsWith('merge') && it.name.endsWith('NativeLibs') }.configureEach {
+    dependsOn copyNativeLibs
+}
 
 android {
     namespace 'com.paiheulevrai.choochootracker'
@@ -60,8 +66,8 @@ android {
         applicationId "com.paiheulevrai.choochootracker"
         minSdk 26
         targetSdk 36
-        versionCode 13
-        versionName "1.0.13-alpha"
+        versionCode 14
+        versionName "1.0.14-alpha"
     }
 
     // Copy bundled tracker content to assets.

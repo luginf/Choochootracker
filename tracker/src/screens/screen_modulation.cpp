@@ -9,32 +9,9 @@
 #include <math.h>
 #include <string.h>
 
-// Screen layout (20 rows):
-// y 0: "MODULATION 00"
-// y 1: (empty)
-// y 2:  Mod1  [type]       Mod3  [type]
-// y 3:  Dest  Off          Dest  Off
-// y 4:  Amt   [00]         Amt   [00]
-// y 5:  p1 label [val]     p1 label [val]
-// y 6:  p2 label [val]     p2 label [val]
-// y 7:  p3 label [val]     p3 label [val]
-// y 8:  p4 label [val]     p4 label [val]
-// y 9:  (spacing)
-// y 10: Mod2  [type]       Mod4  [type]
-// y 11: Dest  Off          Dest  Off
-// y 12: Amt   [00]         Amt   [00]
-// y 13: p1 label [val]     p1 label [val]
-// y 14: p2 label [val]     p2 label [val]
-// y 15: p3 label [val]     p3 label [val]
-// y 16: p4 label [val]     p4 label [val]
-//
-// Logical rows (per modulator, 7 rows each):
-// Top block (Mod1 left, Mod3 right): rows 0-6
-// Bottom block (Mod2 left, Mod4 right): rows 7-13
-//
-// Column mapping:
-// col 0 = left modulator (Mod1 top, Mod2 bottom)
-// col 1 = right modulator (Mod3 top, Mod4 bottom)
+// Two adjacent columns, each with two eight-field blocks. Content rows
+// 1..8 and 9..16 fit between the two-row scope and the message footer.
+// Column 0 edits Mod1/Mod2; column 1 edits Mod3/Mod4.
 
 #define COL_LEFT_X    0
 #define COL_LEFT_VAL  7
@@ -44,8 +21,10 @@
 #define ROW_TOTAL 16
 #define ROWS_PER_MOD 8
 
-static SelectionItem destinationCategories[6];
+static SelectionItem destinationCategories[7];
 static SelectionItem sourceCategories[3];
+static SelectionItem insertDestinations[16];
+static char insertHelpers[16][64];
 static const SelectionItem envelopeSources[] = {{"ADSR", (int)ModulationType::ADSR, NULL, 0}, {"AHD", (int)ModulationType::AHD, NULL, 0}};
 static const SelectionItem lfoSources[] = {{"LFO", (int)ModulationType::LFO, NULL, 0}, {"SYNC LFO", (int)ModulationType::SLFO, NULL, 0}, {"FAST LFO", (int)ModulationType::FLFO, NULL, 0}};
 static const SelectionItem stickSources[] = {{"LINEAR", (int)ModulationType::StickLinear, NULL, 0}, {"RATE", (int)ModulationType::StickRate, NULL, 0}};
@@ -174,6 +153,14 @@ static void openDestinationPopup(int modIndex) {
     if (functions.supportsTrigger)
       destinationCategories[categoryCount++] = {"TRIGGER", -1, triggerDestinations, 2};
   }
+  for (int i = 0; i < 16; ++i) {
+    const auto& c = chipnomadState->project.trackInserts[*pSongTrack][i/8];
+    const auto& d = insertDescriptor(c.module);
+    snprintf(insertHelpers[i],sizeof(insertHelpers[i]),"F%d%d TF%d %s: %s",i/8+1,i%8+1,i/8+1,d.name,i%8<d.count?d.parameters[i%8].name:"Inactive");
+    int destination=firstGeneric+genericModFirstInsert+i;
+    insertDestinations[i]={instrumentModDestinationName(instrument->type,destination),destination,NULL,0,insertHelpers[i]};
+  }
+  destinationCategories[categoryCount++]={"INSERT FX",-1,insertDestinations,16};
   selectionPopupSetup("DESTINATION", destinationCategories, categoryCount,
     instrument->modulation[modIndex].destination, destinationSelected,
     destinationCancelled);
@@ -219,8 +206,7 @@ static ScreenData screenData = {
 
 // Map logical row to screen Y
 static int rowToY(int row) {
-  if (row < ROWS_PER_MOD) return row + 2;  // Top block: y 2-9
-  return row + 3;                            // Bottom block: y 11-18
+  return screenModulationRowY(row);
 }
 
 // Map (col, row) to modulator index (0-3)
@@ -361,7 +347,7 @@ static void drawStatic(void) {
   if (chipnomadState->project.instruments[cInstrument].type == InstrumentType::none) return;
 
   for (int block = 0; block < 2; block++) {
-    int baseY = block == 0 ? 2 : 11;
+    int baseY = rowToY(block * ROWS_PER_MOD);
 
     gfxSetFgColor(cs.textTitles);
     gfxPrintf(COL_LEFT_X, baseY, "Mod%d", block == 0 ? 1 : 2);
@@ -602,6 +588,10 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
     chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
   }
 
+  if (keys == (keyUp | keyShift)) {
+    screenSetup(&screenInsertFX, -1);
+    return 1;
+  }
   if (keys == (keyDown | keyShift)) {
     // To Instrument screen
     screenSetup(&screenInstrument, cInstrument);

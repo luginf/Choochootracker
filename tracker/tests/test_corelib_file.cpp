@@ -6,6 +6,7 @@
 #include <cstring>
 #include <string>
 
+#ifndef _WIN32
 namespace {
 // Sets APPIMAGE for the duration of the test, restoring whatever it was
 // (or clearing it) on scope exit - AppImages set this for the process they
@@ -85,3 +86,5 @@ TEST_CASE("APPIMAGE env var anchors default project/sample/theme paths") {
 }
 
 }
+
+#endif

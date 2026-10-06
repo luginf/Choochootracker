@@ -4,7 +4,7 @@
 # Compiler settings
 CXX = c++
 CFLAGS = -std=c++17 -Wall -g -O0 -DTEST -DTEST_PORTMASTER_INPUT
-LDFLAGS = -lm
+LDFLAGS = -lm -pthread
 
 # Build directory
 BUILD_DIR = build/tests
@@ -13,7 +13,8 @@ BUILD_DIR = build/tests
 # Include paths
 INCLUDES = -I. -Isrc -Isrc/corelib -Isrc/screens -Isrc/import -Itests/mocks -Iexternal \
            -I../chipnomad_lib -I../chipnomad_lib/chips -I../chipnomad_lib/external/ayumi \
-           -I../chipnomad_lib/external/mutable -I../chipnomad_lib/external/open303/Source/DSPCode
+           -I../chipnomad_lib/external/mutable -I../chipnomad_lib/external/open303/Source/DSPCode \
+           -I../chipnomad_lib/external/signalsmith
 
 # Test executable
 TEST_EXECUTABLE = $(BUILD_DIR)/run_tests$(if $(filter Windows_NT,$(OS)),.exe,)
@@ -32,6 +33,8 @@ TEST_SOURCES = $(filter-out $(TEST_SOURCES_EXCLUDED),$(TEST_SOURCES_ALL))
 CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
                         $(wildcard ../chipnomad_lib/chips/*.cpp) \
                         $(wildcard ../chipnomad_lib/synth/*.cpp) \
+                        $(wildcard ../chipnomad_lib/export/*.cpp) \
+                        $(wildcard ../chipnomad_lib/midi/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/open303/Source/DSPCode/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/ayumi/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/mutable/braids/*.cc) \
@@ -54,10 +57,23 @@ CHIPNOMAD_LIB_SOURCES = $(wildcard ../chipnomad_lib/*.cpp) \
                         $(wildcard ../chipnomad_lib/external/mutable/plaits_alt/dsp/physical_modelling/*.cc) \
                         $(wildcard ../chipnomad_lib/external/mutable/plaits_alt/dsp/speech/*.cc)
 
-TRACKER_SRC_SOURCES = src/app.cpp \
+TRACKER_SRC_SOURCES = src/screens/screen_insert_fx.cpp \
+                      src/screens/selection_popup.cpp \
+                      src/app.cpp \
+                      src/corelib/corelib_gfx_layout.cpp \
+                      src/meter_display.cpp \
+                      src/monitor_display.cpp \
+                      src/piano_display.cpp \
+                      src/scope_display.cpp \
+                      src/screens/screen_layout.cpp \
                       src/screens/screen_settings.cpp \
+                      src/screens/screen_settings_submenus.cpp \
+                      src/screens/screen_track_visuals.cpp \
+                      src/screens/screen_midi.cpp \
+                      src/screens/screen_midi_channel_map.cpp \
                       src/string_utils.cpp \
                       src/common.cpp \
+                      src/export_path.cpp \
                       src/copy_paste.cpp \
                       src/project_utils.cpp \
                       src/pitch_table_utils.cpp \
@@ -70,7 +86,8 @@ TRACKER_SRC_SOURCES = src/app.cpp \
                       src/import/import_common.cpp \
                       src/import/import_vt2.cpp \
                       src/import/import_vts.cpp \
-                      src/import/pt3_tables.cpp
+                      src/import/pt3_tables.cpp \
+                      src/import/import_midi.cpp
 
 # Mock sources
 MOCK_SOURCES = $(wildcard tests/mocks/*.cpp)

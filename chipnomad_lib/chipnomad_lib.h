@@ -17,6 +17,8 @@ class DrumSynthVoice;
 class MMEVoice;
 class SinteredVoice;
 class AudioCommandQueue;
+struct MidiRouterState;
+class AudioMonitor;
 
 constexpr int VOICE_MONITOR_SAMPLES = 256;
 
@@ -71,6 +73,11 @@ struct ChipNomadState {
   int trackClipping[PROJECT_MAX_TRACKS];
   int trackWarnings[PROJECT_MAX_TRACKS];
   TrackTilt trackTilt[PROJECT_MAX_TRACKS];
+  InsertChain* insertChains[PROJECT_MAX_TRACKS];
+  uint32_t insertResetSeen[PROJECT_MAX_TRACKS];
+  uint8_t insertValues[PROJECT_MAX_TRACKS][2][8];
+  uint8_t insertActive[PROJECT_MAX_TRACKS];
+  float* insertBuffer;
   float* mixBuffer;
   float* reverbBuffer;
   float* delayBuffer;
@@ -85,9 +92,15 @@ struct ChipNomadState {
   DrumSynthVoice* drumSynthVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   MMEVoice* mmeVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   SinteredVoice* sinteredVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  // MIDI-Out active-note tracking, Program/Bank cache, and MIDI-In routing
+  // state now live behind the generic MIDI router (see midi/midi_router.h) -
+  // one instance per ChipNomadState, so independent engine states (e.g. one
+  // per test fixture) never share bookkeeping through a hidden global.
+  MidiRouterState* midiRouter;
   VoiceMonitor voiceMonitors[PROJECT_MAX_TRACKS];
   MasterEffects* masterEffects;
   AudioCommandQueue* audioCommands;
+  AudioMonitor* audioMonitor;
   PlaybackStatus uiPlaybackStatus;
 };
 
@@ -119,6 +132,11 @@ int chipnomadQueueProjectRefresh(ChipNomadState* state);
 int chipnomadQueuePlaybackScale(ChipNomadState* state, uint8_t root, ScalePreset preset);
 void chipnomadDiscardQueuedProject(ChipNomadState* state);
 void chipnomadQueuePlaybackStop(ChipNomadState* state);
+// Sends Note Off for every currently active MIDI Out note, plus a blanket
+// CC123 (All Notes Off) / CC120 (All Sound Off) on every channel as a final
+// fallback. Call before closing/switching the MIDI output port and on
+// application shutdown, in addition to the automatic call on playback stop.
+void chipnomadMidiPanic(ChipNomadState* state);
 int chipnomadQueuePlaybackStartSong(ChipNomadState* state, int songRow, int chainRow, int loop);
 int chipnomadQueuePlaybackStartChain(ChipNomadState* state, int trackIdx, int songRow, int chainRow, int loop);
 int chipnomadQueuePlaybackStartPhrase(ChipNomadState* state, int trackIdx, int songRow, int chainRow, int loop);

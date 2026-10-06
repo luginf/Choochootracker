@@ -5,6 +5,7 @@
 #include "common.h"
 #include "screens.h"
 #include "corelib_input.h"
+#include "corelib_keymap.h"
 #include "app.h"
 #include <string.h>
 
@@ -18,6 +19,7 @@ static int captureRow = 0;
 static int captureCol = 0;
 static CaptureState captureState = STATE_NAVIGATION;
 static InputCode pendingCapture = {InputDeviceType::none, 0};
+static InputCode captureTrigger = {InputDeviceType::none, 0};
 static void fullRedraw(void);
 static void applyPendingCapture(void);
 
@@ -42,10 +44,41 @@ static InputCode* getKeySlot(int row, int col) {
   return NULL;
 }
 
+#ifdef PORTMASTER_BUILD
+// PortMaster normally delivers every physical control twice: once through
+// SDL's controller API and once through gptokeyb as a keyboard key.  Keep
+// saved mappings keyboard-based, but use the controller event as a reliable
+// fallback when Knulli does not deliver the keyboard event to the capture UI.
+static int portMasterGamepadToKeyboard(InputCode input, InputCode* output) {
+  if (input.deviceType != InputDeviceType::gamepad) return 0;
+
+  int key = 0;
+  switch (input.code) {
+    case SDL_CONTROLLER_BUTTON_DPAD_UP: key = BTN_UP; break;
+    case SDL_CONTROLLER_BUTTON_DPAD_DOWN: key = BTN_DOWN; break;
+    case SDL_CONTROLLER_BUTTON_DPAD_LEFT: key = BTN_LEFT; break;
+    case SDL_CONTROLLER_BUTTON_DPAD_RIGHT: key = BTN_RIGHT; break;
+    case SDL_CONTROLLER_BUTTON_A: key = BTN_A; break;
+    case SDL_CONTROLLER_BUTTON_B: key = BTN_B; break;
+    case SDL_CONTROLLER_BUTTON_X: key = BTN_X; break;
+    case SDL_CONTROLLER_BUTTON_Y: key = BTN_Y; break;
+    case SDL_CONTROLLER_BUTTON_LEFTSHOULDER: key = BTN_L1; break;
+    case SDL_CONTROLLER_BUTTON_RIGHTSHOULDER: key = BTN_R1; break;
+    case SDL_CONTROLLER_BUTTON_BACK: key = BTN_SELECT; break;
+    case SDL_CONTROLLER_BUTTON_START: key = BTN_START; break;
+    case gamepadTriggerLeft: key = BTN_L2; break;
+    case gamepadTriggerRight: key = BTN_R2; break;
+    default: return 0;
+  }
+  *output = (InputCode){InputDeviceType::keyboard, key};
+  return 1;
+}
+#endif
+
 static void onRawInput(InputCode input, int isDown) {
   if (!isDown) {
     if (captureState == STATE_CAPTURE_DONE &&
-        input.deviceType == pendingCapture.deviceType && input.code == pendingCapture.code) {
+        input.deviceType == captureTrigger.deviceType && input.code == captureTrigger.code) {
       applyPendingCapture();
       captureState = STATE_NAVIGATION;
       inputRawCallback = NULL;
@@ -56,20 +89,25 @@ static void onRawInput(InputCode input, int isDown) {
   if (captureState != STATE_CAPTURING) return;
 
 #ifdef PORTMASTER_BUILD
-  // gptokeyb sends the configured keyboard event for every physical button.
-  // SDL may report that same press as a controller button first; accepting it
-  // makes the saved mapping depend on event order. Keep SDL active for sticks.
-  if (input.deviceType == InputDeviceType::gamepad) return;
+  InputCode translatedInput;
+  if (portMasterGamepadToKeyboard(input, &translatedInput)) {
+    pendingCapture = translatedInput;
+    captureTrigger = input;
+    captureState = STATE_CAPTURE_DONE;
+    return;
+  }
 #endif
 
   // Logical buttons (e.g. touch vpad) are not remappable
   if (input.deviceType == InputDeviceType::logical) {
     pendingCapture = input;
+    captureTrigger = input;
     captureState = STATE_CAPTURE_DONE;
     return;
   }
 
   pendingCapture = input;
+  captureTrigger = input;
   captureState = STATE_CAPTURE_DONE;
 }
 
@@ -157,6 +195,10 @@ static int onEdit(int col, int row, CellEditAction action) {
     }
   } else if (row == 11 && action == CellEditAction::tap) {
     settingsSave();
+    // The key that confirms Done can have just been remapped. Do not carry
+    // its old logical state into Settings: on gptokeyb/PortMaster the release
+    // may arrive after this mapping has changed.
+    appResetInputState();
     screenSetup(&screenSettings, 0);
     return 1;
   }
@@ -194,6 +236,7 @@ static void setup(int input) {
   screenKeyMappingData.cursorCol = 0;
   captureState = STATE_NAVIGATION;
   inputRawCallback = NULL;
+  captureTrigger = (InputCode){InputDeviceType::none, 0};
 }
 
 static void fullRedraw(void) {
@@ -222,11 +265,22 @@ static void applyPendingCapture(void) {
     *slot = pendingCapture;
   }
   pendingCapture = (InputCode){InputDeviceType::none, 0};
+  // The release event that completes the capture can otherwise be interpreted
+  // with the newly changed mapping, leaving a stale logical key held.
+  appResetInputState();
 }
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
   if (captureState == STATE_CAPTURING) return 1;
   if (captureState == STATE_CAPTURE_DONE) return 1;
+
+  // Keep a reliable exit after remapping Edit and Opt. This is especially
+  // useful with PortMaster's keyboard bridge, where a just-swapped pair can
+  // otherwise make the expected confirmation button ambiguous.
+  if (isKeyDown && screenKeyMappingData.cursorRow == 11 &&
+      (keys == keyEdit || keys == keyOpt)) {
+    return onEdit(0, 11, CellEditAction::tap);
+  }
 
   // 5 taps on any unmapped key resets to defaults
   if (isKeyDown && keys == keyUnmapped && tapCount >= 5) {
