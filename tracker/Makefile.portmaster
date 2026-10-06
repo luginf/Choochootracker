@@ -2,6 +2,8 @@
 
 PLATFORM = portmaster
 include Makefile.common
+NATIVE_CHIP_OPT_FLAGS ?= -O3
+include Makefile.native-chip-flags
 
 LIBS = $(COMMON_LIBS) platforms/sdl2 ../chipnomad_lib/external/rtmidi
 CXX = aarch64-linux-gnu-g++
@@ -28,9 +30,9 @@ OBJECTS := $(foreach source,$(SOURCES),$(call object_for,$(source)))
 DEPS := $(OBJECTS:.o=.d)
 
 define compile_source
-$(call object_for,$(1)): $(1) Makefile.portmaster Makefile.common
+$(call object_for,$(1)): $(1) Makefile.portmaster Makefile.common Makefile.native-chip-flags
 	@mkdir -p $$(dir $$@)
-	@$(CXX) $(CFLAGS) -MMD -MP -c $$< -o $$@
+	@$(CXX) $(CFLAGS) $(call native_chip_opt_flags,$(1)) -MMD -MP -c $$< -o $$@
 endef
 
 $(foreach source,$(SOURCES),$(eval $(call compile_source,$(source))))
@@ -45,7 +47,7 @@ PortMaster: $(BUILD)/choochootracker.aarch64
 
 $(BUILD)/choochootracker.aarch64: $(OBJECTS)
 	mkdir -p $(BUILD)
-	$(CXX) $(COMMON_CFLAGS) $(OBJECTS) $(SDL_LIBS) -lasound -pthread -lm $(OUTPUT)
+	$(CXX) $(COMMON_CFLAGS) $(OBJECTS) $(SDL_LIBS)  -lasound -pthread -lm $(OUTPUT)
 	$(STRIP) $(BUILD)/choochootracker.aarch64
 
 .PHONY: PortMaster-deploy

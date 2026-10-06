@@ -171,3 +171,10 @@ Mad respects to the people I stole ideas from:
 - Whoever invented the menu navigation style of vintage RPGs
 - the Noise Engineering team, who inspired the MME engine
 - All musicians who I saw playing live sets on gameboys and other constrained hardware rigs.
+
+## Native chip and FM instruments
+
+This contribution adds SID, OPLL/VRC7, AdLib/OPL2, OPL3, Sega PSG, Game Boy
+Pulse/Noise, Genesis/Arcade FM and DX7 instruments with preset browsing.
+See [the instrument notes](docs/native-chip-instruments.md) and
+[the user manual](docs/USER_MANUAL.md) for controls, banks and limitations.

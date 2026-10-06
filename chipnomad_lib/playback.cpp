@@ -55,6 +55,9 @@ static void resetTableFXAuxState(PlaybackTableState* tableState) {
 
 static void resetNoteFX(PlaybackState* state, int trackIdx) {
   PlaybackTrackState* track = &state->tracks[trackIdx];
+  track->note.nativeFM = {};
+  track->note.nativeFMCurrent = {};
+  track->note.nativeFMRemaining = {};
   for (int i = 0; i < fxTotalCount; i++) {
     track->note.fx[i].isOn = 0;
     track->note.fx[i].counter = 0;
@@ -63,6 +66,9 @@ static void resetNoteFX(PlaybackState* state, int trackIdx) {
 }
 
 static void resetInstrumentFX(PlaybackTrackState* track) {
+  track->note.nativeFM = {};
+  track->note.nativeFMCurrent = {};
+  track->note.nativeFMRemaining = {};
   for (int i = fxBMD; i <= fxPRS; i++) track->note.fx[i].isOn = 0;
   for (int i = fxRSN; i <= fxTCL; i++) track->note.fx[i].isOn = 0;
   for (int i = fxASL; i <= fxATY; ++i) track->note.fx[i].isOn = 0;

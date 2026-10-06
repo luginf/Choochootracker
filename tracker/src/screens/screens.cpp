@@ -22,7 +22,8 @@ static int pendingScreenInput;
 
 void drawScreenMap() {
   ScreenOverlayCoordinates overlay;
-  if (currentScreen == &screenSelectionPopup && selectionPopupIsFullWidth()) return;
+  // Native preset lists use the popup area through the footer.
+  if (currentScreen == &screenSelectionPopup) return;
   const static int smY = 15;
 
   const ColorScheme cs = appSettings.colorScheme;

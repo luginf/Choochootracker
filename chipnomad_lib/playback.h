@@ -58,6 +58,9 @@ struct PlaybackNoteState {
 
   PlaybackTableState instrumentTable;
   PlaybackTableState auxTable;
+  NativeFMValues nativeFM;
+  NativeFMValues nativeFMCurrent;
+  NativeFMValues nativeFMRemaining;
   PlaybackFXState fx[256]; // Active FX on this note, indexed by FX enum
 
   PlaybackModState modulation[4]; // Modulation states

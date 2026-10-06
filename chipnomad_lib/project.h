@@ -207,12 +207,38 @@ enum FX {
   // Track insert addresses: appended; existing and reserved IDs remain stable.
   fxF11, fxF12, fxF13, fxF14, fxF15, fxF16, fxF17, fxF18, fxF21, fxF22, fxF23, fxF24, fxF25, fxF26, fxF27, fxF28,
 
+  // Native tone controls append IDs to preserve existing projects.
+  fxFBR, fxFFB,
+  fxCMD, fxCNR, fxCND, fxCNS, fxCSP, fxCSS, fxCSD, fxCEI, fxCEP, fxCED,
+  fxFO1, fxFO2, fxFO3, fxFO4, fxFO5, fxFO6,
+  fxSCP, fxSCT, fxSRN, fxSWV, fxSFTY, fxSMR, fxSRG, fxSSY,
+  fxFET, fxFTD, fxFDT, fxFHR, fxFLR, fxFLD,
+  fxSAT, fxSDE, fxSSU, fxSRL, fxSPR,
+  // Absolute native output levels. Earlier personal command IDs are retired.
+  fxOL1, fxOL2, fxOL3, fxOL4, fxOL5, fxOL6,
+  fxFBK,
+  // Direct FM parameter IDs are also used by fixed-operator modulation.
+  // Leave the removed selector ID unassigned; keep saved command IDs stable.
+  fxOAR = fxFBK + 2, fxODR, fxOSR, fxORR, fxOSL, fxODT, fxOMU, fxOFI, fxOFM, fxOE1, fxOE2, fxOE4,
+  fxLFR, fxLAD, fxLPD, fxLAS, fxLPS, fxLEN,
   // Total count - must be last
   fxTotalCount
 };
 
 static_assert(fxTotalCount < 255, "FX identifiers must not collide with FF");
 static_assert(fxF28 - fxF11 == 15, "Contiguous insert commands");
+
+struct NativeFXInfo {
+  int maximum;
+  int preset;
+  bool relative;
+  int minimum = 0;
+  const char* label = nullptr;
+};
+bool instrumentNativeFXInfo(const Instrument* instrument, int fx, NativeFXInfo* info, int op = 0);
+bool instrumentDirectFMInfo(const Instrument* instrument, int fx, NativeFXInfo* info, int op = 0);
+const char* directFMName(int fx);
+int instrumentFMOperatorCount(const Instrument* instrument);
 
 enum ScalePreset : uint8_t {
   scaleChromatic,

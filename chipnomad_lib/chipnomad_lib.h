@@ -16,6 +16,13 @@ class AChChidVoice;
 class DrumSynthVoice;
 class MMEVoice;
 class SinteredVoice;
+class OPLLVoice;
+class SIDVoice;
+class DX7Voice;
+class DX7Part;
+class FourOpVoice;
+class OPLVoice;
+class SimpleChipVoice;
 class AudioCommandQueue;
 struct MidiRouterState;
 class AudioMonitor;
@@ -91,6 +98,21 @@ struct ChipNomadState {
   AChChidVoice* achchidVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   DrumSynthVoice* drumSynthVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   MMEVoice* mmeVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  OPLVoice* oplVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  OPLVoice* oplPreview;
+  FourOpVoice* fourOpPreview;
+  FourOpVoice* fourOpVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  SimpleChipVoice* simpleChipVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  SimpleChipVoice* simpleChipPreview;
+  InstrumentType chipPreviewType;
+  DX7Part* dx7Parts[PROJECT_MAX_TRACKS];
+  DX7Voice* dx7Voices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  DX7Part* dx7Preview;
+  SIDVoice* sidPreview;
+  SIDVoice* sidVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  OPLLVoice* opllPreview;
+  int opllPreviewTrack;
+  OPLLVoice* opllVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   SinteredVoice* sinteredVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
   // MIDI-Out active-note tracking, Program/Bank cache, and MIDI-In routing
   // state now live behind the generic MIDI router (see midi/midi_router.h) -
@@ -145,6 +167,13 @@ int chipnomadQueuePlaybackQueuePhrase(ChipNomadState* state, int trackIdx, int s
 int chipnomadQueuePlaybackStartLiveChain(ChipNomadState* state, int trackIdx, int songRow);
 int chipnomadQueuePlaybackQueueLiveChain(ChipNomadState* state, int trackIdx, int songRow, int urgent);
 int chipnomadQueuePlaybackPreviewNote(ChipNomadState* state, int trackIdx, uint8_t note, uint8_t instrument);
+// Copies the bounded native patch into the existing audio command queue.
+int chipnomadQueueSimpleChipPreview(ChipNomadState* state,int track,InstrumentType type,const InstrumentSimpleChip* patch);
+int chipnomadQueueFourOpPreview(ChipNomadState* state,int track,InstrumentType type,const InstrumentFourOp* patch);
+int chipnomadQueueOPLPreview(ChipNomadState* state, int track, InstrumentType type, const InstrumentOPL* patch);
+int chipnomadQueueDX7Preview(ChipNomadState* state,int track,const InstrumentDX7* patch);
+int chipnomadQueueSIDPreview(ChipNomadState* state,int track,const InstrumentSID* patch);
+int chipnomadQueueOPLLPreview(ChipNomadState* state, int track, const InstrumentOPLL* patch);
 int chipnomadQueuePlaybackStopPreview(ChipNomadState* state, int trackIdx);
 int chipnomadQueuePlaybackClearTrackFX(ChipNomadState* state, int trackIdx);
 void chipnomadQueueLoopRange(ChipNomadState* state, LoopRange range);

@@ -8,3 +8,5 @@ extern ScreenData* mockScreenData;
 extern const char* mockBrowserTitle;
 extern const char* mockBrowserExtension;
 extern int mockLastInputKeys;
+extern int mockEnvelopePreviewCount;
+extern int mockBitmapDrawCount, mockBitmapDrawRow;

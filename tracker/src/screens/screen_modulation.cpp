@@ -120,6 +120,9 @@ static void openDestinationPopup(int modIndex) {
     if (instrumentModDestinationAvailable(instrument, i))
       engineDestinations[engineDestinationCount++] = {instrumentModDestinationNameForInstrument(instrument, i), i, NULL, 0};
   int firstGeneric = functions.modDestinationsCount + 1;
+  for(int g=genericModFMBrightness;g<genericModTotalCount;++g)
+    if(const auto* d=instrumentNativeModDestination(instrument->type,g))
+      if(instrumentModDestinationAvailable(instrument,firstGeneric+g))engineDestinations[engineDestinationCount++]={d->name,firstGeneric+g,NULL,0};
   sendDestinations[0] = {"REVERB SEND", firstGeneric + genericModReverbSend, NULL, 0};
   sendDestinations[1] = {"DELAY SEND", firstGeneric + genericModDelaySend, NULL, 0};
   for (int i = 0; i < 16; ++i) {
