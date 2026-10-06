@@ -1,8 +1,15 @@
 name: AppImage
 
+# An AppImage uses the C library of the machine it runs on, so what it needs is
+# fixed by the system it was built on. Build inside a Debian 10 (glibc 2.28)
+# container so the result runs on Debian 10+, Ubuntu 18.04+ (incl. 22.04) and
+# anything newer. Debian 10 is EOL: its packages come from archive.debian.org.
+# The checkout happens on the host and only the build runs in the container,
+# because the container's old userland can't run the JavaScript actions.
 on:
   workflow_dispatch:
   push:
+    branches: [linux-appimage]
     tags:
       - 'v*'
 
@@ -11,29 +18,41 @@ permissions:
 
 jobs:
   appimage:
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-      - name: Install Linux build dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y g++ make libsdl2-dev libsamplerate0-dev libasound2-dev
-
-      - name: Install pinned appimagetool
+      - name: Download pinned appimagetool
         env:
           APPIMAGETOOL_SHA256: b90f4a8b18967545fda78a445b27680a1642f1ef9488ced28b65398f2be7add2
         run: |
-          curl --fail --location --output /tmp/appimagetool \
+          curl --fail --location --output "$RUNNER_TEMP/appimagetool" \
             https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
-          echo "$APPIMAGETOOL_SHA256  /tmp/appimagetool" | sha256sum --check
-          chmod +x /tmp/appimagetool
-          printf '#!/bin/sh\nexec /tmp/appimagetool --appimage-extract-and-run "$@"\n' \
-            | sudo tee /usr/local/bin/appimagetool >/dev/null
-          sudo chmod +x /usr/local/bin/appimagetool
+          echo "$APPIMAGETOOL_SHA256  $RUNNER_TEMP/appimagetool" | sha256sum --check
+          chmod +x "$RUNNER_TEMP/appimagetool"
 
-      - name: Build AppImage
-        run: make -C tracker -j2 -f Makefile.linux appimage
+      - name: Build AppImage in a Debian 10 container
+        run: |
+          docker run --rm \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -v "$RUNNER_TEMP/appimagetool:/opt/appimagetool:ro" \
+            -w /workspace \
+            debian:10 bash -euxc '
+              sed -i "s|deb.debian.org|archive.debian.org|; s|security.debian.org|archive.debian.org|; /buster-updates/d" /etc/apt/sources.list
+              echo "Acquire::Check-Valid-Until false;" > /etc/apt/apt.conf.d/99archive
+              apt-get update
+              DEBIAN_FRONTEND=noninteractive apt-get install -y --no-install-recommends \
+                g++ make file libsdl2-dev libsamplerate0-dev libasound2-dev
+              printf "#!/bin/sh\nexec /opt/appimagetool --appimage-extract-and-run \"\$@\"\n" \
+                > /usr/local/bin/appimagetool
+              chmod +x /usr/local/bin/appimagetool
+              make -C tracker -j2 -f Makefile.linux appimage
+              echo "highest glibc symbol version needed:"
+              objdump -T tracker/build/linux/choochootracker | grep -o "GLIBC_[0-9.]*" | sort -uV | tail -1
+            '
 
       - name: Upload AppImage
         uses: actions/upload-artifact@v4

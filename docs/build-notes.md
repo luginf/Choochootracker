@@ -89,6 +89,13 @@ curl -L -o /usr/local/bin/appimagetool https://github.com/AppImage/AppImageKit/r
 chmod +x /usr/local/bin/appimagetool
 ```
 
+The GitHub Actions workflow `.github/workflows/appimage.yml` builds the
+AppImage inside a `debian:10` container (glibc 2.28, packages from
+`archive.debian.org`) so it runs on Debian 10+ and Ubuntu 18.04+ including
+22.04. Trigger it by hand (`workflow_dispatch`), by pushing `linux-appimage`
+or a `v*` tag; the AppImage is uploaded as the `choochootracker-appimage`
+artifact.
+
 `fileGetDefaultDirectory()` (`src/corelib/corelib_file.cpp`) detects the
 `APPIMAGE` environment variable the AppImage runtime sets and resolves
 settings/autosave to `$XDG_DATA_HOME/ChooChooTracker`, falling back to
