@@ -238,6 +238,84 @@ TEST_CASE("rejects files that are not M8 songs") {
 }
 
 
+TEST_CASE("export converts Braids and Sample instruments using template records") {
+  auto tmpl = makeM8S();
+  uint8_t* mac = &tmpl[0x13A3E + 20 * 215];
+  mac[0] = 1; mac[100] = 0x77;              // a MacroSynth to copy from
+  uint8_t* smp = &tmpl[0x13A3E + 21 * 215];
+  smp[0] = 2; smp[60] = 0x66;              // a Sampler to copy from
+  const char* tmplPath = "test_export_m8s_inst_template.m8s";
+  const char* outPath = "test_export_m8s_inst_out.m8s";
+  REQUIRE(writeFile(tmplPath, tmpl));
+
+  Project src;
+  projectInit(&src);
+  Instrument* b = &src.instruments[7];
+  getInstrumentFunctions(InstrumentType::Braids).init(b);
+  strcpy(b->name, "SWARM");
+  b->chip.braids.model = 14;
+  b->chip.braids.timbre = 0xBA * 129;
+  b->chip.braids.color = 0x6B * 129;
+  b->chip.braids.filterMode = 2;
+  b->chip.braids.filterCutoffHz = 20000;
+  b->chip.braids.filterResonance = 0x40;
+  b->pan = 0xB1;
+  Instrument* s = &src.instruments[8];
+  getInstrumentFunctions(InstrumentType::Sample).init(s);
+  strcpy(s->name, "KICK");
+  strcpy(s->chip.sample.path, "/home/x/samples/Pack/Kick_4.wav");
+  s->chip.sample.loopMode = 1;
+  s->chip.sample.start = 0x10;
+  s->chip.sample.end = 0x50;
+  s->chip.sample.filterEnabled = 0;
+  Instrument* unused = &src.instruments[9];
+  getInstrumentFunctions(InstrumentType::Braids).init(unused);
+  src.phrases[0].rows[0].note = 36; src.phrases[0].rows[0].instrument = 7;
+  src.phrases[0].rows[1].note = 36; src.phrases[0].rows[1].instrument = 8;
+  REQUIRE(projectExportM8S(&src, tmplPath, outPath) == 0);
+
+  FILE* f = fopen(outPath, "rb");
+  REQUIRE(f);
+  std::vector<uint8_t> out(M8S_SIZE);
+  REQUIRE(fread(out.data(), 1, out.size(), f) == out.size());
+  fclose(f);
+  remove(tmplPath);
+
+  const uint8_t* m = &out[0x13A3E + 7 * 215];
+  CHECK(m[0] == 1);
+  CHECK(m[100] == 0x77);                    // the rest of the template record is kept
+  CHECK(strcmp((const char*)m + 1, "SWARM") == 0);
+  CHECK(m[18] == 14);
+  CHECK(m[19] == 0xBA);
+  CHECK(m[20] == 0x6B);
+  CHECK(m[23] == 2);                        // high pass
+  CHECK(m[24] == 255);                      // 20 kHz
+  CHECK(m[25] == 0x40);
+  CHECK(m[28] == 0xB1);
+  const uint8_t* r = &out[0x13A3E + 8 * 215];
+  CHECK(r[0] == 2);
+  CHECK(r[60] == 0x66);
+  CHECK(strcmp((const char*)r + 0x57, "/Samples/Kick_4.wav") == 0);
+  CHECK(r[18] == 2);                        // forward loop
+  CHECK(r[20] == 0x10);
+  CHECK(r[22] == 0x40);
+  CHECK(r[24] == 0);                        // no filter
+  CHECK(out[0x13A3E + 9 * 215] == 0);       // unused instrument: template slot untouched
+
+  Project back;
+  projectInit(&back);
+  REQUIRE(projectLoadM8S(&back, outPath) == 0);
+  remove(outPath);
+  CHECK(back.instruments[7].type == InstrumentType::Braids);
+  CHECK(back.instruments[7].chip.braids.model == 14);
+  CHECK(back.instruments[7].chip.braids.timbre == 0xBA * 129);
+  CHECK(back.instruments[8].type == InstrumentType::Sample);
+  CHECK(back.instruments[8].chip.sample.loopMode == 1);
+  CHECK(back.instruments[8].chip.sample.end == 0x50);
+  projectFree(&back);
+  projectFree(&src);
+}
+
 TEST_CASE("export writes structure and notes into the template and round-trips") {
   auto tmpl = makeM8S();
   tmpl[0x13A3E + 5 * 215 + 50] = 0x5A;  // instrument data must survive untouched

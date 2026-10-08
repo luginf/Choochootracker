@@ -1,6 +1,8 @@
 #include "export_m8s.h"
 #include "../m8s_format.h"
+#include "../synth/multimode_filter.h"
 
+#include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,6 +12,88 @@ char projectExportM8SError[48];
 static int fail(const char* message) {
   snprintf(projectExportM8SError, sizeof(projectExportM8SError), "%s", message);
   return 1;
+}
+
+// The inverse of the importer's instrument conversions, for Braids and Sample
+// only. An M8 instrument record holds much more than we know, so the record
+// is taken from the template: the template's own slot when it already has the
+// right type, else a copy of any template record of that type. When the
+// template has none, the slot is left alone.
+static uint8_t* findRecord(uint8_t* instruments, int slot, uint8_t type) {
+  if (instruments[slot * M8S_INSTRUMENT_SIZE] == type) return instruments + slot * M8S_INSTRUMENT_SIZE;
+  for (int i = 0; i < M8S_INSTRUMENTS; i++) {
+    if (instruments[i * M8S_INSTRUMENT_SIZE] != type) continue;
+    uint8_t* dest = instruments + slot * M8S_INSTRUMENT_SIZE;
+    memcpy(dest, instruments + i * M8S_INSTRUMENT_SIZE, M8S_INSTRUMENT_SIZE);
+    return dest;
+  }
+  return NULL;
+}
+
+static void writeName(uint8_t* record, const char* name) {
+  memset(record + 1, 0, M8S_INSTRUMENT_NAME_SIZE);
+  strncpy((char*)record + 1, name, M8S_INSTRUMENT_NAME_SIZE);
+}
+
+// CCT filter mode 0 LP, 1 BP, 2 HP -> M8 type 1 LP, 3 BP, 2 HP.
+static void writeFilter(const InstrumentVoicePostSettings* post, uint8_t* f) {
+  static const uint8_t types[3] = {1, 3, 2};
+  if (!post->filterEnabled) { f[0] = 0; return; }
+  f[0] = types[post->filterMode <= 2 ? post->filterMode : 0];
+  double ratio = (double)FILTER_CUTOFF_MAX_HZ / FILTER_CUTOFF_MIN_HZ;
+  double position = log(post->filterCutoffHz / (double)FILTER_CUTOFF_MIN_HZ) / log(ratio);
+  int cutoff = (int)(position * 255.0 + 0.5);
+  f[1] = (uint8_t)(cutoff < 0 ? 0 : cutoff > 255 ? 255 : cutoff);
+  f[2] = post->filterResonance;
+}
+
+static void exportBraids(uint8_t* record, const Instrument* inst) {
+  if (inst->chip.braids.model >= M8S_MACRO_SHAPE_COUNT) return;
+  record[M8S_MACRO_SHAPE] = inst->chip.braids.model;
+  record[M8S_MACRO_TIMBRE] = (uint8_t)((inst->chip.braids.timbre + 64) / 129);
+  record[M8S_MACRO_COLOR] = (uint8_t)((inst->chip.braids.color + 64) / 129);
+  record[M8S_MACRO_PAN] = inst->pan;
+  writeFilter(&inst->chip.braids, record + M8S_MACRO_FILTER);
+  writeName(record, inst->name);
+}
+
+// The WAV is not copied: the path points at /Samples/<file name> on the M8
+// card, the user copies the file there. Sample pitch and slices are not
+// exported.
+static void exportSample(uint8_t* record, const Instrument* inst) {
+  const InstrumentSample* s = &inst->chip.sample;
+  const char* base = s->path;
+  for (const char* c = s->path; *c; c++) if (*c == '/' || *c == '\\') base = c + 1;
+  memset(record + M8S_SAMPLER_PATH, 0, M8S_SAMPLER_PATH_SIZE);
+  snprintf((char*)record + M8S_SAMPLER_PATH, M8S_SAMPLER_PATH_SIZE, "/Samples/%s", base);
+  record[M8S_SAMPLER_PLAY_MODE] = s->loopMode == 1 ? 2 : s->loopMode == 2 ? 4 : 0;
+  record[M8S_SAMPLER_START] = s->start;
+  record[M8S_SAMPLER_LENGTH] = (s->end == 255 || s->end <= s->start) ? 0xFF : (uint8_t)(s->end - s->start);
+  record[M8S_SAMPLER_PAN] = inst->pan;
+  writeFilter(s, record + M8S_SAMPLER_FILTER);
+  writeName(record, inst->name);
+}
+
+static void exportInstruments(Project* project, uint8_t* data) {
+  uint8_t* instruments = data + M8S_INSTRUMENTS_OFFSET;
+  uint8_t used[M8S_INSTRUMENTS] = {0};
+  for (int ph = 0; ph < M8S_PHRASES && ph < PROJECT_MAX_PHRASES; ph++) {
+    for (int s = 0; s < M8S_PHRASE_STEPS; s++) {
+      uint8_t i = project->phrases[ph].rows[s].instrument;
+      if (project->phrases[ph].rows[s].note != EMPTY_VALUE_8 && i < M8S_INSTRUMENTS && i < PROJECT_MAX_INSTRUMENTS) used[i] = 1;
+    }
+  }
+  for (int i = 0; i < M8S_INSTRUMENTS && i < PROJECT_MAX_INSTRUMENTS; i++) {
+    if (!used[i]) continue;
+    const Instrument* inst = &project->instruments[i];
+    if (inst->type == InstrumentType::Braids && inst->chip.braids.model < M8S_MACRO_SHAPE_COUNT) {
+      uint8_t* record = findRecord(instruments, i, M8S_INST_MACROSYNTH);
+      if (record) exportBraids(record, inst);
+    } else if (inst->type == InstrumentType::Sample) {
+      uint8_t* record = findRecord(instruments, i, M8S_INST_SAMPLER);
+      if (record) exportSample(record, inst);
+    }
+  }
 }
 
 int projectExportM8S(Project* project, const char* templatePath, const char* outputPath) {
@@ -107,6 +191,8 @@ int projectExportM8S(Project* project, const char* templatePath, const char* out
       }
     }
   }
+
+  exportInstruments(project, data);
 
   FILE* out = fopen(outputPath, "wb");
   if (!out) {

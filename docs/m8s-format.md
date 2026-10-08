@@ -103,8 +103,19 @@ reimplementing every M8 section. The template is remembered for the session;
 **EDIT + OPT** on the row forgets it.
 
 - Phrase FX columns are written empty.
-- Instrument numbers are exported as they are and play whatever the template
-  holds in those slots.
+- Instrument numbers are exported as they are. Braids and Sample instruments
+  used by a phrase are converted back (see below); every other slot plays
+  whatever the template holds.
+- Braids becomes a MacroSynth: model = shape, timbre and color divided by 129,
+  filter mode, cutoff (inverse of the import curve, approximate), resonance,
+  pan and name. Sample becomes a Sampler: path `/Samples/<file name>` (copy the
+  WAV into that folder on the M8 card yourself, it is not exported), loop mode,
+  start, length, filter, pan and name. Sample pitch and slices are not
+  exported. An M8 instrument has many parameters we do not know, so the record
+  is a copy of the template's instrument of the same type (the slot itself if
+  it already has that type, otherwise any other slot). If the template has none
+  of that type the slot is left as it is. Other parameters keep the template
+  values.
 - The M8 has 255 phrases: a song whose chains reference phrase 255 or higher
   fails to export rather than losing notes.
 - An exported file has not been verified on real M8 hardware.
