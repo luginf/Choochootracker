@@ -196,7 +196,7 @@ void drawField(int col, int row, CellState state) {
   int y = rowY(row);
   gfxClearRect(cellX(col), y, 8, 1);
   if (f.tag[0]) { gfxSetFgColor(appSettings.colorScheme.textInfo); gfxPrint(cellX(col), y, f.tag); }
-  setCellColor(state, false, true);
+  gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
   int v = f.get();
   if (f.names) gfxPrint(valueX(f, col), y, f.names[v]);
   else gfxPrintf(valueX(f, col), y, f.max > 15 ? "%02X" : "%X", v);
