@@ -88,8 +88,7 @@ int projectExportM8S(Project* project, const char* templatePath, const char* out
     }
   }
 
-  // Phrases. Pitch table index N is MIDI note 12+N and an M8 note value is a
-  // MIDI note number (the importer's inverse).
+  // Phrases. The importer's inverse: M8 value = pitch table index + 12.
   for (int ph = 0; ph < M8S_PHRASES; ph++) {
     for (int s = 0; s < M8S_PHRASE_STEPS; s++) {
       uint8_t* step = data + M8S_PHRASES_OFFSET + (ph * M8S_PHRASE_STEPS + s) * M8S_PHRASE_STEP_SIZE;
@@ -101,8 +100,8 @@ int projectExportM8S(Project* project, const char* templatePath, const char* out
       if (row->note == NOTE_OFF) {
         step[0] = M8S_NOTE_OFF;
       } else if (row->note != EMPTY_VALUE_8) {
-        int note = row->note + 12;
-        step[0] = (uint8_t)(note > 127 ? 127 : note);
+        int note = row->note + M8S_INDEX_OFFSET;
+        step[0] = (uint8_t)(note < 0 ? 0 : note > 127 ? 127 : note);
         if (row->volume != EMPTY_VALUE_16) step[1] = (uint8_t)(row->volume > PHRASE_VOLUME_MAX ? PHRASE_VOLUME_MAX : row->volume);
         if (row->instrument != EMPTY_VALUE_8 && row->instrument < M8S_INSTRUMENTS) step[2] = row->instrument;
       }
