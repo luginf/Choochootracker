@@ -2,6 +2,7 @@
 #include "corelib_gfx.h"
 #include "utils.h"
 #include "model_catalog.h"
+#include <string.h>
 
 static int modelButtonDown;
 static void selectModel(int value) { chipnomadState->project.instruments[cInstrument].chip.sintered.model = (SinteredModel)value; projectModified = 1; screenSetup(&screenInstrument, cInstrument); }
@@ -26,7 +27,7 @@ static void drawStatic(void) {
   gfxSetFgColor(appSettings.colorScheme.textTitles); gfxPrint(0, 6, "Model"); gfxPrint(0, 7, "SINTERED"); gfxSetFgColor(appSettings.colorScheme.textDefault);
   for (int i = 0; i < 6; ++i) gfxPrint(0, 8 + i, macroName(s->model, i)); instrumentCommonDrawVoicePostStatic(0);
 }
-static void drawCursor(int col, int row) { if (row < 3) { instrumentCommonDrawCursor(col, row); return; } if (col && row >= 4 && row <= 8) { instrumentCommonDrawVoicePostCursor(col, row); return; } gfxCursor(11, row == 3 ? 6 : row + 4, 7); }
+static void drawCursor(int col, int row) { if (row < 3) { instrumentCommonDrawCursor(col, row); return; } if (col && row >= 4 && row <= 8) { instrumentCommonDrawVoicePostCursor(col, row); return; } InstrumentSintered* s = &chipnomadState->project.instruments[cInstrument].chip.sintered; gfxCursor(11, row == 3 ? 6 : row + 4, row == 3 ? 3 + strlen(modelName(s->model)) : 2); }
 static void drawField(int col, int row, CellState state) {
   if (row < 3) { instrumentCommonDrawField(col, row, state); return; } InstrumentSintered* s = &chipnomadState->project.instruments[cInstrument].chip.sintered;
   if (col && row >= 4 && row <= 8) { instrumentCommonDrawVoicePostField(col, row, state, s); return; }

@@ -1,10 +1,12 @@
 #include "doctest.h"
 #include "common.h"
+#include "corelib_file.h"
 #include "waveform_display.h"
 
 #include <cstring>
 #include <filesystem>
 #include <fstream>
+#include <string>
 
 TEST_SUITE("AY wavetable LFO view") {
 
@@ -26,12 +28,15 @@ TEST_CASE("linear LFO preview draws a zero guide") {
 }
 
 TEST_CASE("AY wavetable LFO view setting survives save and load") {
-  namespace fs = std::filesystem;
-  const fs::path originalPath = fs::current_path();
-  const fs::path testPath = fs::temp_directory_path() / "choochootracker-lfo-view-test";
-  fs::remove_all(testPath);
-  fs::create_directories(testPath);
-  fs::current_path(testPath);
+  // settingsSave()/settingsLoad() resolve their path from the running
+  // executable's own directory (see corelib_file.cpp), not the process cwd,
+  // so isolate this test by targeting that real resolved path directly
+  // rather than fs::current_path() (which settingsSave/Load no longer
+  // consult).
+  char defaultDir[PATH_LENGTH];
+  REQUIRE(fileGetDefaultDirectory(defaultDir, sizeof(defaultDir)) == 0);
+  std::string settingsPath = std::string(defaultDir) + "/settings.txt";
+  std::filesystem::remove(settingsPath);
 
   initDefaultAppSettings();
   CHECK(appSettings.ayWavetableLfoView == 0);
@@ -41,12 +46,11 @@ TEST_CASE("AY wavetable LFO view setting survives save and load") {
   REQUIRE(settingsLoad() == 0);
   CHECK(appSettings.ayWavetableLfoView == 1);
 
-  std::ofstream("settings.txt") << "screenWidth: 640\n";
+  std::ofstream(settingsPath) << "screenWidth: 640\n";
   REQUIRE(settingsLoad() == 0);
   CHECK(appSettings.ayWavetableLfoView == 0);
 
-  fs::current_path(originalPath);
-  fs::remove_all(testPath);
+  std::filesystem::remove(settingsPath);
 }
 
 }

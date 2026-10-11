@@ -2,6 +2,7 @@
 #include "corelib_gfx.h"
 #include "utils.h"
 #include "model_catalog.h"
+#include <string.h>
 
 static int engineButtonDown;
 
@@ -13,7 +14,7 @@ static void selectEngine(int value) {
 static void cancelEngineSelection() { screenSetup(&screenInstrument, cInstrument); }
 static void openEngineSelection() {
   InstrumentDrumSynth* d = &chipnomadState->project.instruments[cInstrument].chip.drumSynth;
-  selectionPopupSetup("BOGIE ENGINE", drumSynthCategories, drumSynthCategoryCount,
+  selectionPopupSetup("BOGIE MODEL", drumSynthCategories, drumSynthCategoryCount,
     (int)d->engine, selectEngine, cancelEngineSelection);
   screenSetup(&screenSelectionPopup, 0);
 }
@@ -50,7 +51,7 @@ static uint8_t* macro(InstrumentDrumSynth* d, int index) {
 static int columns(int row) { return row < 3 ? instrumentCommonColumnCount(row) : row == 3 ? 1 : row <= 8 ? 2 : 1; }
 static void drawStatic(void) {
   instrumentCommonDrawStatic(); InstrumentDrumSynth* d = &chipnomadState->project.instruments[cInstrument].chip.drumSynth;
-  gfxSetFgColor(appSettings.colorScheme.textTitles); gfxPrint(0, 6, "Engine"); gfxPrint(0, 7, "SOUND");
+  gfxSetFgColor(appSettings.colorScheme.textTitles); gfxPrint(0, 6, "Model"); gfxPrint(0, 7, "SOUND");
   gfxSetFgColor(appSettings.colorScheme.textDefault);
   for (int i = 0; i < 6; ++i) gfxPrint(0, 8 + i, drumSynthMacroUsed(d->engine, i) ? macroName(d->engine, i) : "---");
   instrumentCommonDrawVoicePostStatic(0);
@@ -58,7 +59,7 @@ static void drawStatic(void) {
 static void drawCursor(int col, int row) {
   if (row < 3) { instrumentCommonDrawCursor(col, row); return; }
   if (col && row >= 4 && row <= 8) { instrumentCommonDrawVoicePostCursor(col, row); return; }
-  if (row == 3) gfxCursor(11, 6, 28); else gfxCursor(11, row + 4, 7);
+  if (row == 3) gfxCursor(11, 6, 3 + strlen(engineName(chipnomadState->project.instruments[cInstrument].chip.drumSynth.engine))); else if (!col) gfxCursor(11, row + 4, 2);
 }
 static void drawField(int col, int row, CellState state) {
   if (row < 3) { instrumentCommonDrawField(col, row, state); return; }

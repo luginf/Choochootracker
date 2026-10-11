@@ -1,4 +1,5 @@
 #include "playback_modulation.h"
+#include "synth/multimode_filter.h"
 #include "utils.h"
 #include <math.h>
 #include <stdint.h>
@@ -442,4 +443,17 @@ int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude) {
   }
 
   return (int16_t)scaled;
+}
+
+int playbackModulateCutoff(int cutoffHz, const PlaybackModState* mod) {
+  if (!mod || !mod->modulation) return cutoffHz;
+  int amount = clampInt((int)mod->modulation->amount + mod->amountOffset, -128, 127);
+  float normalizedAmount = fabsf(amount) / 127.0f;
+  if (normalizedAmount == 0.0f) return cutoffHz;
+  float source = mod->outValue / (MOD_MAX_RANGE_F * normalizedAmount);
+  if (source > 1.0f) source = 1.0f;
+  if (source < -1.0f) source = -1.0f;
+  float semitones = source * 72.0f * normalizedAmount * normalizedAmount;
+  float cutoff = cutoffHz * powf(2.0f, semitones / 12.0f);
+  return clampInt((int)(cutoff + 0.5f), FILTER_CUTOFF_MIN_HZ, FILTER_CUTOFF_MAX_HZ);
 }

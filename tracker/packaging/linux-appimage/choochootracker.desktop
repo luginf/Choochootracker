@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=ChooChooTracker
+Comment=Handheld-style music tracker
+Exec=choochootracker
+Icon=choochootracker
+Categories=AudioVideo;Audio;Music;
+Terminal=false

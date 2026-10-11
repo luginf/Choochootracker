@@ -1,0 +1,1 @@
+ZIP regression fixtures: public Fat Man OPL2/OPL3 and ChooChoo-authored Genesis presets from the factory library, plus a synthetic all-zero DX7 bulk bank. No personal user patches. Source notices ship in packaging/common/licenses/chip-banks. Both archives contain identical uncompressed bytes.

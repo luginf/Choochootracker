@@ -63,6 +63,22 @@ TEST_CASE("MME maximum feedback stays animated") {
   }
 }
 
+TEST_CASE("MME shaper calibration is continuous and bounded") {
+  for (int model = 0; model < (int)MMEModel::totalCount; ++model) {
+    double previous = 0.0;
+    for (int shaper = 0; shaper < 256; ++shaper) {
+      InstrumentMME m = mmeInstrument((MMEModel)model); m.shaper = (uint8_t)shaper;
+      MMEVoice voice; voice.init(48000.0f); voice.configure(&m, 6000, 1, 20000, 0); voice.noteOn();
+      std::vector<float> output(1024); voice.render(output.data(), output.size());
+      double energy = 0.0;
+      for (float sample : output) { CHECK(std::isfinite(sample)); energy += sample * sample; }
+      energy = std::sqrt(energy / output.size());
+      if (previous > 1e-6 && energy > 1e-6) CHECK(std::fabs(20.0 * std::log10(energy / previous)) < 3.0);
+      previous = energy;
+    }
+  }
+}
+
 TEST_CASE("MME CNI round trip preserves model macros and filter") {
   Project saved, loaded; fillFXNames(); projectInit(&saved); projectInit(&loaded);
   Instrument* instrument = &saved.instruments[0]; getInstrumentFunctions(InstrumentType::MME).init(instrument);

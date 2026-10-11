@@ -67,6 +67,10 @@ void gfxClear(void);
  */
 void gfxUpdateScreen(void);
 
+// Offset page content below persistent UI. Overlays explicitly use zero.
+void gfxSetContentRowOffset(int rows);
+int gfxGetContentRowOffset(void);
+
 // All following functions take coordinates in characters, assuming a 40x20 screen
 
 void gfxClearRect(int x, int y, int w, int h);
@@ -140,7 +144,9 @@ void gfxReloadFont(void);
  */
 void gfxDrawHUD(void);
 void gfxSetButtonPressed(int buttonIndex, int pressed);
-void gfxHandleResize(void);
+void gfxHandleResize(int width, int height);
+void gfxHandleRenderReset(void);
+const char* gfxGetRendererType(void);
 // Physical drawable dimensions, for overlays whose hitboxes are outside the
 // tracker's fixed logical canvas.
 void gfxGetPhysicalSize(int* width, int* height);

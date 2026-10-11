@@ -16,7 +16,17 @@ class AChChidVoice;
 class DrumSynthVoice;
 class MMEVoice;
 class SinteredVoice;
+class OPLLVoice;
+class SIDVoice;
+class DX7Voice;
+class DX7Part;
+class FourOpVoice;
+class OPLVoice;
+class SimpleChipVoice;
 class AudioCommandQueue;
+struct MidiRouterState;
+class AudioMonitor;
+class RenderWorkerPool;
 
 constexpr int VOICE_MONITOR_SAMPLES = 256;
 
@@ -71,23 +81,50 @@ struct ChipNomadState {
   int trackClipping[PROJECT_MAX_TRACKS];
   int trackWarnings[PROJECT_MAX_TRACKS];
   TrackTilt trackTilt[PROJECT_MAX_TRACKS];
+  InsertChain* insertChains[PROJECT_MAX_TRACKS];
+  uint32_t insertResetSeen[PROJECT_MAX_TRACKS];
+  uint8_t insertValues[PROJECT_MAX_TRACKS][2][8];
+  uint8_t insertActive[PROJECT_MAX_TRACKS];
+  float* insertBuffer;
   float* mixBuffer;
   float* reverbBuffer;
   float* delayBuffer;
   int mixBufferSize;
   int aySampleDithering;
-  BraidsVoice* braidsVoices[PROJECT_MAX_TRACKS];
-  SampleVoice* sampleVoices[PROJECT_MAX_TRACKS];
-  SCWFVoice* scwfVoices[PROJECT_MAX_TRACKS];
-  PlaitsVoice* plaitsVoices[PROJECT_MAX_TRACKS];
-  PlaitsAltVoice* plaitsAltVoices[PROJECT_MAX_TRACKS];
-  AChChidVoice* achchidVoices[PROJECT_MAX_TRACKS];
-  DrumSynthVoice* drumSynthVoices[PROJECT_MAX_TRACKS];
-  MMEVoice* mmeVoices[PROJECT_MAX_TRACKS];
-  SinteredVoice* sinteredVoices[PROJECT_MAX_TRACKS];
+  BraidsVoice* braidsVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  SampleVoice* sampleVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  SCWFVoice* scwfVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  PlaitsVoice* plaitsVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  PlaitsAltVoice* plaitsAltVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  AChChidVoice* achchidVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  DrumSynthVoice* drumSynthVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  MMEVoice* mmeVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  OPLVoice* oplVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  OPLVoice* oplPreview;
+  FourOpVoice* fourOpPreview;
+  FourOpVoice* fourOpVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  SimpleChipVoice* simpleChipVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  SimpleChipVoice* simpleChipPreview;
+  InstrumentType chipPreviewType;
+  DX7Part* dx7Parts[PROJECT_MAX_TRACKS];
+  DX7Voice* dx7Voices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  DX7Part* dx7Preview;
+  SIDVoice* sidPreview;
+  SIDVoice* sidVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  OPLLVoice* opllPreview;
+  int opllPreviewTrack;
+  OPLLVoice* opllVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  SinteredVoice* sinteredVoices[PROJECT_MAX_TRACKS][CHORD_MAX_VOICES];
+  // MIDI-Out active-note tracking, Program/Bank cache, and MIDI-In routing
+  // state now live behind the generic MIDI router (see midi/midi_router.h) -
+  // one instance per ChipNomadState, so independent engine states (e.g. one
+  // per test fixture) never share bookkeeping through a hidden global.
+  MidiRouterState* midiRouter;
   VoiceMonitor voiceMonitors[PROJECT_MAX_TRACKS];
   MasterEffects* masterEffects;
   AudioCommandQueue* audioCommands;
+  AudioMonitor* audioMonitor;
+  RenderWorkerPool* renderWorkers;
   PlaybackStatus uiPlaybackStatus;
 };
 
@@ -114,10 +151,19 @@ void chipnomadInitChips(ChipNomadState* state, int sampleRate, ChipFactory facto
 // Reserve render buffers before starting the audio device. Rendering never
 // grows these buffers, so this must be called again after reconfiguration.
 int chipnomadReserveRenderBuffers(ChipNomadState* state, int frames);
+// Configure persistent workers for real-time rendering while audio is stopped.
+// Returns the number of workers actually enabled; 0 is the serial fallback.
+int chipnomadConfigureRealtimeWorkers(ChipNomadState* state, int requestedWorkers);
 int chipnomadQueueTrackEnabled(ChipNomadState* state, const uint8_t enabled[PROJECT_MAX_TRACKS]);
 int chipnomadQueueProjectRefresh(ChipNomadState* state);
+int chipnomadQueuePlaybackScale(ChipNomadState* state, uint8_t root, ScalePreset preset);
 void chipnomadDiscardQueuedProject(ChipNomadState* state);
 void chipnomadQueuePlaybackStop(ChipNomadState* state);
+// Sends Note Off for every currently active MIDI Out note, plus a blanket
+// CC123 (All Notes Off) / CC120 (All Sound Off) on every channel as a final
+// fallback. Call before closing/switching the MIDI output port and on
+// application shutdown, in addition to the automatic call on playback stop.
+void chipnomadMidiPanic(ChipNomadState* state);
 int chipnomadQueuePlaybackStartSong(ChipNomadState* state, int songRow, int chainRow, int loop);
 int chipnomadQueuePlaybackStartChain(ChipNomadState* state, int trackIdx, int songRow, int chainRow, int loop);
 int chipnomadQueuePlaybackStartPhrase(ChipNomadState* state, int trackIdx, int songRow, int chainRow, int loop);
@@ -126,6 +172,13 @@ int chipnomadQueuePlaybackQueuePhrase(ChipNomadState* state, int trackIdx, int s
 int chipnomadQueuePlaybackStartLiveChain(ChipNomadState* state, int trackIdx, int songRow);
 int chipnomadQueuePlaybackQueueLiveChain(ChipNomadState* state, int trackIdx, int songRow, int urgent);
 int chipnomadQueuePlaybackPreviewNote(ChipNomadState* state, int trackIdx, uint8_t note, uint8_t instrument);
+// Copies the bounded native patch into the existing audio command queue.
+int chipnomadQueueSimpleChipPreview(ChipNomadState* state,int track,InstrumentType type,const InstrumentSimpleChip* patch);
+int chipnomadQueueFourOpPreview(ChipNomadState* state,int track,InstrumentType type,const InstrumentFourOp* patch);
+int chipnomadQueueOPLPreview(ChipNomadState* state, int track, InstrumentType type, const InstrumentOPL* patch);
+int chipnomadQueueDX7Preview(ChipNomadState* state,int track,const InstrumentDX7* patch);
+int chipnomadQueueSIDPreview(ChipNomadState* state,int track,const InstrumentSID* patch);
+int chipnomadQueueOPLLPreview(ChipNomadState* state, int track, const InstrumentOPLL* patch);
 int chipnomadQueuePlaybackStopPreview(ChipNomadState* state, int trackIdx);
 int chipnomadQueuePlaybackClearTrackFX(ChipNomadState* state, int trackIdx);
 void chipnomadQueueLoopRange(ChipNomadState* state, LoopRange range);

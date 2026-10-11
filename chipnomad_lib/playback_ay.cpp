@@ -834,7 +834,8 @@ void outputRegistersAY(ChipNomadState* chipNomadState, int trackIdx, int chipIdx
         // Envelope off - calculate volume
         // ===============================
 
-        volume = clampInt(track->note.volume + track->note.volumeOffset, 0, 15);
+        // Phrase volume is 0-127; AY output remains the native 0-15 scale.
+        volume = (clampInt(track->note.volume + track->note.volumeOffset, 0, PHRASE_VOLUME_MAX) * 15 + 63) / PHRASE_VOLUME_MAX;
         volume *= track->note.chip.ay.volume; // Instrument volume
 
         // Instrument table volume

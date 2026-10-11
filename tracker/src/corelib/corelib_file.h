@@ -26,6 +26,12 @@ struct FileEntry {
 // Returns 0 on success, -1 on failure
 int fileGetDefaultDirectory(char* buffer, int bufferSize);
 
+// True when running from a mounted AppImage (checks the APPIMAGE env var
+// the AppImage runtime sets). Desktop-only; always false elsewhere.
+// fileGetDefaultDirectory() and common.cpp's default projectPath/samplePath/
+// etc. both use this to avoid pointing into the AppImage's read-only mount.
+int fileIsRunningFromAppImage(void);
+
 // Opens Android's system document picker and copies the selected file into
 // the private workspace. Other targets intentionally do nothing.
 void fileImportDocument(const char* mimeType, const char* relativeDirectory);
@@ -49,6 +55,14 @@ int fileDirectoryExists(const char* path);
 // Create a directory
 // Returns 0 on success, -1 on failure
 int fileCreateDirectory(const char* path);
+
+// Create a directory tree, including all missing parent levels
+// Returns 0 on success (or if the directory already exists), -1 on failure
+int fileCreateDirectoryRecursive(const char* path);
+
+// Rename (move) a file or directory
+// Returns 0 on success, -1 on failure
+int fileRename(const char* oldPath, const char* newPath);
 
 // Delete a file
 // Returns 0 on success, -1 on failure

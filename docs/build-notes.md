@@ -12,6 +12,9 @@ make -j4 windows
 ```
 
 The executable and bundled files are written to `tracker/build/windows/`.
+The Windows makefile enables `_USE_MATH_DEFINES` before compiling, so the
+vendored SID core can use the CRT math constants under C++17. The Docker
+cross-build enables the same flag.
 
 The ChooChooPlayer visualizer uses the same Windows toolchain:
 
@@ -26,7 +29,8 @@ Run `launch-alf-dance.bat` there to preview the bundled `alf dance.cct` project.
 ## Linux / Steam Deck (x86_64)
 
 For a native local test, use the existing Ubuntu-24.04 WSL distribution with
-`g++`, `make`, and `libsdl2-dev` installed. From `tracker` in that distribution:
+`g++`, `make`, `libsdl2-dev`, and `libasound2-dev` (for MIDI I/O, see below)
+installed. From `tracker` in that distribution:
 
 ```sh
 make -j4 -f Makefile.linux linux-package \
@@ -54,6 +58,75 @@ at 48 kHz, those displays advanced in visible jumps despite a 60 FPS overlay:
 the engine processes about 102 ms of audio per callback. At 512 frames this
 falls to about 10.7 ms. This observation validates that test configuration;
 it does not establish a safe buffer size for every supported device.
+
+### MIDI I/O
+
+Desktop builds (Linux/Windows/macOS) link RtMidi (vendored at
+`chipnomad_lib/external/rtmidi`) for realtime MIDI in/out - see
+`docs/USER_MANUAL.md`'s MIDI section for what it's used for. Backend
+selection is per platform Makefile: `-D__LINUX_ALSA__ -D__LINUX_ALSASEQ__`
+plus `-lasound` on Linux, `-D__WINDOWS_MM__` plus `-lwinmm` on Windows,
+`-D__MACOSX_CORE__` plus the CoreMIDI/CoreAudio/CoreFoundation frameworks on
+macOS. `Dockerfile.linux` installs `libasound2-dev` for the Docker-based
+Linux build.
+
+### AppImage
+
+```sh
+make -j4 -f Makefile.linux appimage
+```
+
+Produces `releases/ChooChooTracker-<date>-<version>-x86_64.AppImage`. Bundles
+only `libSDL2` and its `libsamplerate` dependency into `usr/lib` - the two
+libraries the tar.gz release's README tells users to `apt install` - and
+lets everything else (X11, ALSA, glibc...) resolve from the host, to avoid
+the ABI-mismatch risk of bundling core OS libraries into an AppImage.
+
+Requires `appimagetool` on `PATH` - it is not downloaded automatically, since
+the only available URL for it is a `continuous` release tag that isn't
+pinned to a fixed version, which would make the build not reproducible.
+Install it first, e.g.:
+
+```sh
+curl -L -o /usr/local/bin/appimagetool https://github.com/AppImage/AppImageKit/releases/download/continuous/appimagetool-x86_64.AppImage
+chmod +x /usr/local/bin/appimagetool
+```
+
+The GitHub Actions workflow `.github/workflows/appimage.yml` builds the
+AppImage inside a `debian:10` container (glibc 2.28, packages from
+`archive.debian.org`) so it runs on Debian 10+ and Ubuntu 20.04+ including
+22.04. Trigger it by hand (`workflow_dispatch`), by pushing `linux-appimage`
+or a `v*` tag; the AppImage is uploaded as the `choochootracker-appimage`
+artifact.
+
+`fileGetDefaultDirectory()` (`src/corelib/corelib_file.cpp`) detects the
+`APPIMAGE` environment variable the AppImage runtime sets and resolves
+settings/autosave to `$XDG_DATA_HOME/ChooChooTracker`, falling back to
+`~/.local/share/ChooChooTracker` when `$XDG_DATA_HOME` is unset, instead of
+next to the executable, since an AppImage mounts itself read-only -
+confirmed by running the produced AppImage under Xvfb with an isolated
+`$HOME` and checking that `settings.txt`/`autosave.cct` land there rather
+than inside the `/tmp/.mount_*` squashfs mount.
+
+`packaging/common/*` (bonus themes, instruments, sample projects, title art)
+is bundled read-only under `usr/share/choochootracker/common`. Since the
+AppImage itself can't be written to, `AppRun` seeds a writable copy into the
+same `$XDG_DATA_HOME`-aware directory every time it runs, copying each
+top-level bonus directory independently and only if it's missing on the
+destination - so an interrupted first run, or a user who already created
+their own e.g. `projects` folder before the rest was seeded, still gets the
+remaining bonus content on a later launch instead of never seeing it.
+`AppRun` then starts the executable from that workspace, so relative assets
+including the animated title artwork resolve from the writable copy rather
+than the read-only mount (or the caller's current directory).
+`initDefaultAppSettings()` (`src/common.cpp`) points
+`projectPath`/`samplePath`/`themePath`/etc at that same directory when
+`fileIsRunningFromAppImage()` is true - normal desktop builds keep their
+existing behavior (relative paths, resolved via the launcher script's `cd`)
+untouched. Confirmed under Xvfb with a fresh `$HOME`: first launch populates
+every subfolder, the files are writable, and the Project screen's Load
+browser lists the bundled example songs from the seeded (not the read-only)
+copy.
 
 ## Web
 
@@ -109,9 +182,9 @@ to happen after native C/C++ changes:
 ```powershell
 $env:ANDROID_NDK_ROOT = "$env:LOCALAPPDATA\Android\Sdk\ndk\30.0.16248370"
 & 'C:\msys64\usr\bin\bash.exe' -c `
-  'export PATH=/ucrt64/bin:/usr/bin:$PATH; cd /c/Users/<you>/Desktop/mobilegroove/tracker; make -f Makefile.android android ARCH=arm64-v8a'
+  'export PATH=/ucrt64/bin:/usr/bin:$PATH; cd /c/Users/<you>/Desktop/choochootracker/tracker; make -f Makefile.android android ARCH=arm64-v8a'
 & 'C:\msys64\usr\bin\bash.exe' -c `
-  'export PATH=/ucrt64/bin:/usr/bin:$PATH; cd /c/Users/<you>/Desktop/mobilegroove/tracker; make -f Makefile.android android ARCH=armeabi-v7a'
+  'export PATH=/ucrt64/bin:/usr/bin:$PATH; cd /c/Users/<you>/Desktop/choochootracker/tracker; make -f Makefile.android android ARCH=armeabi-v7a'
 ```
 
 The native build also needs SDL 2.32.10 headers in
@@ -175,7 +248,6 @@ Upload that AAB to Play Console's Internal testing track. Complete the values
 and artwork in `docs/play-store-listing.md` before submission.
 
 For audio traces and the separately installed debug APK, see
-[Android audio diagnosis](android-audio-debugging.md).
 
 The optional working-folder sync (`ChooChooTrackerActivity.java`, `Settings >
 Working folder`) uses `ACTION_OPEN_DOCUMENT_TREE` + `DocumentsContract`, not
@@ -196,6 +268,25 @@ cd tracker
 make -f Makefile.test -j4
 ```
 
+On Windows (`OS=Windows_NT`), the test makefile enables `_USE_MATH_DEFINES`,
+matching the application build's CRT math constants for the vendored SID core.
+
 If MSYS2 reports exit code 127 after `Built: build/tests/run_tests.exe`, run
 `build/tests/run_tests.exe` directly; the executable is the authoritative test
 result in that environment.
+
+## Native chip instruments
+
+The normal builds include the native instruments and shipped preset catalog.
+Synth core sources live under `chipnomad_lib/external/`; each new dependency
+includes its license and provenance. Preset source licenses are packaged under
+`tracker/packaging/common/licenses/`. See `docs/native-chip-instruments.md`.
+
+PortMaster appends `-O3` only for native synth cores and adapters through
+`Makefile.native-chip-flags`; other platform and audio settings are unchanged.
+The native UI/audio harnesses are developer-only targets in
+`Makefile.native-chip-device` and are not included in release packages.
+
+To regenerate factory data, build `chip-factory` with `Makefile.test`, then use
+`tools/chip_banks/convert.py` and the documented expansion/SID conversion tools.
+The ordinary build uses the checked-in presets and needs no network access.

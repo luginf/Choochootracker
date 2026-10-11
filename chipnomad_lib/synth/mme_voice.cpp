@@ -87,6 +87,20 @@ void MMEVoice::render(float* output, size_t frames) {
   const int shapeA = pair == 0 ? 0 : pair == 1 ? 1 : pair == 2 ? 2 : pair == 3 ? 0 : 3;
   const int shapeB = pair == 0 ? 0 : pair == 1 ? 0 : pair == 2 ? 1 : pair == 3 ? 2 : 3;
   const float amount = parameters_.amount / 255.0f, flow = parameters_.flow / 255.0f;
+  static constexpr float shaperGain[7][9] = {
+    {0.992512f, .874683f, .761782f, .721170f, .701094f, 1.011484f, 1.035431f, .415567f, .251189f},
+    {0.994402f, 1.012236f, .866559f, .779612f, .741525f, 1.011517f, 1.035429f, .415568f, .251189f},
+    {0.993494f, 1.032738f, .849110f, .776743f, .743856f, 1.011473f, 1.035431f, .415568f, .251189f},
+    {0.992148f, 1.027351f, .874872f, .798137f, .756676f, 1.011463f, 1.035428f, .415568f, .251189f},
+    {0.991767f, .964965f, .808480f, .749326f, .729518f, 1.011532f, 1.035434f, .415568f, .251189f},
+    {0.999106f, .958805f, .800955f, .755353f, .719275f, 1.011618f, 1.035429f, .415568f, .251189f},
+    {0.993601f, .889503f, .778649f, .724063f, .700066f, 1.011468f, 1.035428f, .415569f, .251189f}
+  };
+  const int gainIndex = parameters_.shaper == 255 ? 7 : parameters_.shaper / 32;
+  const float gainFraction = parameters_.shaper == 255 ? 1.0f : (parameters_.shaper & 31) / 32.0f;
+  const float gainA = shaperGain[(int)parameters_.model][gainIndex];
+  const float gainB = shaperGain[(int)parameters_.model][gainIndex + 1];
+  const float calibration = .9856f * expf(logf(gainA) + (logf(gainB) - logf(gainA)) * gainFraction);
   for (size_t i = 0; i < frames; ++i) {
     const float feedbackControl = parameters_.feedback / 255.0f;
     // The square keeps normal settings civil; the last third accelerates into
@@ -143,7 +157,7 @@ void MMEVoice::render(float* output, size_t frames) {
     // Keep the turbulence, but only reinject its AC component.
     feedbackDC_ += .025f * (rawFeedback - feedbackDC_);
     feedback_ = (rawFeedback - feedbackDC_) * (.72f + feedbackControl * .22f);
-    output[i] = post_.process(sample);
+    output[i] = post_.process(sample * calibration);
     phaseA_ = mmeWrap(phaseA_ + stepA);
     phaseB_ = mmeWrap(phaseB_ + stepB);
     if (!post_.envelopeActive()) { active_ = false; memset(output + i + 1, 0, (frames - i - 1) * sizeof(float)); break; }

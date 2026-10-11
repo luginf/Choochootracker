@@ -38,4 +38,7 @@ void playbackModNoteOff(PlaybackModState* state);
 // Returns scaled value in range [-maxAmplitude, maxAmplitude] with rounding
 int16_t playbackModScaleToRange(int16_t modValue, int16_t maxAmplitude);
 
+// Cutoff depth is quadratic: 25% = 4.5 semitones, 50% = 18, 100% = 72.
+int playbackModulateCutoff(int cutoffHz, const PlaybackModState* mod);
+
 #endif // __CHIPNOMAD_LIB__PLAYBACK_MODULATION_H__

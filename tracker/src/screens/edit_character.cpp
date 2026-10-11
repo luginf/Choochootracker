@@ -270,3 +270,82 @@ void charEditFullDraw(char startChar) {
   int hintX = (40 - hintLen) / 2;
   gfxPrint(hintX, 18, hint);
 }
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzTextEnabled = 0;
+
+static int keyJazzTextFieldFor(const AppScreen* current, KeyJazzTextField* field) {
+  if (current == &screenProject) return projectKeyJazzTextField(field);
+  if (current == &screenInstrument) return instrumentKeyJazzTextField(field);
+  if (current == &screenColorTheme) return colorThemeKeyJazzTextField(field);
+  if (current == &screenEnterName) return enterNameKeyJazzTextField(field);
+  if (current == &screenCreateFolder) return createFolderKeyJazzTextField(field);
+  if (current == &screenPitchTable) return pitchTableKeyJazzTextField(field);
+  if (current == &screenBounce) return bounceKeyJazzTextField(field);
+  return 0;
+}
+
+int keyJazzTextHandleRawKey(InputCode input, int isDown, const AppScreen* current) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  KeyJazzTextField field;
+  if (!keyJazzTextFieldFor(current, &field)) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown && !field.popupOpen) {
+      keyJazzTextEnabled = !keyJazzTextEnabled;
+      screenMessage(MESSAGE_TIME, keyJazzTextEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+    }
+    return 1;
+  }
+
+  // Shift is read live via inputIsShiftHeld() for uppercase below, but its
+  // own keydown/keyup are NOT swallowed: Shift+arrow combos navigate between
+  // screens and must keep working while key jazz is active.
+  if (!keyJazzTextEnabled || field.popupOpen || !field.str) return 0;
+
+  ScreenData* screen = field.screen;
+  char* str = field.str;
+
+  if (inputIsBackspaceKey(input)) {
+    // Text fields rest the caret one past the last typed character (unlike
+    // a grid cell), so Backspace deletes the character BEFORE the caret -
+    // classic text editor behavior - not "at" it.
+    if (isDown) {
+      int col = screen->cursorCol;
+      int len = (int)strlen(str);
+      if (col > 0) {
+        if (col - 1 < len) {
+          memmove(&str[col - 1], &str[col], len - col + 1);
+          trimString(str);
+          if (field.marksProjectModified) projectModified = 1;
+        }
+        screen->cursorCol = col - 1;
+      }
+      screen->drawField(0, field.row, CellState::normal);
+    }
+    return 1;
+  }
+
+  if (inputIsCtrlHeld()) return 0;
+  char c = inputTypedCharacter(input, inputIsShiftHeld());
+  if (c == 0) return 0;
+
+  if (isDown) {
+    int col = screen->cursorCol;
+    int len = (int)strlen(str);
+    if (col >= len) {
+      for (int i = len; i < col; i++) str[i] = ' ';
+      str[col + 1] = 0;
+    }
+    str[col] = c;
+    trimString(str);
+    if (field.marksProjectModified) projectModified = 1;
+    if (col < field.maxLen - 1) screen->cursorCol = col + 1;
+    screen->drawField(0, field.row, CellState::normal);
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD

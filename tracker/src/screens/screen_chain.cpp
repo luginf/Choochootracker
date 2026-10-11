@@ -80,6 +80,7 @@ static void drawStatic(void) {
 }
 
 static void drawField(int col, int row, CellState state) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   uint16_t phrase = chipnomadState->project.chains[chain].rows[row].phrase;
   int hasContent = phrase != EMPTY_VALUE_16 && phraseHasNotes(&chipnomadState->project, phrase);
 
@@ -87,26 +88,27 @@ static void drawField(int col, int row, CellState state) {
     // Phrase
     setCellColor(state, phrase == EMPTY_VALUE_16, hasContent);
     if (phrase == EMPTY_VALUE_16) {
-      gfxPrint(3, 3 + row, "---");
+      gfxPrint(3, 3 + row - screen.topRow, "---");
     } else {
-      gfxPrintf(3, 3 + row, "%03X", phrase);
+      gfxPrintf(3, 3 + row - screen.topRow, "%03X", phrase);
     }
     // Also draw transpose to keep colors synchronized (only if not in selection mode)
     if (screen.selectMode == 0) {
       setCellColor(CellState::normal, 0, hasContent);
-      gfxPrint(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
+      gfxPrint(7, 3 + row - screen.topRow, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
     }
   } else {
     // Transpose
     setCellColor(state, 0, hasContent);
-    gfxPrint(7, 3 + row, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
+    gfxPrint(7, 3 + row - screen.topRow, byteToHex(chipnomadState->project.chains[chain].rows[row].transpose));
   }
 }
 
 static void drawRowHeader(int row, CellState state) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
-  gfxPrintf(1, 3 + row, "%X", row);
+  gfxPrintf(1, 3 + row - screen.topRow, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
@@ -123,19 +125,20 @@ static void drawColHeader(int col, CellState state) {
 }
 
 static void drawCursor(int col, int row) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   if (col == 0) {
     // Phrase
-    gfxCursor(3, 3 + row, 3);
+    gfxCursor(3, 3 + row - screen.topRow, 3);
   } else {
     // Transpose
-    gfxCursor(7, 3 + row, 2);
+    gfxCursor(7, 3 + row - screen.topRow, 2);
   }
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
   int x = (col1 == 0) ? 3 : 7;
   int w = (col2 - col1 == 1) ? 6 : (col1 == 0 ? 3 : 2);
-  int y = 3 + row1;
+  int y = 3 + row1 - screen.topRow;
   int h = row2 - row1 + 1;
   gfxRect(x, y, w, h);
 }
@@ -145,12 +148,12 @@ static void fullRedraw(void) {
 }
 
 static void draw(void) {
-  gfxClearRect(2, 3, 1, 16);
+  gfxClearRect(2, 3, 1, screenVisibleRows());
   if (chipnomadState && chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].songRow == *pSongRow) {
     int chainRow = chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].chainRow;
-    if (chainRow >= 0 && chainRow < 16) {
+    if (chainRow >= screen.topRow && chainRow < screen.topRow + screenVisibleRows()) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
-      gfxPrint(2, 3 + chainRow, ">");
+      gfxPrint(2, 3 + chainRow - screen.topRow, ">");
     }
   }
 }
@@ -319,6 +322,53 @@ static LoopRange getLoopRange(void) {
   }
   return range;
 }
+
+///////////////////////////////////////////////////////////////////////////////
+//
+// Key jazz (desktop only): type a phrase's hex index directly instead of
+// incrementing with Up/Down (column 0 only - the transpose column is
+// untouched). Same pattern as screen_song.cpp's chain index entry.
+//
+
+#ifdef DESKTOP_BUILD
+
+static int keyJazzEnabled = 0;
+static int keyJazzEditRow = -1;
+
+int chainKeyJazzHandleRawKey(InputCode input, int isDown) {
+  if (input.deviceType != InputDeviceType::keyboard) return 0;
+
+  if (inputIsKeyJazzToggle(input)) {
+    if (isDown) {
+      keyJazzEnabled = !keyJazzEnabled;
+      screenMessage(MESSAGE_TIME, keyJazzEnabled ? "KEY JAZZ ON (Esc to exit)" : "KEY JAZZ OFF");
+    }
+    return 1;
+  }
+
+  // Unlike Phrase/Project, hex digits aren't affected by Shift, and Chain
+  // has no Shift-modified key jazz behavior - Shift must keep reaching the
+  // normal pipeline so Shift+Right/Left (screen navigation) still works.
+  if (!keyJazzEnabled || screen.cursorCol != 0) return 0;
+
+  int digit = inputHexDigitValue(input);
+  if (digit < 0) return 0;
+
+  if (isDown) {
+    int row = screen.cursorRow;
+    uint16_t current = chipnomadState->project.chains[chain].rows[row].phrase;
+    uint16_t base = (row == keyJazzEditRow && current != EMPTY_VALUE_16) ? current : 0;
+    int value = base * 16 + digit;
+    if (value > PROJECT_MAX_PHRASES - 1) value = PROJECT_MAX_PHRASES - 1;
+    chipnomadState->project.chains[chain].rows[row].phrase = (uint16_t)value;
+    lastPhraseValue = (uint16_t)value;
+    keyJazzEditRow = row;
+    drawField(0, row, CellState::normal);
+  }
+  return 1;
+}
+
+#endif // DESKTOP_BUILD
 
 static ScreenPlaybackLevel getPlaybackLevel(void) {
   return ScreenPlaybackLevel::chain;

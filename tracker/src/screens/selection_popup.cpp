@@ -1,13 +1,17 @@
 #include "selection_popup.h"
 
 #include "corelib_gfx.h"
+#include "chipnomad_lib.h"
 #include <string.h>
 
 static char title[32];
 static const SelectionItem* rootItems;
+static bool fullWidth;
 static int rootCount, categoryIndex, itemIndex, activePanel, currentValue;
 static void (*onSelected)(int);
 static void (*onCancelled)(void);
+static void (*onPreview)(int, bool);
+static bool previewHeld, editPending;
 
 static const SelectionItem* currentCategory() {
   return &rootItems[categoryIndex];
@@ -33,7 +37,9 @@ static void selectCurrentValue() {
 
 void selectionPopupSetup(const char* popupTitle, const SelectionItem* items,
                          int count, int selectedValue,
-                         void (*selected)(int), void (*cancelled)(void)) {
+                         void (*selected)(int), void (*cancelled)(void), bool wide, void (*preview)(int, bool)) {
+  onPreview = preview; previewHeld = editPending = false;
+  fullWidth = wide;
   strncpy(title, popupTitle, sizeof(title) - 1);
   title[sizeof(title) - 1] = 0;
   rootItems = items;
@@ -45,13 +51,15 @@ void selectionPopupSetup(const char* popupTitle, const SelectionItem* items,
   selectCurrentValue();
 }
 
+bool selectionPopupIsFullWidth(void) { return fullWidth; }
+
 static void setup(int input) {}
 
 static void fullRedraw() {
   gfxClear();
   gfxSetFgColor(appSettings.colorScheme.textTitles);
   gfxPrint(0, 0, title);
-  gfxPrint(18, 1, "|");
+  if (!fullWidth) gfxPrint(18, 1, "|");
   const SelectionItem* category = currentCategory();
   int categoryStart = categoryIndex > 7 ? categoryIndex - 7 : 0;
   int itemStart = itemIndex > 7 ? itemIndex - 7 : 0;
@@ -62,7 +70,7 @@ static void fullRedraw() {
     if (categoryItem < rootCount) {
       gfxSetFgColor(categoryItem == categoryIndex && activePanel == 0 ?
         appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-      gfxPrintf(0, y, "%c %-16.16s", categoryItem == categoryIndex ? '>' : ' ',
+      gfxPrintf(0, y, fullWidth ? "%c %-38.38s" : "%c %-16.16s", categoryItem == categoryIndex ? '>' : ' ',
         rootItems[categoryItem].label);
     }
     if (childItem < category->childCount) {
@@ -78,13 +86,33 @@ static void fullRedraw() {
     gfxPrintf(0, 18, "%-40.40s", category->children[itemIndex].helper);
   }
   gfxSetFgColor(appSettings.colorScheme.textInfo);
-  gfxPrint(0, 19, "L/R PANEL U/D MOVE EDIT SELECT OPT EXIT");
+  const bool playing = chipnomadState && chipnomadGetPlaybackStatus(chipnomadState)->isPlaying;
+  gfxPrint(0, 19, onPreview && playing ? "STOP SONG TO HEAR  EDIT SELECT  OPT EXIT" :
+    onPreview ? "EDIT SELECT  EDIT+PLAY HEAR  OPT EXIT" :
+    fullWidth ? "U/D MOVE EDIT SELECT OPT EXIT" :
+    "L/R PANEL U/D MOVE EDIT SELECT OPT EXIT");
 }
 
 static void draw() {}
 
 static int onInput(int isKeyDown, int keys, int tapCount) {
-  if (!isKeyDown) return 1;
+  if (onPreview && keys == (keyEdit | keyPlay) && isKeyDown) {
+    const auto* category = currentCategory();
+    int value = activePanel == 1 && category->childCount ? category->children[itemIndex].value : category->value;
+    editPending=false;
+    if (value >= 0) { onPreview(value, true); previewHeld = true; }
+    return 1;
+  }
+  if (previewHeld) {
+    if (keys != (keyEdit | keyPlay)) { onPreview(0, false); previewHeld = false; }
+    return 1;
+  }
+  // Defer EDIT selection until release on audition-capable popups so pressing
+  // EDIT before PLAY can form the existing preview chord without committing.
+  if(onPreview&&isKeyDown&&keys==keyEdit){editPending=true;return 1;}
+  bool selectOnRelease=onPreview&&!isKeyDown&&editPending;
+  if(selectOnRelease){editPending=false;keys=keyEdit;}
+  if (!isKeyDown&&!selectOnRelease) return 1;
   if (keys == keyUp || keys == keyDown) {
     int direction = keys == keyUp ? -1 : 1;
     if (activePanel == 0) {

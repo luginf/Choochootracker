@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "model_catalog.h"
 #include "waveform_display.h"
+#include <string.h>
 
 static int modelButtonDown;
 static Bitmap* previewBitmap;
@@ -14,6 +15,7 @@ static const char* paraphonicChordName(uint16_t color) {
 }
 
 static void drawPreview(const InstrumentBraids* braids) {
+  if (appSettings.persistentWaveform) return;
   if (!previewBitmap) previewBitmap = gfxBitmapCreate(32, 3);
   renderBraidsPreview(previewBitmap, braids);
   gfxSetFgColor(appSettings.colorScheme.textInfo);
@@ -56,8 +58,8 @@ static void drawStatic(void) {
 static void drawCursor(int col, int row) {
   if (row < 3) return instrumentCommonDrawCursor(col, row);
   if (instrumentCommonDrawVoicePostCursor(col, row)) return;
-  else if (row == 3) gfxCursor(11, 6, 28);
-  else gfxCursor(col ? 26 : 11, row + 4, col ? 8 : 7);
+  else if (row == 3) gfxCursor(12, 6, 3 + strlen(modelCatalogName(InstrumentType::Braids, chipnomadState->project.instruments[cInstrument].chip.braids.model)));
+  else if (!col) gfxCursor(11, row + 4, row == 5 && chipnomadState->project.instruments[cInstrument].chip.braids.model == 40 ? strlen(paraphonicChordName(chipnomadState->project.instruments[cInstrument].chip.braids.color)) : 2);
 }
 
 static void drawField(int col, int row, CellState state) {

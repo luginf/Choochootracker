@@ -1010,7 +1010,7 @@ int projectLoadVT2(Project* destination, const char* path) {
   strncpy(project->author, module.author, PROJECT_TITLE_LENGTH);
   project->author[PROJECT_TITLE_LENGTH] = '\0';
 
-  project->tracksCount = 3;
+  project->tracksCount = project->chipsCount = 3;
 
   int startSpeedGroove = 0;
   if (module.speed > 0) {

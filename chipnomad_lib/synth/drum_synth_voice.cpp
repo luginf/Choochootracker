@@ -53,6 +53,11 @@ void DrumSynthVoice::render(float* output, size_t frames) {
   const float tone = instrument_->tone / 255.0f, sweep = instrument_->sweep / 255.0f;
   const float noise = instrument_->noise / 255.0f, fm = instrument_->fm / 255.0f;
   const float drive = 1.0f + instrument_->drive / 255.0f * 5.5f;
+  static constexpr float modelGain[] = {
+    1.335575f, 1.253229f, 1.202260f, 1.352630f, 1.331551f, 1.335482f,
+    1.335162f, 1.286303f, 1.332512f, 1.084859f, 1.337063f, 1.329288f
+  };
+  const float calibration = modelGain[(int)instrument_->engine];
   for (size_t i = 0; i < frames; ++i) {
     if (age_ >= duration_) { kill(); memset(output + i, 0, (frames - i) * sizeof(float)); break; }
     float progress = age_ / duration_, fast = expf(-age_ / (0.006f + 0.050f * (1.0f - tone)));
@@ -143,7 +148,7 @@ void DrumSynthVoice::render(float* output, size_t frames) {
       default: break;
     }
     sample = tanhf(sample * drive) / tanhf(drive) * envelope_;
-    output[i] = post_.process(sample);
+    output[i] = post_.process(sample * calibration);
     age_ += 1.0f / sampleRate_;
   }
 }

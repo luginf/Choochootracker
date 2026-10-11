@@ -1,64 +1,29 @@
 #include "screen_settings.h"
-#include "screen_color_theme.h"
 #include "screen_keymapping.h"
-#include "file_browser.h"
+#include "screen_midi.h"
 #include "common.h"
+#include "app.h"
 #include "corelib_gfx.h"
 #include "corelib_mainloop.h"
-#include "corelib_font.h"
-#include "corelib_file.h"
 #include "screens.h"
+#include "support_report.h"
+#include "corelib_file.h"
 #include <string.h>
 
-// Row layout differs on Android only, which gets an extra "Working folder" row.
+// Android adds a "Working folder" row (row 9) before Quit.
 #ifdef ANDROID_BUILD
-#define SETTINGS_WORKING_FOLDER_ROW 12
-#define SETTINGS_QUIT_ROW 13
-#define SETTINGS_TOTAL_ROWS 14
-#else
-#define SETTINGS_QUIT_ROW 12
-#define SETTINGS_TOTAL_ROWS 13
-#endif
-
-// Forward declarations
-static int settingsColumnCount(int row);
-static void settingsDrawStatic(void);
-static void settingsDrawCursor(int col, int row);
-static void settingsDrawRowHeader(int row, CellState state);
-static void settingsDrawColHeader(int col, CellState state);
-static void settingsDrawField(int col, int row, CellState state);
-static int settingsOnEdit(int col, int row, CellEditAction action);
-
-#ifdef ANDROID_BUILD
+#define SETTINGS_WORKING_FOLDER_ROW 9
+#define SETTINGS_QUIT_ROW 10
+#define SETTINGS_TOTAL_ROWS 11
 static char workingFolderStatus[256];
+#else
+#define SETTINGS_QUIT_ROW 9
+#define SETTINGS_TOTAL_ROWS 10
 #endif
 
-static ScreenData screenSettingsData = {
-  .rows = SETTINGS_TOTAL_ROWS,
-  .cursorRow = 0,
-  .cursorCol = 0,
-  .topRow = 0,
-  .selectMode = -1,
-  .selectStartRow = 0,
-  .selectStartCol = 0,
-  .selectAnchorRow = 0,
-  .selectAnchorCol = 0,
-  .playbackLevel = ScreenPlaybackLevel::none,
-  .getColumnCount = settingsColumnCount,
-  .drawStatic = settingsDrawStatic,
-  .drawCursor = settingsDrawCursor,
-  .drawSelection = NULL,
-  .drawRowHeader = settingsDrawRowHeader,
-  .drawColHeader = settingsDrawColHeader,
-  .drawField = settingsDrawField,
-  .onEdit = settingsOnEdit,
-  .onInput = NULL,
-  .onRawInput = NULL,
-  .isCellValid = NULL,
-  .getLoopRange = NULL,
-};
-
-static void setup(int input) {
+static void fullRedraw(void);
+static int columnCount(int) { return 1; }
+static void setup(int) {
 #ifdef ANDROID_BUILD
   fileGetWorkingFolderStatus(workingFolderStatus, sizeof(workingFolderStatus));
   if (strcmp(workingFolderStatus, "Default (app storage)") != 0) {
@@ -66,45 +31,10 @@ static void setup(int input) {
   }
 #endif
 }
-
-static void fontLoadCallback(const char* path) {
-  Font* font = fontLoad(path);
-  if (font) {
-    fontSetCurrent(font);
-    gfxReloadFont();
-    strncpy(appSettings.fontPath, path, PATH_LENGTH);
-    appSettings.fontPath[PATH_LENGTH] = 0;
-
-    // Extract folder path
-    const char* lastSeparator = strrchr(path, PATH_SEPARATOR);
-    if (lastSeparator) {
-      int pathLen = lastSeparator - path;
-      if (pathLen > 0 && pathLen < PATH_LENGTH) {
-        strncpy(appSettings.fontFolderPath, path, pathLen);
-        appSettings.fontFolderPath[pathLen] = '\0';
-      }
-    }
-
-    screenMessage(MESSAGE_TIME, "Loaded: %s", font->name);
-  } else {
-    screenMessage(MESSAGE_TIME, "Failed to load font");
-  }
-  screenSetup(&screenSettings, 0);
-}
-
-static void fontCancelCallback(void) {
-  screenSetup(&screenSettings, 0);
-}
-
-static void fullRedraw(void) {
-  screenFullRedraw(&screenSettingsData);
-}
-
 static void draw(void) {
 #ifdef ANDROID_BUILD
-  // The Settings screen doesn't get a callback when the system folder picker
-  // (a separate Activity) returns, so poll for a status change instead of
-  // only refreshing on setup() (screen entry).
+  // The system folder picker is a separate Activity with no callback into
+  // this screen, so poll for a status change.
   static int pollCounter = 0;
   if (++pollCounter >= 30) {
     pollCounter = 0;
@@ -116,235 +46,81 @@ static void draw(void) {
       if (strcmp(workingFolderStatus, "Default (app storage)") != 0) {
         screenMessage(MESSAGE_TIME, "%s", workingFolderStatus);
       }
-      screenFullRedraw(&screenSettingsData);
+      fullRedraw();
     }
   }
 #endif
 }
-
-int settingsColumnCount(int row) {
-  return 1;
+static void drawStatic(void) { gfxSetFgColor(appSettings.colorScheme.textTitles); gfxPrint(0, 0, "SETTINGS"); }
+static void drawCursor(int, int row) {
+  if (row < 2) gfxCursor(23, 2 + row, 3);
+  else if (row == 2) gfxCursor(23, 4, 6);
+  else if (row < 8) { static const int widths[] = {4, 11, 6, 5, 8}; gfxCursor(0, 2 + row, widths[row - 3]); }
+  else if (row == 8) gfxCursor(0, 10, 14);
+#ifdef ANDROID_BUILD
+  else if (row == SETTINGS_WORKING_FOLDER_ROW) gfxCursor(0, 12, 15);
+#endif
+  else if (row == SETTINGS_QUIT_ROW) gfxCursor(0, 18, 19);
 }
-
-void settingsDrawStatic(void) {
+static void noHeader(int, CellState) {}
+static void drawField(int, int row, CellState state) {
   const ColorScheme cs = appSettings.colorScheme;
-
-  gfxSetFgColor(cs.textTitles);
-  gfxPrint(0, 0, "SETTINGS");
-}
-
-void settingsDrawCursor(int col, int row) {
-  if ((row == 0 || row == 1) && col == 0) {
-    gfxCursor(23, 2 + row, 3);
-  } else if (row == 2 && col == 0) {
-    gfxCursor(23, 4, 4);
-  } else if (row == 3 && col == 0) {
-    gfxCursor(23, 5, 4);
-  } else if (row == 4 && col == 0) {
-    gfxCursor(23, 6, 6);
-  } else if (row == 5 && col == 0) {
-    gfxCursor(23, 7, 3);
-  } else if (row >= 6 && row <= 8 && col == 0) {
-    gfxCursor(23, 2 + row, row == 6 ? 6 : 4);
-  } else if (row == 9 && col == 0) {
-    gfxCursor(0, 11, 11);
-  } else if (row == 10 && col == 0) {
-    gfxCursor(0, 12, 9);
-  } else if (row == 11 && col == 0) {
-    gfxCursor(0, 13, 16);
+  gfxSetFgColor(cs.textDefault);
+  if (row == 0) { gfxPrint(0, 2, "Repeat delay"); gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault); gfxPrintf(23, 2, "%03d", appSettings.keyRepeatDelay); }
+  else if (row == 1) { gfxPrint(0, 3, "Repeat speed"); gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault); gfxPrintf(23, 3, "%03d", appSettings.keyRepeatSpeed); }
+  else if (row == 2) { gfxPrint(0, 4, "Stick live mode"); gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault); gfxPrint(23, 4, appSettings.stickLiveMode == StickLiveMode::free ? "FREE  " : appSettings.stickLiveMode == StickLiveMode::toggle ? "TOGGLE" : "HOLD  "); }
+  else if (row >= 3 && row <= 7) { static const char* labels[] = {"MIDI", "Key mapping", "Synths", "Mixer", "Graphics"}; gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault); gfxPrint(0, 2 + row, labels[row - 3]); }
+  else if (row == 8) { gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault); gfxPrint(0, 10, "Support report"); }
 #ifdef ANDROID_BUILD
-  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0) {
-    gfxCursor(0, 14, 15);
-#endif
-  } else if (row == SETTINGS_QUIT_ROW && col == 0) {
-    gfxCursor(0, 17, 19);
+  else if (row == SETTINGS_WORKING_FOLDER_ROW) {
+    gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault);
+    gfxPrint(0, 12, "Working folder");
+    gfxPrint(23, 12, strncmp(workingFolderStatus, "Syncing:", 8) == 0 ? "SYNC   " : "DEFAULT");
   }
-}
-
-void settingsDrawRowHeader(int row, CellState state) {
-}
-
-void settingsDrawColHeader(int col, CellState state) {
-}
-
-void settingsDrawField(int col, int row, CellState state) {
-  if (row == 0 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 2, "Repeat delay");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrintf(23, 2, "%03d", appSettings.keyRepeatDelay);
-  } else if (row == 1 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 3, "Repeat speed");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrintf(23, 3, "%03d", appSettings.keyRepeatSpeed);
-  } else if (row == 2 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 4, "Mix volume");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
-    gfxPrintf(23, 4, "%03d%%", mixVolumePercent);
-  } else if (row == 3 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 5, "Tilt pivot");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrintf(23, 5, "%u Hz", chipnomadState->project.tiltPivotHz);
-  } else if (row == 4 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 6, "AY Quality");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    const char* qualityNames[] = {"LOW   ", "MEDIUM", "HIGH  ", "BEST  "};
-    gfxPrint(23, 6, qualityNames[appSettings.quality]);
-  } else if (row == 5 && col == 0) {
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 7, "AY Sample dithering");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(23, 7, appSettings.aySampleDithering ? "ON " : "OFF");
-  } else if (row == 6 && col == 0) {
-    static const char* names[] = {"2 BIT ", "3 BIT ", "4 BIT ", "6 BIT ", "8 BIT ", "12 BIT", "16 BIT"};
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 8, "Braids BITS");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(23, 8, names[appSettings.braidsBits]);
-  } else if (row == 7 && col == 0) {
-    static const char* levels[] = {"OFF ", "LOW ", "MED ", "HIGH", "MAX "};
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 9, "Braids DRFT");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(23, 9, levels[appSettings.braidsDrift]);
-  } else if (row == 8 && col == 0) {
-    static const char* levels[] = {"OFF ", "LOW ", "MED ", "HIGH", "MAX "};
-    gfxSetFgColor(appSettings.colorScheme.textDefault);
-    gfxPrint(0, 10, "Braids SIGN");
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(23, 10, levels[appSettings.braidsSignature]);
-  } else if (row == 9 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 11, "Key mapping");
-  } else if (row == 10 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 12, "Load font");
-  } else if (row == 11 && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 13, "Edit color theme");
-#ifdef ANDROID_BUILD
-  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 14, "Working folder");
-    gfxPrint(23, 14, strncmp(workingFolderStatus, "Syncing:", 8) == 0 ? "SYNC   " : "DEFAULT");
 #endif
-  } else if (row == SETTINGS_QUIT_ROW && col == 0) {
-    gfxSetFgColor(state == CellState::focus ? appSettings.colorScheme.textValue : appSettings.colorScheme.textDefault);
-    gfxPrint(0, 17, "Quit ChooChooTracker");
-  }
+  else if (row == SETTINGS_QUIT_ROW) { gfxSetFgColor(state == CellState::focus ? cs.textValue : cs.textDefault); gfxPrint(0, 18, "Quit ChooChooTracker"); }
 }
-
-int settingsOnEdit(int col, int row, CellEditAction action) {
-  if (row == 0 && col == 0) {
-    uint8_t value = appSettings.keyRepeatDelay;
-    int handled = edit8noLast(action, &value, 4, 4, 30);
-    if (handled) appSettings.keyRepeatDelay = value;
-    return handled;
-  } else if (row == 1 && col == 0) {
-    uint8_t value = appSettings.keyRepeatSpeed;
-    int handled = edit8noLast(action, &value, 2, 1, 12);
-    if (handled) appSettings.keyRepeatSpeed = value;
-    return handled;
-  } else if (row == 2 && col == 0) {
-    // Mix volume (1-100%)
-    int mixVolumePercent = (int)(appSettings.mixVolume * 100.0f + 0.5f);
-    uint8_t mixVolumePercentU8 = (uint8_t)mixVolumePercent;
-    int handled = edit8noLast(action, &mixVolumePercentU8, 10, 1, 100);
-    if (handled) {
-      appSettings.mixVolume = (float)mixVolumePercentU8 / 100.0f;
-      if (chipnomadState) {
-        chipnomadState->mixVolume = appSettings.mixVolume;
-      }
-    }
-    return handled;
-  } else if (row == 3 && col == 0) {
-    int handled = edit16withMinMax(action, &chipnomadState->project.tiltPivotHz, 250, 250, 4000);
-    if (handled) projectModified = 1;
-    return handled;
-  } else if (row == 4 && col == 0) {
-    // Quality (0-3)
-    int handled = edit8noLast(action, (uint8_t*)&appSettings.quality, 1, 0, 3);
-    if (handled) {
-      chipnomadSetQuality(chipnomadState, (ChipNomadQuality)appSettings.quality);
-    }
-    return handled;
-  } else if (row == 5 && col == 0) {
-    // Sample dithering (0/1)
-    int handled = edit8noLast(action, (uint8_t*)&appSettings.aySampleDithering, 1, 0, 1);
-    if (handled && chipnomadState) {
-      chipnomadState->aySampleDithering = appSettings.aySampleDithering;
-    }
-    return handled;
-  } else if (row >= 6 && row <= 8 && col == 0) {
-    uint8_t value = row == 6 ? appSettings.braidsBits :
-      (row == 7 ? appSettings.braidsDrift : appSettings.braidsSignature);
-    int handled = edit8noLast(action, &value, 1, 0, row == 6 ? 6 : 4);
-    if (handled) {
-      if (row == 6) appSettings.braidsBits = value;
-      else if (row == 7) appSettings.braidsDrift = value;
-      else appSettings.braidsSignature = value;
-      chipnomadSetBraidsSettings(chipnomadState, appSettings.braidsBits,
-        appSettings.braidsDrift, appSettings.braidsSignature,
-        appSettings.braidsSignatureSeed);
-    }
-    return handled;
-  } else if (row == 9 && col == 0 && action == CellEditAction::tap) {
-    screenSetup(&screenKeyMapping, 0);
-    return 0;
-  } else if (row == 10 && col == 0 && action == CellEditAction::tap) {
-    fileBrowserSetup("LOAD FONT", ".cnfont", appSettings.fontFolderPath,
-      (void (*)(const char*))fontLoadCallback,
-      (void (*)(void))fontCancelCallback);
-    screenSetup(&screenFileBrowser, 0);
-    return 0;
-  } else if (row == 11 && col == 0 && action == CellEditAction::tap) {
-    screenSetup(&screenColorTheme, 0);
-    return 0;
+static int onEdit(int, int row, CellEditAction action) {
+  if (row == 0) { uint8_t value = appSettings.keyRepeatDelay; int handled = edit8noLast(action, &value, 4, 4, 30); if (handled) appSettings.keyRepeatDelay = value; return handled; }
+  if (row == 1) { uint8_t value = appSettings.keyRepeatSpeed; int handled = edit8noLast(action, &value, 2, 1, 12); if (handled) appSettings.keyRepeatSpeed = value; return handled; }
+  if (row == 2) { uint8_t value = (uint8_t)appSettings.stickLiveMode; int handled = edit8noLast(action, &value, 1, 0, 2); if (handled) appSetStickLiveMode((StickLiveMode)value); return handled; }
 #ifdef ANDROID_BUILD
-  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0 && action == CellEditAction::tap) {
-    filePickWorkingFolder();
-    return 0;
-  } else if (row == SETTINGS_WORKING_FOLDER_ROW && col == 0 && action == CellEditAction::clear) {
+  if (row == SETTINGS_WORKING_FOLDER_ROW && action == CellEditAction::clear) {
     fileClearWorkingFolder();
     fileGetWorkingFolderStatus(workingFolderStatus, sizeof(workingFolderStatus));
     screenMessage(MESSAGE_TIME, "%s", workingFolderStatus);
     return 1;
+  }
 #endif
-  } else if (row == SETTINGS_QUIT_ROW && col == 0 && action == CellEditAction::tap) {
-    // Trigger exit event
-    mainLoopTriggerQuit();
+  if (action != CellEditAction::tap) return 0;
+  if (row == 3) screenSetup(&screenMidi, 0);
+  else if (row == 4) screenSetup(&screenKeyMapping, 0);
+  else if (row == 5) screenSetup(&screenSynthSettings, 0);
+  else if (row == 6) screenSetup(&screenMixerSettings, 0);
+  else if (row == 7) screenSetup(&screenGraphicsSettings, 0);
+  else if (row == 8) {
+    char path[PATH_LENGTH + 32];
+    if (supportReportSaveDefault("Settings", path, sizeof(path)) == 0)
+      screenMessage(MESSAGE_TIME, "Support report saved");
+    else
+      screenMessage(MESSAGE_TIME_ERROR, "Support report failed");
     return 1;
   }
+#ifdef ANDROID_BUILD
+  else if (row == SETTINGS_WORKING_FOLDER_ROW) { filePickWorkingFolder(); return 0; }
+#endif
+  else if (row == SETTINGS_QUIT_ROW) { mainLoopTriggerQuit(); return 1; }
   return 0;
 }
-
-static int inputScreenNavigation(int keys, int tapCount) {
-  if (keys == (keyUp | keyShift)) {
-    screenSetup(&screenSong, 0);
-    return 1;
-  }
-  return 0;
-}
-
-static int onInput(int isKeyDown, int keys, int tapCount) {
-  if (inputScreenNavigation(keys, tapCount)) return 1;
-  return screenInput(&screenSettingsData, isKeyDown, keys, tapCount);
-}
-
-static ScreenPlaybackLevel getPlaybackLevel(void) {
-  return ScreenPlaybackLevel::song;
-}
-
-const AppScreen screenSettings = {
-  .init = NULL,
-  .setup = setup,
-  .fullRedraw = fullRedraw,
-  .draw = draw,
-  .onInput = onInput,
-  .getPlaybackLevel = getPlaybackLevel,
+static ScreenData data = {
+  .rows = SETTINGS_TOTAL_ROWS, .cursorRow = 0, .cursorCol = 0, .topRow = 0, .selectMode = -1,
+  .selectStartRow = 0, .selectStartCol = 0, .selectAnchorRow = 0, .selectAnchorCol = 0,
+  .playbackLevel = ScreenPlaybackLevel::none, .getColumnCount = columnCount,
+  .drawStatic = drawStatic, .drawCursor = drawCursor, .drawSelection = NULL,
+  .drawRowHeader = noHeader, .drawColHeader = noHeader, .drawField = drawField,
+  .onEdit = onEdit, .onInput = NULL, .onRawInput = NULL, .isCellValid = NULL, .getLoopRange = NULL,
 };
+static void fullRedraw(void) { screenFullRedraw(&data); }
+static int onInput(int isKeyDown, int keys, int taps) { if (keys == keyOpt || keys == (keyUp | keyShift)) { screenSetup(&screenSong, 0); return 1; } return screenInput(&data, isKeyDown, keys, taps); }
+static ScreenPlaybackLevel playbackLevel(void) { return ScreenPlaybackLevel::song; }
+const AppScreen screenSettings = {NULL, setup, fullRedraw, draw, onInput, playbackLevel};

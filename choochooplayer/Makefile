@@ -58,8 +58,8 @@ windows: $(WIN_DIR)/choochooplayer.exe
 	cp fonts/Fragment_Mono/FragmentMono-Regular.ttf $(WIN_DIR)/fonts/Fragment_Mono/
 	cp ../tracker/packaging/common/projects/alf\ dance.cct $(WIN_DIR)/
 	cp -r ../tracker/packaging/common/samples ../tracker/packaging/common/SR_wavetables $(WIN_DIR)/
-	sed -i 's|C:\\Users\\surga\\Desktop\\mobilegroove\\tracker\\build\\windows\\SR_wavetables\\WaveEdit\\BASIC_TH.WAV|SR_wavetables/WaveEdit/BASIC_TH.WAV|' "$(WIN_DIR)/alf dance.cct"
-	sed -i 's|C:\\Users\\surga\\Desktop\\mobilegroove\\tracker\\build\\windows\\SR_wavetables\\WaveEdit\\PLESANT_.WAV|SR_wavetables/WaveEdit/PLESANT_.WAV|' "$(WIN_DIR)/alf dance.cct"
+	sed -i 's|.*SR_wavetables\\\\WaveEdit\\\\BASIC_TH.WAV|SR_wavetables/WaveEdit/BASIC_TH.WAV|' "$(WIN_DIR)/alf dance.cct"
+	sed -i 's|.*SR_wavetables\\\\WaveEdit\\\\PLESANT_.WAV|SR_wavetables/WaveEdit/PLESANT_.WAV|' "$(WIN_DIR)/alf dance.cct"
 	cp launch-alf-dance.bat $(WIN_DIR)/
 
 win_object = $(WIN_OBJ_DIR)/$(subst ../,up/,$(basename $(1))).o

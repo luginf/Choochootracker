@@ -381,6 +381,15 @@ TEST_CASE("test_scaleToRange_different_maxAmplitudes") {
   CHECK(result >= -1 - 1); CHECK(result <= -1 + 1);
 }
 
+TEST_CASE("cutoff modulation has quadratic musical depth") {
+  Modulation modulation = {.amount = 32};
+  PlaybackModState state = {.modulation = &modulation, .outValue = 8160};
+  CHECK(playbackModulateCutoff(1000, &state) == 1302); // 25%: 4.5 semitones
+  modulation.amount = 127;
+  state.outValue = 32385;
+  CHECK(playbackModulateCutoff(100, &state) == 6400); // 100%: six octaves
+}
+
 // Test ADSR full cycle
 TEST_CASE("test_ADSR_full_cycle") {
   Modulation mod = {

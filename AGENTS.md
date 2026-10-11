@@ -1,8 +1,15 @@
-# MobileGroove agent notes
+# ChooChooTracker agent notes
 
 ## Builds
 
 - Windows: run from `tracker` with MSYS2 UCRT64: `make -j4 windows`.
+- From PowerShell, invoke MSYS2 Bash and escape the workspace spaces; set
+  `HOME` and `TMPDIR` inside the workspace because the sandbox may block
+  MSYS2's default locations:
+
+  ```powershell
+  & 'C:\msys64\usr\bin\bash.exe' -lc 'export PATH=/ucrt64/bin:/usr/bin; cd /c/Users/surga/Desktop/projects\ code/choochootracker/tracker; mkdir -p build/msys-home build/msys-tmp; export HOME="$(pwd)/build/msys-home"; export TMPDIR="$(pwd)/build/msys-tmp"; make -j4 windows'
+  ```
 - Windows releases must ship as a complete package: include the executable,
   required DLLs, and all runtime assets/dependencies, like the PortMaster
   package.
@@ -11,6 +18,9 @@
   It writes `releases/choochootracker.zip`; validate it with
   `unzip -t releases/choochootracker.zip`. Final releases still require a
   hardware check on the target console.
+- Linux AppImage: run `make -j4 -f Makefile.linux appimage` from `tracker`.
+  Writes `releases/ChooChooTracker-<date>-<version>-x86_64.AppImage`. See
+  `docs/build-notes.md` for what it bundles and why.
 - Web: Emscripten is already installed at `.tmp/emsdk`. Use PowerShell, not
   MSYS2 Bash. The SDK requires its bundled Python:
 

@@ -39,6 +39,7 @@ class SoundChip {
 class SoundChipAY : public SoundChip {
   private:
     int sampleRate;
+    float volumeScale;
     uint8_t registers[16];
     ayumi* ay;
 

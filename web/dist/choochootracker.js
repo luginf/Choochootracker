@@ -76,7 +76,7 @@ var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIR
 
 // --pre-jses are emitted after the Module integration code, so that they can
 // refer to Module (if they choose; they can also define Module)
-// include: C:\Users\surga\AppData\Local\Temp\tmpko3f4nbn.js
+// include: /var/folders/g9/899ky8t11x9g4x5pskvtwrrh0000gn/T/tmp_9y3r7ef.js
 
   if (!Module['expectedDataFileDownloads']) Module['expectedDataFileDownloads'] = 0;
   Module['expectedDataFileDownloads']++;
@@ -168,7 +168,30 @@ Module['FS_createPath']("/", "AY_wavetables", true, true);
 Module['FS_createPath']("/", "SR_wavetables", true, true);
 Module['FS_createPath']("/SR_wavetables", "WaveEdit", true, true);
 Module['FS_createPath']("/", "fonts", true, true);
+Module['FS_createPath']("/fonts", "Pixel16x24", true, true);
+Module['FS_createPath']("/fonts/Pixel16x24", "licenses", true, true);
 Module['FS_createPath']("/", "instruments", true, true);
+Module['FS_createPath']("/instruments", "FACTORY", true, true);
+Module['FS_createPath']("/instruments", "USER", true, true);
+Module['FS_createPath']("/instruments/USER", "arcade", true, true);
+Module['FS_createPath']("/instruments/USER", "dx7", true, true);
+Module['FS_createPath']("/instruments/USER", "gb-noise", true, true);
+Module['FS_createPath']("/instruments/USER", "gb-pulse", true, true);
+Module['FS_createPath']("/instruments/USER", "genesis", true, true);
+Module['FS_createPath']("/instruments/USER", "opl2", true, true);
+Module['FS_createPath']("/instruments/USER", "opl3", true, true);
+Module['FS_createPath']("/instruments/USER", "opll", true, true);
+Module['FS_createPath']("/instruments/USER", "sega", true, true);
+Module['FS_createPath']("/instruments/USER", "sid", true, true);
+Module['FS_createPath']("/instruments/USER", "vrc7", true, true);
+Module['FS_createPath']("/", "licenses", true, true);
+Module['FS_createPath']("/licenses", "chip-banks", true, true);
+Module['FS_createPath']("/licenses/chip-banks", "expansion", true, true);
+Module['FS_createPath']("/licenses", "emu76489", true, true);
+Module['FS_createPath']("/licenses", "gb_apu", true, true);
+Module['FS_createPath']("/licenses", "msfa", true, true);
+Module['FS_createPath']("/licenses", "sid", true, true);
+Module['FS_createPath']("/licenses", "ymfm", true, true);
 Module['FS_createPath']("/", "pitch-tables", true, true);
 Module['FS_createPath']("/", "projects", true, true);
 Module['FS_createPath']("/", "samples", true, true);
@@ -215,25 +238,25 @@ Module['FS_createPath']("/waveforms", "AKWF", true, true);
     }
 
     }
-    loadPackage({"files": [{"filename": "/AY_wavetables/AY-Waves-4.aywave", "start": 0, "end": 132}, {"filename": "/AY_wavetables/FIFTH.aywave", "start": 132, "end": 165}, {"filename": "/AY_wavetables/NESTRI.aywave", "start": 165, "end": 198}, {"filename": "/AY_wavetables/VRC6DSAW.aywave", "start": 198, "end": 231}, {"filename": "/AY_wavetables/VRC6SAW.aywave", "start": 231, "end": 264}, {"filename": "/SR_wavetables/WaveEdit/11-2020_.WAV", "start": 264, "end": 33076}, {"filename": "/SR_wavetables/WaveEdit/111.WAV", "start": 33076, "end": 65888}, {"filename": "/SR_wavetables/WaveEdit/111___00.WAV", "start": 65888, "end": 98700}, {"filename": "/SR_wavetables/WaveEdit/303.WAV", "start": 98700, "end": 131512}, {"filename": "/SR_wavetables/WaveEdit/AAHWOHYE.WAV", "start": 131512, "end": 164324}, {"filename": "/SR_wavetables/WaveEdit/ACCESS_V.WAV", "start": 164324, "end": 197136}, {"filename": "/SR_wavetables/WaveEdit/ACID_RIN.WAV", "start": 197136, "end": 229948}, {"filename": "/SR_wavetables/WaveEdit/ACID_SP.WAV", "start": 229948, "end": 262760}, {"filename": "/SR_wavetables/WaveEdit/ADDITIVE.WAV", "start": 262760, "end": 295572}, {"filename": "/SR_wavetables/WaveEdit/AEIOUTSX.WAV", "start": 295572, "end": 328384}, {"filename": "/SR_wavetables/WaveEdit/AKVF_GRA.WAV", "start": 328384, "end": 361196}, {"filename": "/SR_wavetables/WaveEdit/AKVF_NES.WAV", "start": 361196, "end": 394008}, {"filename": "/SR_wavetables/WaveEdit/AKVF_VID.WAV", "start": 394008, "end": 426820}, {"filename": "/SR_wavetables/WaveEdit/AKWF_FMS.WAV", "start": 426820, "end": 459632}, {"filename": "/SR_wavetables/WaveEdit/ALIEN_SP.WAV", "start": 459632, "end": 492444}, {"filename": "/SR_wavetables/WaveEdit/ALIEN_VO.WAV", "start": 492444, "end": 525256}, {"filename": "/SR_wavetables/WaveEdit/ALPHA_2_.WAV", "start": 525256, "end": 558068}, {"filename": "/SR_wavetables/WaveEdit/ALTO_SAX.WAV", "start": 558068, "end": 590880}, {"filename": "/SR_wavetables/WaveEdit/AMEN.WAV", "start": 590880, "end": 623692}, {"filename": "/SR_wavetables/WaveEdit/AMEN_LOO.WAV", "start": 623692, "end": 656504}, {"filename": "/SR_wavetables/WaveEdit/AM_SINE.WAV", "start": 656504, "end": 689316}, {"filename": "/SR_wavetables/WaveEdit/ANALOG_W.WAV", "start": 689316, "end": 722128}, {"filename": "/SR_wavetables/WaveEdit/ASSYMETR.WAV", "start": 722128, "end": 754940}, {"filename": "/SR_wavetables/WaveEdit/AUDIOTER.WAV", "start": 754940, "end": 787752}, {"filename": "/SR_wavetables/WaveEdit/A_55HZ_-.WAV", "start": 787752, "end": 820564}, {"filename": "/SR_wavetables/WaveEdit/BANK_410.WAV", "start": 820564, "end": 853376}, {"filename": "/SR_wavetables/WaveEdit/BANK_A.WAV", "start": 853376, "end": 886188}, {"filename": "/SR_wavetables/WaveEdit/BANK_B.WAV", "start": 886188, "end": 919000}, {"filename": "/SR_wavetables/WaveEdit/BANK_C.WAV", "start": 919000, "end": 951812}, {"filename": "/SR_wavetables/WaveEdit/BASIC_TH.WAV", "start": 951812, "end": 984624}, {"filename": "/SR_wavetables/WaveEdit/BASIC_WA.WAV", "start": 984624, "end": 1017436}, {"filename": "/SR_wavetables/WaveEdit/BASS_BY_.WAV", "start": 1017436, "end": 1050248}, {"filename": "/SR_wavetables/WaveEdit/BBELLS.WAV", "start": 1050248, "end": 1083060}, {"filename": "/SR_wavetables/WaveEdit/BELL02.WAV", "start": 1083060, "end": 1115872}, {"filename": "/SR_wavetables/WaveEdit/BELL03.WAV", "start": 1115872, "end": 1148684}, {"filename": "/SR_wavetables/WaveEdit/BELLS.WAV", "start": 1148684, "end": 1181496}, {"filename": "/SR_wavetables/WaveEdit/BEST_OF_.WAV", "start": 1181496, "end": 1214308}, {"filename": "/SR_wavetables/WaveEdit/BOWED_00.WAV", "start": 1214308, "end": 1247120}, {"filename": "/SR_wavetables/WaveEdit/BOWED_CY.WAV", "start": 1247120, "end": 1279932}, {"filename": "/SR_wavetables/WaveEdit/BOWING.WAV", "start": 1279932, "end": 1312744}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS01.WAV", "start": 1312744, "end": 1345556}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS02.WAV", "start": 1345556, "end": 1378368}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS03.WAV", "start": 1378368, "end": 1411180}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS04.WAV", "start": 1411180, "end": 1443992}, {"filename": "/SR_wavetables/WaveEdit/CHEBYSHE.WAV", "start": 1443992, "end": 1476804}, {"filename": "/SR_wavetables/WaveEdit/CLOCK_MU.WAV", "start": 1476804, "end": 1509616}, {"filename": "/SR_wavetables/WaveEdit/COLUNDI-.WAV", "start": 1509616, "end": 1542428}, {"filename": "/SR_wavetables/WaveEdit/CRUSH_AD.WAV", "start": 1542428, "end": 1575240}, {"filename": "/SR_wavetables/WaveEdit/CYBERNET.WAV", "start": 1575240, "end": 1608052}, {"filename": "/SR_wavetables/WaveEdit/CYBORG.WAV", "start": 1608052, "end": 1640864}, {"filename": "/SR_wavetables/WaveEdit/CZ-ISH.WAV", "start": 1640864, "end": 1673676}, {"filename": "/SR_wavetables/WaveEdit/DECIDE.WAV", "start": 1673676, "end": 1706488}, {"filename": "/SR_wavetables/WaveEdit/DIGITAL_.WAV", "start": 1706488, "end": 1739300}, {"filename": "/SR_wavetables/WaveEdit/DIRTY_01.WAV", "start": 1739300, "end": 1772112}, {"filename": "/SR_wavetables/WaveEdit/DIRTY_02.WAV", "start": 1772112, "end": 1804924}, {"filename": "/SR_wavetables/WaveEdit/DISCORDA.WAV", "start": 1804924, "end": 1837736}, {"filename": "/SR_wavetables/WaveEdit/DISTORTE.WAV", "start": 1837736, "end": 1870548}, {"filename": "/SR_wavetables/WaveEdit/DOSE_WIT.WAV", "start": 1870548, "end": 1903360}, {"filename": "/SR_wavetables/WaveEdit/DRONE.WAV", "start": 1903360, "end": 1936172}, {"filename": "/SR_wavetables/WaveEdit/DRONE_.WAV", "start": 1936172, "end": 1968984}, {"filename": "/SR_wavetables/WaveEdit/DRUMSTRU.WAV", "start": 1968984, "end": 2001796}, {"filename": "/SR_wavetables/WaveEdit/E.GUITAR.WAV", "start": 2001796, "end": 2034608}, {"filename": "/SR_wavetables/WaveEdit/ELOB_A.WAV", "start": 2034608, "end": 2067420}, {"filename": "/SR_wavetables/WaveEdit/ELOB_B.WAV", "start": 2067420, "end": 2100232}, {"filename": "/SR_wavetables/WaveEdit/ELOB_C.WAV", "start": 2100232, "end": 2133044}, {"filename": "/SR_wavetables/WaveEdit/ENSHTU02.WAV", "start": 2133044, "end": 2165856}, {"filename": "/SR_wavetables/WaveEdit/ENSHTU03.WAV", "start": 2165856, "end": 2198668}, {"filename": "/SR_wavetables/WaveEdit/ENSHTURZ.WAV", "start": 2198668, "end": 2231480}, {"filename": "/SR_wavetables/WaveEdit/ENSONIQ_.WAV", "start": 2231480, "end": 2264292}, {"filename": "/SR_wavetables/WaveEdit/ENVELO00.WAV", "start": 2264292, "end": 2297104}, {"filename": "/SR_wavetables/WaveEdit/ENVELO01.WAV", "start": 2297104, "end": 2329916}, {"filename": "/SR_wavetables/WaveEdit/ENVELOPE.WAV", "start": 2329916, "end": 2362728}, {"filename": "/SR_wavetables/WaveEdit/ESQ1-HI.WAV", "start": 2362728, "end": 2395540}, {"filename": "/SR_wavetables/WaveEdit/ESQ1-LO.WAV", "start": 2395540, "end": 2428352}, {"filename": "/SR_wavetables/WaveEdit/EUCLIDEA.WAV", "start": 2428352, "end": 2461164}, {"filename": "/SR_wavetables/WaveEdit/FAIRLI01.WAV", "start": 2461164, "end": 2493976}, {"filename": "/SR_wavetables/WaveEdit/FAIRLIGH.WAV", "start": 2493976, "end": 2526788}, {"filename": "/SR_wavetables/WaveEdit/FEEDBACK.WAV", "start": 2526788, "end": 2559600}, {"filename": "/SR_wavetables/WaveEdit/FMADDI02.WAV", "start": 2559600, "end": 2592412}, {"filename": "/SR_wavetables/WaveEdit/FM_-_COM.WAV", "start": 2592412, "end": 2625224}, {"filename": "/SR_wavetables/WaveEdit/FOLDFEED.WAV", "start": 2625224, "end": 2658036}, {"filename": "/SR_wavetables/WaveEdit/FOLDING_.WAV", "start": 2658036, "end": 2690848}, {"filename": "/SR_wavetables/WaveEdit/FOURIER.WAV", "start": 2690848, "end": 2723660}, {"filename": "/SR_wavetables/WaveEdit/FOURIER2.WAV", "start": 2723660, "end": 2756472}, {"filename": "/SR_wavetables/WaveEdit/FRACTA01.WAV", "start": 2756472, "end": 2789284}, {"filename": "/SR_wavetables/WaveEdit/FRACTA02.WAV", "start": 2789284, "end": 2822096}, {"filename": "/SR_wavetables/WaveEdit/FRACTA03.WAV", "start": 2822096, "end": 2854908}, {"filename": "/SR_wavetables/WaveEdit/FRED_DUR.WAV", "start": 2854908, "end": 2887720}, {"filename": "/SR_wavetables/WaveEdit/FX_BITNO.WAV", "start": 2887720, "end": 2920532}, {"filename": "/SR_wavetables/WaveEdit/FX_BIT_N.WAV", "start": 2920532, "end": 2953344}, {"filename": "/SR_wavetables/WaveEdit/G2_ASTRA.WAV", "start": 2953344, "end": 2986156}, {"filename": "/SR_wavetables/WaveEdit/GENTLE_M.WAV", "start": 2986156, "end": 3018968}, {"filename": "/SR_wavetables/WaveEdit/GEOMETRI.WAV", "start": 3018968, "end": 3051780}, {"filename": "/SR_wavetables/WaveEdit/GLITCHBO.WAV", "start": 3051780, "end": 3084592}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A1.WAV", "start": 3084592, "end": 3117404}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A10.WAV", "start": 3117404, "end": 3150216}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A2.WAV", "start": 3150216, "end": 3183028}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A3.WAV", "start": 3183028, "end": 3215840}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A4.WAV", "start": 3215840, "end": 3248652}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A5.WAV", "start": 3248652, "end": 3281464}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A6.WAV", "start": 3281464, "end": 3314276}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A7.WAV", "start": 3314276, "end": 3347088}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A8.WAV", "start": 3347088, "end": 3379900}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A9.WAV", "start": 3379900, "end": 3412712}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B1.WAV", "start": 3412712, "end": 3445524}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B10.WAV", "start": 3445524, "end": 3478336}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B2.WAV", "start": 3478336, "end": 3511148}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B3.WAV", "start": 3511148, "end": 3543960}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B4.WAV", "start": 3543960, "end": 3576772}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B5.WAV", "start": 3576772, "end": 3609584}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B6.WAV", "start": 3609584, "end": 3642396}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B7.WAV", "start": 3642396, "end": 3675208}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B8.WAV", "start": 3675208, "end": 3708020}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B9.WAV", "start": 3708020, "end": 3740832}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C1.WAV", "start": 3740832, "end": 3773644}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C10.WAV", "start": 3773644, "end": 3806456}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C2.WAV", "start": 3806456, "end": 3839268}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C3.WAV", "start": 3839268, "end": 3872080}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C5.WAV", "start": 3872080, "end": 3904892}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C6.WAV", "start": 3904892, "end": 3937704}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C7.WAV", "start": 3937704, "end": 3970516}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C8.WAV", "start": 3970516, "end": 4003328}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C9.WAV", "start": 4003328, "end": 4036140}, {"filename": "/SR_wavetables/WaveEdit/HARMOMET.WAV", "start": 4036140, "end": 4068952}, {"filename": "/SR_wavetables/WaveEdit/HARMON00.WAV", "start": 4068952, "end": 4101764}, {"filename": "/SR_wavetables/WaveEdit/HARMONIC.WAV", "start": 4101764, "end": 4134576}, {"filename": "/SR_wavetables/WaveEdit/HARMONIO.WAV", "start": 4134576, "end": 4167388}, {"filename": "/SR_wavetables/WaveEdit/HARMONIX.WAV", "start": 4167388, "end": 4200200}, {"filename": "/SR_wavetables/WaveEdit/HIENHARM.WAV", "start": 4200200, "end": 4233012}, {"filename": "/SR_wavetables/WaveEdit/HIGH_FRE.WAV", "start": 4233012, "end": 4265824}, {"filename": "/SR_wavetables/WaveEdit/HMMMMMMM.WAV", "start": 4265824, "end": 4298636}, {"filename": "/SR_wavetables/WaveEdit/HORROR.WAV", "start": 4298636, "end": 4331448}, {"filename": "/SR_wavetables/WaveEdit/HVOICEA.WAV", "start": 4331448, "end": 4364260}, {"filename": "/SR_wavetables/WaveEdit/HYPERBOL.WAV", "start": 4364260, "end": 4397072}, {"filename": "/SR_wavetables/WaveEdit/ISOBELLE.WAV", "start": 4397072, "end": 4429884}, {"filename": "/SR_wavetables/WaveEdit/ISOLDE.WAV", "start": 4429884, "end": 4462696}, {"filename": "/SR_wavetables/WaveEdit/ITERAT00.WAV", "start": 4462696, "end": 4495508}, {"filename": "/SR_wavetables/WaveEdit/ITERATIV.WAV", "start": 4495508, "end": 4528320}, {"filename": "/SR_wavetables/WaveEdit/I_HEART_.WAV", "start": 4528320, "end": 4561132}, {"filename": "/SR_wavetables/WaveEdit/JUNOX_HO.WAV", "start": 4561132, "end": 4593944}, {"filename": "/SR_wavetables/WaveEdit/JUST_RAN.WAV", "start": 4593944, "end": 4626756}, {"filename": "/SR_wavetables/WaveEdit/KAWAI_K1.WAV", "start": 4626756, "end": 4659568}, {"filename": "/SR_wavetables/WaveEdit/KEEN.WAV", "start": 4659568, "end": 4692380}, {"filename": "/SR_wavetables/WaveEdit/KERMIT00.WAV", "start": 4692380, "end": 4725192}, {"filename": "/SR_wavetables/WaveEdit/KERMIT01.WAV", "start": 4725192, "end": 4758004}, {"filename": "/SR_wavetables/WaveEdit/KERMITEN.WAV", "start": 4758004, "end": 4790816}, {"filename": "/SR_wavetables/WaveEdit/KERMIT_0.WAV", "start": 4790816, "end": 4823628}, {"filename": "/SR_wavetables/WaveEdit/KERMIT_K.WAV", "start": 4823628, "end": 4856440}, {"filename": "/SR_wavetables/WaveEdit/KERMIT_R.WAV", "start": 4856440, "end": 4889252}, {"filename": "/SR_wavetables/WaveEdit/KOMPLE01.WAV", "start": 4889252, "end": 4922064}, {"filename": "/SR_wavetables/WaveEdit/KONBANWA.WAV", "start": 4922064, "end": 4954876}, {"filename": "/SR_wavetables/WaveEdit/KUATO.WAV", "start": 4954876, "end": 4987688}, {"filename": "/SR_wavetables/WaveEdit/KYMA_PAR.WAV", "start": 4987688, "end": 5020500}, {"filename": "/SR_wavetables/WaveEdit/LASER_CR.WAV", "start": 5020500, "end": 5053312}, {"filename": "/SR_wavetables/WaveEdit/LERNING2.WAV", "start": 5053312, "end": 5086124}, {"filename": "/SR_wavetables/WaveEdit/LFO_PL00.WAV", "start": 5086124, "end": 5118936}, {"filename": "/SR_wavetables/WaveEdit/LFO_PLAY.WAV", "start": 5118936, "end": 5151748}, {"filename": "/SR_wavetables/WaveEdit/LICENSE.CC0.md", "start": 5151748, "end": 5152093}, {"filename": "/SR_wavetables/WaveEdit/LIGHT_00.WAV", "start": 5152093, "end": 5184905}, {"filename": "/SR_wavetables/WaveEdit/LIGHT_YE.WAV", "start": 5184905, "end": 5217717}, {"filename": "/SR_wavetables/WaveEdit/LOFIRISE.WAV", "start": 5217717, "end": 5250529}, {"filename": "/SR_wavetables/WaveEdit/LOM_A.WAV", "start": 5250529, "end": 5283341}, {"filename": "/SR_wavetables/WaveEdit/LSDJ_WAV.WAV", "start": 5283341, "end": 5316153}, {"filename": "/SR_wavetables/WaveEdit/MAGNET00.WAV", "start": 5316153, "end": 5348965}, {"filename": "/SR_wavetables/WaveEdit/MAGNETIC.WAV", "start": 5348965, "end": 5381777}, {"filename": "/SR_wavetables/WaveEdit/MELLOW_D.WAV", "start": 5381777, "end": 5414589}, {"filename": "/SR_wavetables/WaveEdit/MERAVIGL.WAV", "start": 5414589, "end": 5447401}, {"filename": "/SR_wavetables/WaveEdit/MICROBRU.WAV", "start": 5447401, "end": 5480213}, {"filename": "/SR_wavetables/WaveEdit/MICROW02.WAV", "start": 5480213, "end": 5513025}, {"filename": "/SR_wavetables/WaveEdit/MICRO_Q_.WAV", "start": 5513025, "end": 5545837}, {"filename": "/SR_wavetables/WaveEdit/MIXED02.WAV", "start": 5545837, "end": 5578649}, {"filename": "/SR_wavetables/WaveEdit/MIXED_AS.WAV", "start": 5578649, "end": 5611461}, {"filename": "/SR_wavetables/WaveEdit/MK_DWG_H.WAV", "start": 5611461, "end": 5644273}, {"filename": "/SR_wavetables/WaveEdit/MODDROP.WAV", "start": 5644273, "end": 5677085}, {"filename": "/SR_wavetables/WaveEdit/MONICS.WAV", "start": 5677085, "end": 5709897}, {"filename": "/SR_wavetables/WaveEdit/MORPHING.WAV", "start": 5709897, "end": 5742709}, {"filename": "/SR_wavetables/WaveEdit/MS2K.WAV", "start": 5742709, "end": 5775521}, {"filename": "/SR_wavetables/WaveEdit/MUTATION.WAV", "start": 5775521, "end": 5808333}, {"filename": "/SR_wavetables/WaveEdit/NOISE_WA.WAV", "start": 5808333, "end": 5841145}, {"filename": "/SR_wavetables/WaveEdit/NOMAD.WAV", "start": 5841145, "end": 5873957}, {"filename": "/SR_wavetables/WaveEdit/ORGANIC_.WAV", "start": 5873957, "end": 5906769}, {"filename": "/SR_wavetables/WaveEdit/ORGANS01.WAV", "start": 5906769, "end": 5939581}, {"filename": "/SR_wavetables/WaveEdit/ORGAN_DI.WAV", "start": 5939581, "end": 5972393}, {"filename": "/SR_wavetables/WaveEdit/OSMAOS.WAV", "start": 5972393, "end": 6005205}, {"filename": "/SR_wavetables/WaveEdit/PD101.WAV", "start": 6005205, "end": 6038017}, {"filename": "/SR_wavetables/WaveEdit/PD102.WAV", "start": 6038017, "end": 6070829}, {"filename": "/SR_wavetables/WaveEdit/PD103.WAV", "start": 6070829, "end": 6103641}, {"filename": "/SR_wavetables/WaveEdit/PD104.WAV", "start": 6103641, "end": 6136453}, {"filename": "/SR_wavetables/WaveEdit/PHANTOMS.WAV", "start": 6136453, "end": 6169265}, {"filename": "/SR_wavetables/WaveEdit/PISTON_H.WAV", "start": 6169265, "end": 6202077}, {"filename": "/SR_wavetables/WaveEdit/PLAITS01.WAV", "start": 6202077, "end": 6234889}, {"filename": "/SR_wavetables/WaveEdit/PLAITS02.WAV", "start": 6234889, "end": 6267701}, {"filename": "/SR_wavetables/WaveEdit/PLAITS03.WAV", "start": 6267701, "end": 6300513}, {"filename": "/SR_wavetables/WaveEdit/PLESANT_.WAV", "start": 6300513, "end": 6333325}, {"filename": "/SR_wavetables/WaveEdit/PPG_BES.WAV", "start": 6333325, "end": 6366137}, {"filename": "/SR_wavetables/WaveEdit/PPG_UPPE.WAV", "start": 6366137, "end": 6398949}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA00.WAV", "start": 6398949, "end": 6431761}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA01.WAV", "start": 6431761, "end": 6464573}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA02.WAV", "start": 6464573, "end": 6497385}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA03.WAV", "start": 6497385, "end": 6530197}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA04.WAV", "start": 6530197, "end": 6563009}, {"filename": "/fonts/Console.cnfont", "start": 6563009, "end": 6764279}, {"filename": "/fonts/Default.cnfont", "start": 6764279, "end": 6965059}, {"filename": "/fonts/IBM_VGA.cnfont", "start": 6965059, "end": 7165867}, {"filename": "/fonts/PSGCAPITAL.cnfont", "start": 7165867, "end": 7367127}, {"filename": "/fonts/RobotoMono.cnfont", "start": 7367127, "end": 7567937}, {"filename": "/fonts/tm-prosto-constructivist.cnfont", "start": 7567937, "end": 7769236}, {"filename": "/instruments/BD 1.cni", "start": 7769236, "end": 7769999}, {"filename": "/instruments/BD Bass 1.cni", "start": 7769999, "end": 7770767}, {"filename": "/instruments/Bass 1.cni", "start": 7770767, "end": 7771534}, {"filename": "/instruments/Bass 2.cni", "start": 7771534, "end": 7772303}, {"filename": "/instruments/Bass Saw 1.cni", "start": 7772303, "end": 7773071}, {"filename": "/instruments/Bass Slap 1.cni", "start": 7773071, "end": 7773842}, {"filename": "/instruments/Bass Slap 2.cni", "start": 7773842, "end": 7774613}, {"filename": "/instruments/Bass Slap 3.cni", "start": 7774613, "end": 7775384}, {"filename": "/instruments/Bass Tri 1.cni", "start": 7775384, "end": 7776152}, {"filename": "/instruments/Clap.cni", "start": 7776152, "end": 7776917}, {"filename": "/instruments/DrumSynth Clap.cni", "start": 7776917, "end": 7777390}, {"filename": "/instruments/DrumSynth Clave.cni", "start": 7777390, "end": 7777865}, {"filename": "/instruments/DrumSynth Cowbell.cni", "start": 7777865, "end": 7778345}, {"filename": "/instruments/DrumSynth Cymbal.cni", "start": 7778345, "end": 7778823}, {"filename": "/instruments/DrumSynth FM.cni", "start": 7778823, "end": 7779297}, {"filename": "/instruments/DrumSynth Hat.cni", "start": 7779297, "end": 7779771}, {"filename": "/instruments/DrumSynth Kick.cni", "start": 7779771, "end": 7780246}, {"filename": "/instruments/DrumSynth Noise.cni", "start": 7780246, "end": 7780720}, {"filename": "/instruments/DrumSynth Rim.cni", "start": 7780720, "end": 7781192}, {"filename": "/instruments/DrumSynth Shaker.cni", "start": 7781192, "end": 7781668}, {"filename": "/instruments/DrumSynth Snare.cni", "start": 7781668, "end": 7782144}, {"filename": "/instruments/DrumSynth Tom.cni", "start": 7782144, "end": 7782617}, {"filename": "/instruments/Fall.cni", "start": 7782617, "end": 7783382}, {"filename": "/instruments/Hat 1.cni", "start": 7783382, "end": 7784145}, {"filename": "/instruments/Lead 1.cni", "start": 7784145, "end": 7784912}, {"filename": "/instruments/Pluck 1.cni", "start": 7784912, "end": 7785678}, {"filename": "/instruments/Rim.cni", "start": 7785678, "end": 7786441}, {"filename": "/instruments/Riser 1.cni", "start": 7786441, "end": 7787208}, {"filename": "/instruments/Sax.cni", "start": 7787208, "end": 7787972}, {"filename": "/instruments/ShortArp 1.cni", "start": 7787972, "end": 7788742}, {"filename": "/instruments/Snare 1.cni", "start": 7788742, "end": 7789505}, {"filename": "/instruments/Snare 2.cni", "start": 7789505, "end": 7790271}, {"filename": "/instruments/Tom 1.cni", "start": 7790271, "end": 7791034}, {"filename": "/instruments/Waves.cni", "start": 7791034, "end": 7791802}, {"filename": "/pitch-tables/24TET Linear.csv", "start": 7791802, "end": 7793797}, {"filename": "/pitch-tables/Just D Phrygian 177 433.csv", "start": 7793797, "end": 7795226}, {"filename": "/pitch-tables/PT3-0.csv", "start": 7795226, "end": 7795990}, {"filename": "/pitch-tables/PT3-1.csv", "start": 7795990, "end": 7796762}, {"filename": "/pitch-tables/PT3-2.csv", "start": 7796762, "end": 7797528}, {"filename": "/pitch-tables/PT3-3.csv", "start": 7797528, "end": 7798294}, {"filename": "/projects/DNB.cct", "start": 7798294, "end": 7804966}, {"filename": "/projects/alf dance.cct", "start": 7804966, "end": 7814921}, {"filename": "/projects/dub-reich.cct", "start": 7814921, "end": 7825204}, {"filename": "/projects/grieg-mountain-king-fm.cct", "start": 7825204, "end": 7910856}, {"filename": "/projects/maple-leaf-rag.cct", "start": 7910856, "end": 7996294}, {"filename": "/projects/psy.cct", "start": 7996294, "end": 8008504}, {"filename": "/samples/909/BT0A0A7.WAV", "start": 8008504, "end": 8033656}, {"filename": "/samples/909/BT0A0D0.WAV", "start": 8033656, "end": 8042678}, {"filename": "/samples/909/BT0A0D3.WAV", "start": 8042678, "end": 8057860}, {"filename": "/samples/909/BT0A0DA.WAV", "start": 8057860, "end": 8101888}, {"filename": "/samples/909/BT0AAD0.WAV", "start": 8101888, "end": 8111516}, {"filename": "/samples/909/BT0AADA.WAV", "start": 8111516, "end": 8155536}, {"filename": "/samples/909/BT3A0D0.WAV", "start": 8155536, "end": 8164276}, {"filename": "/samples/909/BT3A0D3.WAV", "start": 8164276, "end": 8180200}, {"filename": "/samples/909/BT3A0D7.WAV", "start": 8180200, "end": 8208794}, {"filename": "/samples/909/BT3A0DA.WAV", "start": 8208794, "end": 8251674}, {"filename": "/samples/909/BT3AAD0.WAV", "start": 8251674, "end": 8260380}, {"filename": "/samples/909/BT3AADA.WAV", "start": 8260380, "end": 8303280}, {"filename": "/samples/909/BT7A0D0.WAV", "start": 8303280, "end": 8312752}, {"filename": "/samples/909/BT7A0D3.WAV", "start": 8312752, "end": 8327712}, {"filename": "/samples/909/BT7A0D7.WAV", "start": 8327712, "end": 8355256}, {"filename": "/samples/909/BT7A0DA.WAV", "start": 8355256, "end": 8398924}, {"filename": "/samples/909/BT7AAD0.WAV", "start": 8398924, "end": 8408372}, {"filename": "/samples/909/BT7AADA.WAV", "start": 8408372, "end": 8451988}, {"filename": "/samples/909/BTAA0D0.WAV", "start": 8451988, "end": 8461208}, {"filename": "/samples/909/BTAA0D3.WAV", "start": 8461208, "end": 8477518}, {"filename": "/samples/909/BTAA0D7.WAV", "start": 8477518, "end": 8506392}, {"filename": "/samples/909/BTAA0DA.WAV", "start": 8506392, "end": 8549402}, {"filename": "/samples/909/BTAAAD0.WAV", "start": 8549402, "end": 8558618}, {"filename": "/samples/909/BTAAADA.WAV", "start": 8558618, "end": 8601632}, {"filename": "/samples/909/CLOP1.WAV", "start": 8601632, "end": 8640646}, {"filename": "/samples/909/CLOP2.WAV", "start": 8640646, "end": 8663790}, {"filename": "/samples/909/CLOP3.WAV", "start": 8663790, "end": 8716954}, {"filename": "/samples/909/CLOP4.WAV", "start": 8716954, "end": 8737250}, {"filename": "/samples/909/CSHD0.WAV", "start": 8737250, "end": 8835076}, {"filename": "/samples/909/CSHD2.WAV", "start": 8835076, "end": 8926066}, {"filename": "/samples/909/CSHD4.WAV", "start": 8926066, "end": 9005690}, {"filename": "/samples/909/CSHD6.WAV", "start": 9005690, "end": 9070300}, {"filename": "/samples/909/CSHD8.WAV", "start": 9070300, "end": 9125254}, {"filename": "/samples/909/CSHDA.WAV", "start": 9125254, "end": 9172938}, {"filename": "/samples/909/HANDCLP1.WAV", "start": 9172938, "end": 9212330}, {"filename": "/samples/909/HANDCLP2.WAV", "start": 9212330, "end": 9244642}, {"filename": "/samples/909/HHCD0.WAV", "start": 9244642, "end": 9248446}, {"filename": "/samples/909/HHCD2.WAV", "start": 9248446, "end": 9256058}, {"filename": "/samples/909/HHCD4.WAV", "start": 9256058, "end": 9266090}, {"filename": "/samples/909/HHCD6.WAV", "start": 9266090, "end": 9277840}, {"filename": "/samples/909/HHCD8.WAV", "start": 9277840, "end": 9289928}, {"filename": "/samples/909/HHCDA.WAV", "start": 9289928, "end": 9302722}, {"filename": "/samples/909/HHOD0.WAV", "start": 9302722, "end": 9325090}, {"filename": "/samples/909/HHOD2.WAV", "start": 9325090, "end": 9354358}, {"filename": "/samples/909/HHOD4.WAV", "start": 9354358, "end": 9389626}, {"filename": "/samples/909/HHOD6.WAV", "start": 9389626, "end": 9428314}, {"filename": "/samples/909/HHOD8.WAV", "start": 9428314, "end": 9473870}, {"filename": "/samples/909/HHODA.WAV", "start": 9473870, "end": 9519528}, {"filename": "/samples/909/HT0D0.WAV", "start": 9519528, "end": 9540362}, {"filename": "/samples/909/HT0D3.WAV", "start": 9540362, "end": 9565982}, {"filename": "/samples/909/HT0D7.WAV", "start": 9565982, "end": 9600298}, {"filename": "/samples/909/HT0DA.WAV", "start": 9600298, "end": 9637710}, {"filename": "/samples/909/HT3D0.WAV", "start": 9637710, "end": 9657698}, {"filename": "/samples/909/HT3D3.WAV", "start": 9657698, "end": 9683116}, {"filename": "/samples/909/HT3D7.WAV", "start": 9683116, "end": 9718798}, {"filename": "/samples/909/HT3DA.WAV", "start": 9718798, "end": 9756836}, {"filename": "/samples/909/HT7D0.WAV", "start": 9756836, "end": 9777474}, {"filename": "/samples/909/HT7D3.WAV", "start": 9777474, "end": 9803734}, {"filename": "/samples/909/HT7D7.WAV", "start": 9803734, "end": 9840448}, {"filename": "/samples/909/HT7DA.WAV", "start": 9840448, "end": 9879004}, {"filename": "/samples/909/HTAD0.WAV", "start": 9879004, "end": 9899662}, {"filename": "/samples/909/HTAD3.WAV", "start": 9899662, "end": 9926456}, {"filename": "/samples/909/HTAD7.WAV", "start": 9926456, "end": 9961500}, {"filename": "/samples/909/HTADA.WAV", "start": 9961500, "end": 10001734}, {"filename": "/samples/909/LT0D0.WAV", "start": 10001734, "end": 10033306}, {"filename": "/samples/909/LT0D3.WAV", "start": 10033306, "end": 10072242}, {"filename": "/samples/909/LT0D7.WAV", "start": 10072242, "end": 10125484}, {"filename": "/samples/909/LT0DA.WAV", "start": 10125484, "end": 10185560}, {"filename": "/samples/909/LT3D0.WAV", "start": 10185560, "end": 10216742}, {"filename": "/samples/909/LT3D3.WAV", "start": 10216742, "end": 10256062}, {"filename": "/samples/909/LT3D7.WAV", "start": 10256062, "end": 10310642}, {"filename": "/samples/909/LT3DA.WAV", "start": 10310642, "end": 10370230}, {"filename": "/samples/909/LT7D0.WAV", "start": 10370230, "end": 10402810}, {"filename": "/samples/909/LT7D3.WAV", "start": 10402810, "end": 10444916}, {"filename": "/samples/909/LT7D7.WAV", "start": 10444916, "end": 10503106}, {"filename": "/samples/909/LT7DA.WAV", "start": 10503106, "end": 10565100}, {"filename": "/samples/909/LTAD0.WAV", "start": 10565100, "end": 10597502}, {"filename": "/samples/909/LTAD3.WAV", "start": 10597502, "end": 10639482}, {"filename": "/samples/909/LTAD7.WAV", "start": 10639482, "end": 10697098}, {"filename": "/samples/909/LTADA.WAV", "start": 10697098, "end": 10760748}, {"filename": "/samples/909/MT0D0.WAV", "start": 10760748, "end": 10780200}, {"filename": "/samples/909/MT0D3.WAV", "start": 10780200, "end": 10805942}, {"filename": "/samples/909/MT0D7.WAV", "start": 10805942, "end": 10840334}, {"filename": "/samples/909/MT0DA.WAV", "start": 10840334, "end": 10876910}, {"filename": "/samples/909/MT3D0.WAV", "start": 10876910, "end": 10896788}, {"filename": "/samples/909/MT3D3.WAV", "start": 10896788, "end": 10922554}, {"filename": "/samples/909/MT3D7.WAV", "start": 10922554, "end": 10959094}, {"filename": "/samples/909/MT3DA.WAV", "start": 10959094, "end": 10998050}, {"filename": "/samples/909/MT7D0.WAV", "start": 10998050, "end": 11017450}, {"filename": "/samples/909/MT7D3.WAV", "start": 11017450, "end": 11044322}, {"filename": "/samples/909/MT7D7.WAV", "start": 11044322, "end": 11079930}, {"filename": "/samples/909/MT7DA.WAV", "start": 11079930, "end": 11121086}, {"filename": "/samples/909/MTAD0.WAV", "start": 11121086, "end": 11141512}, {"filename": "/samples/909/MTAD3.WAV", "start": 11141512, "end": 11167220}, {"filename": "/samples/909/MTAD7.WAV", "start": 11167220, "end": 11205314}, {"filename": "/samples/909/MTADA.WAV", "start": 11205314, "end": 11246778}, {"filename": "/samples/909/OPCL1.WAV", "start": 11246778, "end": 11281824}, {"filename": "/samples/909/OPCL2.WAV", "start": 11281824, "end": 11308492}, {"filename": "/samples/909/OPCL3.WAV", "start": 11308492, "end": 11329262}, {"filename": "/samples/909/OPCL4.WAV", "start": 11329262, "end": 11379738}, {"filename": "/samples/909/RIDED0.WAV", "start": 11379738, "end": 11482586}, {"filename": "/samples/909/RIDED2.WAV", "start": 11482586, "end": 11578800}, {"filename": "/samples/909/RIDED4.WAV", "start": 11578800, "end": 11648882}, {"filename": "/samples/909/RIDED6.WAV", "start": 11648882, "end": 11718964}, {"filename": "/samples/909/RIDED8.WAV", "start": 11718964, "end": 11776836}, {"filename": "/samples/909/RIDEDA.WAV", "start": 11776836, "end": 11824476}, {"filename": "/samples/909/RIM127.WAV", "start": 11824476, "end": 11828058}, {"filename": "/samples/909/RIM63.WAV", "start": 11828058, "end": 11831640}, {"filename": "/samples/909/ST0T0S0.WAV", "start": 11831640, "end": 11847422}, {"filename": "/samples/909/ST0T0S3.WAV", "start": 11847422, "end": 11860918}, {"filename": "/samples/909/ST0T0S7.WAV", "start": 11860918, "end": 11874726}, {"filename": "/samples/909/ST0T0SA.WAV", "start": 11874726, "end": 11888274}, {"filename": "/samples/909/ST0T3S3.WAV", "start": 11888274, "end": 11903996}, {"filename": "/samples/909/ST0T3S7.WAV", "start": 11903996, "end": 11919962}, {"filename": "/samples/909/ST0T3SA.WAV", "start": 11919962, "end": 11936018}, {"filename": "/samples/909/ST0T7S3.WAV", "start": 11936018, "end": 11957436}, {"filename": "/samples/909/ST0T7S7.WAV", "start": 11957436, "end": 11980330}, {"filename": "/samples/909/ST0T7SA.WAV", "start": 11980330, "end": 12003864}, {"filename": "/samples/909/ST0TAS3.WAV", "start": 12003864, "end": 12026700}, {"filename": "/samples/909/ST0TAS7.WAV", "start": 12026700, "end": 12051764}, {"filename": "/samples/909/ST0TASA.WAV", "start": 12051764, "end": 12077400}, {"filename": "/samples/909/ST3T0S0.WAV", "start": 12077400, "end": 12091426}, {"filename": "/samples/909/ST3T0S3.WAV", "start": 12091426, "end": 12105594}, {"filename": "/samples/909/ST3T0S7.WAV", "start": 12105594, "end": 12119110}, {"filename": "/samples/909/ST3T0SA.WAV", "start": 12119110, "end": 12133884}, {"filename": "/samples/909/ST3T3S3.WAV", "start": 12133884, "end": 12149472}, {"filename": "/samples/909/ST3T3S7.WAV", "start": 12149472, "end": 12165446}, {"filename": "/samples/909/ST3T3SA.WAV", "start": 12165446, "end": 12181392}, {"filename": "/samples/909/ST3T7S3.WAV", "start": 12181392, "end": 12202554}, {"filename": "/samples/909/ST3T7S7.WAV", "start": 12202554, "end": 12225294}, {"filename": "/samples/909/ST3T7SA.WAV", "start": 12225294, "end": 12248826}, {"filename": "/samples/909/ST3TAS3.WAV", "start": 12248826, "end": 12271716}, {"filename": "/samples/909/ST3TAS7.WAV", "start": 12271716, "end": 12296908}, {"filename": "/samples/909/ST3TASA.WAV", "start": 12296908, "end": 12322614}, {"filename": "/samples/909/ST7T0S0.WAV", "start": 12322614, "end": 12336690}, {"filename": "/samples/909/ST7T0S3.WAV", "start": 12336690, "end": 12350696}, {"filename": "/samples/909/ST7T0S7.WAV", "start": 12350696, "end": 12365142}, {"filename": "/samples/909/ST7T0SA.WAV", "start": 12365142, "end": 12379780}, {"filename": "/samples/909/ST7T3S3.WAV", "start": 12379780, "end": 12395542}, {"filename": "/samples/909/ST7T3S7.WAV", "start": 12395542, "end": 12411510}, {"filename": "/samples/909/ST7T3SA.WAV", "start": 12411510, "end": 12427850}, {"filename": "/samples/909/ST7T7S3.WAV", "start": 12427850, "end": 12448822}, {"filename": "/samples/909/ST7T7S7.WAV", "start": 12448822, "end": 12472478}, {"filename": "/samples/909/ST7T7SA.WAV", "start": 12472478, "end": 12496132}, {"filename": "/samples/909/ST7TAS3.WAV", "start": 12496132, "end": 12518896}, {"filename": "/samples/909/ST7TAS7.WAV", "start": 12518896, "end": 12544598}, {"filename": "/samples/909/ST7TASA.WAV", "start": 12544598, "end": 12570496}, {"filename": "/samples/909/STAT0S0.WAV", "start": 12570496, "end": 12584758}, {"filename": "/samples/909/STAT0S3.WAV", "start": 12584758, "end": 12599396}, {"filename": "/samples/909/STAT0S7.WAV", "start": 12599396, "end": 12614032}, {"filename": "/samples/909/STAT0SA.WAV", "start": 12614032, "end": 12628340}, {"filename": "/samples/909/STAT3S3.WAV", "start": 12628340, "end": 12644428}, {"filename": "/samples/909/STAT3S7.WAV", "start": 12644428, "end": 12660964}, {"filename": "/samples/909/STAT3SA.WAV", "start": 12660964, "end": 12677696}, {"filename": "/samples/909/STAT7S3.WAV", "start": 12677696, "end": 12698540}, {"filename": "/samples/909/STAT7S7.WAV", "start": 12698540, "end": 12721992}, {"filename": "/samples/909/STAT7SA.WAV", "start": 12721992, "end": 12745396}, {"filename": "/samples/909/STATAS3.WAV", "start": 12745396, "end": 12768348}, {"filename": "/samples/909/STATAS7.WAV", "start": 12768348, "end": 12794370}, {"filename": "/samples/909/STATASA.WAV", "start": 12794370, "end": 12820078}, {"filename": "/samples/909/TR909SET.TXT", "start": 12820078, "end": 12826894}, {"filename": "/samples/ChocolateAmen/01-kik.wav", "start": 12826894, "end": 12828552}, {"filename": "/samples/ChocolateAmen/02-hat.wav", "start": 12828552, "end": 12830210}, {"filename": "/samples/ChocolateAmen/03-sn1.wav", "start": 12830210, "end": 12831868}, {"filename": "/samples/ChocolateAmen/04-gsn.wav", "start": 12831868, "end": 12833526}, {"filename": "/samples/ChocolateAmen/05-sn2.wav", "start": 12833526, "end": 12835184}, {"filename": "/samples/ChocolateAmen/06-csh.wav", "start": 12835184, "end": 12838194}, {"filename": "/samples/ST-01/Alien.wav", "start": 12838194, "end": 12846038}, {"filename": "/samples/ST-01/Aligator.wav", "start": 12846038, "end": 12848782}, {"filename": "/samples/ST-01/AnalogString.wav", "start": 12848782, "end": 12857626}, {"filename": "/samples/ST-01/Asia.wav", "start": 12857626, "end": 12865870}, {"filename": "/samples/ST-01/BassDrum1.wav", "start": 12865870, "end": 12867014}, {"filename": "/samples/ST-01/BassDrum2.wav", "start": 12867014, "end": 12870058}, {"filename": "/samples/ST-01/BassDrum3.wav", "start": 12870058, "end": 12873502}, {"filename": "/samples/ST-01/BassDrum4.wav", "start": 12873502, "end": 12877046}, {"filename": "/samples/ST-01/BigBow.wav", "start": 12877046, "end": 12884890}, {"filename": "/samples/ST-01/Blast.wav", "start": 12884890, "end": 12894834}, {"filename": "/samples/ST-01/Blubzing.wav", "start": 12894834, "end": 12896178}, {"filename": "/samples/ST-01/Breath.wav", "start": 12896178, "end": 12900022}, {"filename": "/samples/ST-01/Call.wav", "start": 12900022, "end": 12908066}, {"filename": "/samples/ST-01/Celeste.wav", "start": 12908066, "end": 12916110}, {"filename": "/samples/ST-01/Chink.wav", "start": 12916110, "end": 12922054}, {"filename": "/samples/ST-01/Cinema.wav", "start": 12922054, "end": 12926598}, {"filename": "/samples/ST-01/Claps1.wav", "start": 12926598, "end": 12928942}, {"filename": "/samples/ST-01/Claps2.wav", "start": 12928942, "end": 12930386}, {"filename": "/samples/ST-01/Claves.wav", "start": 12930386, "end": 12933430}, {"filename": "/samples/ST-01/CloseHiHat.wav", "start": 12933430, "end": 12934674}, {"filename": "/samples/ST-01/Conga.wav", "start": 12934674, "end": 12936318}, {"filename": "/samples/ST-01/CowBell.wav", "start": 12936318, "end": 12937762}, {"filename": "/samples/ST-01/DXBass.wav", "start": 12937762, "end": 12940506}, {"filename": "/samples/ST-01/Dangerous.wav", "start": 12940506, "end": 12947550}, {"filename": "/samples/ST-01/DeepBass.wav", "start": 12947550, "end": 12955794}, {"filename": "/samples/ST-01/Detune.wav", "start": 12955794, "end": 12961538}, {"filename": "/samples/ST-01/DigDug.wav", "start": 12961538, "end": 12964682}, {"filename": "/samples/ST-01/DigiHarp.wav", "start": 12964682, "end": 12968726}, {"filename": "/samples/ST-01/DreamBells.wav", "start": 12968726, "end": 12977970}, {"filename": "/samples/ST-01/DxTom.wav", "start": 12977970, "end": 12982014}, {"filename": "/samples/ST-01/EPiano.wav", "start": 12982014, "end": 12990058}, {"filename": "/samples/ST-01/ElecTom.wav", "start": 12990058, "end": 12993102}, {"filename": "/samples/ST-01/ExBells.wav", "start": 12993102, "end": 12996646}, {"filename": "/samples/ST-01/FaeryTale.wav", "start": 12996646, "end": 13005590}, {"filename": "/samples/ST-01/FilterBass.wav", "start": 13005590, "end": 13011534}, {"filename": "/samples/ST-01/FunBass.wav", "start": 13011534, "end": 13018078}, {"filename": "/samples/ST-01/FunkBass.wav", "start": 13018078, "end": 13023422}, {"filename": "/samples/ST-01/Gato.wav", "start": 13023422, "end": 13028466}, {"filename": "/samples/ST-01/Great.wav", "start": 13028466, "end": 13033510}, {"filename": "/samples/ST-01/HallBrass.wav", "start": 13033510, "end": 13042954}, {"filename": "/samples/ST-01/Heaven.wav", "start": 13042954, "end": 13049598}, {"filename": "/samples/ST-01/HeavySynth.wav", "start": 13049598, "end": 13059442}, {"filename": "/samples/ST-01/Heifer.wav", "start": 13059442, "end": 13062086}, {"filename": "/samples/ST-01/HiHat1.wav", "start": 13062086, "end": 13063530}, {"filename": "/samples/ST-01/HiHat2.wav", "start": 13063530, "end": 13065574}, {"filename": "/samples/ST-01/Hooman.wav", "start": 13065574, "end": 13072118}, {"filename": "/samples/ST-01/Horns.wav", "start": 13072118, "end": 13074662}, {"filename": "/samples/ST-01/JahrMarkt1.wav", "start": 13074662, "end": 13084506}, {"filename": "/samples/ST-01/JahrMarkt2.wav", "start": 13084506, "end": 13094350}, {"filename": "/samples/ST-01/Jetes.wav", "start": 13094350, "end": 13103994}, {"filename": "/samples/ST-01/Klickorgan.wav", "start": 13103994, "end": 13109738}, {"filename": "/samples/ST-01/KorgBass.wav", "start": 13109738, "end": 13113782}, {"filename": "/samples/ST-01/KorgBeau.wav", "start": 13113782, "end": 13120826}, {"filename": "/samples/ST-01/KorgBow.wav", "start": 13120826, "end": 13126270}, {"filename": "/samples/ST-01/KorgFilter.wav", "start": 13126270, "end": 13129714}, {"filename": "/samples/ST-01/KorgString.wav", "start": 13129714, "end": 13133758}, {"filename": "/samples/ST-01/Koto.wav", "start": 13133758, "end": 13140902}, {"filename": "/samples/ST-01/Leader.wav", "start": 13140902, "end": 13144346}, {"filename": "/samples/ST-01/Licks.wav", "start": 13144346, "end": 13150590}, {"filename": "/samples/ST-01/Magic.wav", "start": 13150590, "end": 13159534}, {"filename": "/samples/ST-01/Marimba.wav", "start": 13159534, "end": 13167578}, {"filename": "/samples/ST-01/Mechanic1.wav", "start": 13167578, "end": 13175122}, {"filename": "/samples/ST-01/Mechanic2.wav", "start": 13175122, "end": 13184866}, {"filename": "/samples/ST-01/MetalKeys.wav", "start": 13184866, "end": 13194310}, {"filename": "/samples/ST-01/MonoBass.wav", "start": 13194310, "end": 13200954}, {"filename": "/samples/ST-01/MonsterBass.wav", "start": 13200954, "end": 13209998}, {"filename": "/samples/ST-01/MuteClav.wav", "start": 13209998, "end": 13215142}, {"filename": "/samples/ST-01/Nice.wav", "start": 13215142, "end": 13221786}, {"filename": "/samples/ST-01/NightMare.wav", "start": 13221786, "end": 13231730}, {"filename": "/samples/ST-01/NoteMan.wav", "start": 13231730, "end": 13238774}, {"filename": "/samples/ST-01/Organ.wav", "start": 13238774, "end": 13245218}, {"filename": "/samples/ST-01/Outlaw.wav", "start": 13245218, "end": 13253662}, {"filename": "/samples/ST-01/PanFlute.wav", "start": 13253662, "end": 13263606}, {"filename": "/samples/ST-01/Perco.wav", "start": 13263606, "end": 13268150}, {"filename": "/samples/ST-01/PingBells.wav", "start": 13268150, "end": 13273594}, {"filename": "/samples/ST-01/Pizza.wav", "start": 13273594, "end": 13283038}, {"filename": "/samples/ST-01/PolySynth.wav", "start": 13283038, "end": 13292982}, {"filename": "/samples/ST-01/PopBass.wav", "start": 13292982, "end": 13295726}, {"filename": "/samples/ST-01/PopSnare1.wav", "start": 13295726, "end": 13297770}, {"filename": "/samples/ST-01/PopSnare2.wav", "start": 13297770, "end": 13301814}, {"filename": "/samples/ST-01/PopSnare3.wav", "start": 13301814, "end": 13304558}, {"filename": "/samples/ST-01/Pulse.wav", "start": 13304558, "end": 13311002}, {"filename": "/samples/ST-01/RichString.wav", "start": 13311002, "end": 13317946}, {"filename": "/samples/ST-01/RingPiano.wav", "start": 13317946, "end": 13327890}, {"filename": "/samples/ST-01/RoomBrass.wav", "start": 13327890, "end": 13332534}, {"filename": "/samples/ST-01/RubberBass.wav", "start": 13332534, "end": 13341578}, {"filename": "/samples/ST-01/Shaker.wav", "start": 13341578, "end": 13343922}, {"filename": "/samples/ST-01/Shamus.wav", "start": 13343922, "end": 13352966}, {"filename": "/samples/ST-01/SineCZ.wav", "start": 13352966, "end": 13356910}, {"filename": "/samples/ST-01/SixTease.wav", "start": 13356910, "end": 13365354}, {"filename": "/samples/ST-01/SlapBass.wav", "start": 13365354, "end": 13370298}, {"filename": "/samples/ST-01/Smash1.wav", "start": 13370298, "end": 13373842}, {"filename": "/samples/ST-01/Smash2.wav", "start": 13373842, "end": 13378286}, {"filename": "/samples/ST-01/Snare1.wav", "start": 13378286, "end": 13380330}, {"filename": "/samples/ST-01/Snare2.wav", "start": 13380330, "end": 13382274}, {"filename": "/samples/ST-01/Snare3.wav", "start": 13382274, "end": 13386118}, {"filename": "/samples/ST-01/Snare4.wav", "start": 13386118, "end": 13388162}, {"filename": "/samples/ST-01/Snare5.wav", "start": 13388162, "end": 13392206}, {"filename": "/samples/ST-01/SoftBass.wav", "start": 13392206, "end": 13397150}, {"filename": "/samples/ST-01/Soundtrack.wav", "start": 13397150, "end": 13407094}, {"filename": "/samples/ST-01/Squares.wav", "start": 13407094, "end": 13417038}, {"filename": "/samples/ST-01/Stabs.wav", "start": 13417038, "end": 13424482}, {"filename": "/samples/ST-01/Steinway.wav", "start": 13424482, "end": 13431426}, {"filename": "/samples/ST-01/Strange.wav", "start": 13431426, "end": 13438470}, {"filename": "/samples/ST-01/Strings1.wav", "start": 13438470, "end": 13447414}, {"filename": "/samples/ST-01/Strings2.wav", "start": 13447414, "end": 13457158}, {"filename": "/samples/ST-01/Strings3.wav", "start": 13457158, "end": 13465702}, {"filename": "/samples/ST-01/Strings4.wav", "start": 13465702, "end": 13475446}, {"filename": "/samples/ST-01/Strings5.wav", "start": 13475446, "end": 13485390}, {"filename": "/samples/ST-01/Strings7.wav", "start": 13485390, "end": 13495334}, {"filename": "/samples/ST-01/Strings8.wav", "start": 13495334, "end": 13503478}, {"filename": "/samples/ST-01/Sweep.wav", "start": 13503478, "end": 13510822}, {"filename": "/samples/ST-01/SynBrass.wav", "start": 13510822, "end": 13514866}, {"filename": "/samples/ST-01/SynClaves.wav", "start": 13514866, "end": 13515910}, {"filename": "/samples/ST-01/SynthPiano.wav", "start": 13515910, "end": 13521454}, {"filename": "/samples/ST-01/SyntheBass.wav", "start": 13521454, "end": 13529398}, {"filename": "/samples/ST-01/TechBass.wav", "start": 13529398, "end": 13534542}, {"filename": "/samples/ST-01/TheEgg.wav", "start": 13534542, "end": 13544486}, {"filename": "/samples/ST-01/TineWave.wav", "start": 13544486, "end": 13554430}, {"filename": "/samples/ST-01/Touch.wav", "start": 13554430, "end": 13563674}, {"filename": "/samples/ST-01/TuneBass.wav", "start": 13563674, "end": 13568518}, {"filename": "/samples/ST-01/Voices.wav", "start": 13568518, "end": 13578462}, {"filename": "/samples/ST-01/WabberString.wav", "start": 13578462, "end": 13582406}, {"filename": "/samples/ST-01/WoodBlock.wav", "start": 13582406, "end": 13583650}, {"filename": "/samples/ST-01/WowBass.wav", "start": 13583650, "end": 13588694}, {"filename": "/samples/ST-01/st-notes.txt", "start": 13588694, "end": 13588928}, {"filename": "/samples/ST-01/strings6.wav", "start": 13588928, "end": 13598974}, {"filename": "/themes/Choo.cth", "start": 13598974, "end": 13599224}, {"filename": "/themes/DarkPink.cth", "start": 13599224, "end": 13599474}, {"filename": "/themes/Default.cth", "start": 13599474, "end": 13599724}, {"filename": "/themes/IDEColorThemes/AbletonDark.cth", "start": 13599724, "end": 13599974}, {"filename": "/themes/IDEColorThemes/AbletonLight.cth", "start": 13599974, "end": 13600224}, {"filename": "/themes/IDEColorThemes/AtomOneDark.cth", "start": 13600224, "end": 13600474}, {"filename": "/themes/IDEColorThemes/AtomOneLight.cth", "start": 13600474, "end": 13600724}, {"filename": "/themes/IDEColorThemes/CatpuccinDrk.cth", "start": 13600724, "end": 13600974}, {"filename": "/themes/IDEColorThemes/CatpuccinLight.cth", "start": 13600974, "end": 13601224}, {"filename": "/themes/IDEColorThemes/CyberpunkDark.cth", "start": 13601224, "end": 13601474}, {"filename": "/themes/IDEColorThemes/CyberpunkLight.cth", "start": 13601474, "end": 13601724}, {"filename": "/themes/IDEColorThemes/DraculaDark.cth", "start": 13601724, "end": 13601974}, {"filename": "/themes/IDEColorThemes/DraculaLight.cth", "start": 13601974, "end": 13602224}, {"filename": "/themes/IDEColorThemes/FLStudioDark.cth", "start": 13602224, "end": 13602474}, {"filename": "/themes/IDEColorThemes/FLStudioLight.cth", "start": 13602474, "end": 13602724}, {"filename": "/themes/IDEColorThemes/GBDMGDark.cth", "start": 13602724, "end": 13602974}, {"filename": "/themes/IDEColorThemes/GBDMGLight.cth", "start": 13602974, "end": 13603224}, {"filename": "/themes/IDEColorThemes/GitHubDark.cth", "start": 13603224, "end": 13603474}, {"filename": "/themes/IDEColorThemes/GitHubLight.cth", "start": 13603474, "end": 13603724}, {"filename": "/themes/IDEColorThemes/GruvDark.cth", "start": 13603724, "end": 13603974}, {"filename": "/themes/IDEColorThemes/GruvLight.cth", "start": 13603974, "end": 13604224}, {"filename": "/themes/IDEColorThemes/MatchaDark.cth", "start": 13604224, "end": 13604474}, {"filename": "/themes/IDEColorThemes/MatchaLight.cth", "start": 13604474, "end": 13604724}, {"filename": "/themes/IDEColorThemes/MonokaiProDark.cth", "start": 13604724, "end": 13604974}, {"filename": "/themes/IDEColorThemes/MonokaiProLight.cth", "start": 13604974, "end": 13605224}, {"filename": "/themes/IDEColorThemes/NordDark.cth", "start": 13605224, "end": 13605474}, {"filename": "/themes/IDEColorThemes/NordLight.cth", "start": 13605474, "end": 13605724}, {"filename": "/themes/IDEColorThemes/NostromoAmberDark.cth", "start": 13605724, "end": 13605974}, {"filename": "/themes/IDEColorThemes/NostromoAmberLight.cth", "start": 13605974, "end": 13606224}, {"filename": "/themes/IDEColorThemes/TokyoNightDark.cth", "start": 13606224, "end": 13606474}, {"filename": "/themes/IDEColorThemes/TokyoNightLight.cth", "start": 13606474, "end": 13606724}, {"filename": "/themes/IDEColorThemes/WLTerminalGreenDark.cth", "start": 13606724, "end": 13606974}, {"filename": "/themes/IDEColorThemes/WLTerminalGreenLight.cth", "start": 13606974, "end": 13607224}, {"filename": "/themes/IDEColorThemes/ZenBurnDark.cth", "start": 13607224, "end": 13607474}, {"filename": "/themes/IDEColorThemes/ZenBurnLight.cth", "start": 13607474, "end": 13607724}, {"filename": "/themes/Wood.cth", "start": 13607724, "end": 13607984}, {"filename": "/themes/cndef.cth", "start": 13607984, "end": 13608244}, {"filename": "/themes/nIkO.cth", "start": 13608244, "end": 13608494}, {"filename": "/title/SNES_ART.md", "start": 13608494, "end": 13609555}, {"filename": "/title/snes_foreground.bmp", "start": 13609555, "end": 13744777}, {"filename": "/title/snes_logo.bmp", "start": 13744777, "end": 13761247}, {"filename": "/title/snes_scene.bmp", "start": 13761247, "end": 13907797}, {"filename": "/title/snes_sky.bmp", "start": 13907797, "end": 14251915}, {"filename": "/title/snes_train.bmp", "start": 14251915, "end": 14275009}, {"filename": "/title/snes_viaduct.bmp", "start": 14275009, "end": 14315671}, {"filename": "/waveforms/AKWF/AKWF_cello_0001.wav", "start": 14315671, "end": 14317015}, {"filename": "/waveforms/AKWF/AKWF_cello_0002.wav", "start": 14317015, "end": 14318359}, {"filename": "/waveforms/AKWF/AKWF_cello_0003.wav", "start": 14318359, "end": 14319703}, {"filename": "/waveforms/AKWF/AKWF_clarinett_0001.wav", "start": 14319703, "end": 14321047}, {"filename": "/waveforms/AKWF/AKWF_clarinett_0002.wav", "start": 14321047, "end": 14322391}, {"filename": "/waveforms/AKWF/AKWF_piano_0001.wav", "start": 14322391, "end": 14323735}, {"filename": "/waveforms/AKWF/AKWF_piano_0002.wav", "start": 14323735, "end": 14325079}, {"filename": "/waveforms/AKWF/AKWF_piano_0003.wav", "start": 14325079, "end": 14326423}, {"filename": "/waveforms/AKWF/AKWF_piano_0004.wav", "start": 14326423, "end": 14327767}, {"filename": "/waveforms/AKWF/AKWF_piano_0005.wav", "start": 14327767, "end": 14329111}, {"filename": "/waveforms/AKWF/AKWF_piano_0006.wav", "start": 14329111, "end": 14330455}, {"filename": "/waveforms/AKWF/AKWF_piano_0007.wav", "start": 14330455, "end": 14331799}, {"filename": "/waveforms/AKWF/AKWF_piano_0008.wav", "start": 14331799, "end": 14333143}, {"filename": "/waveforms/AKWF/AKWF_piano_0009.wav", "start": 14333143, "end": 14334487}, {"filename": "/waveforms/AKWF/AKWF_piano_0010.wav", "start": 14334487, "end": 14335831}, {"filename": "/waveforms/AKWF/AKWF_piano_0011.wav", "start": 14335831, "end": 14337175}, {"filename": "/waveforms/AKWF/AKWF_piano_0012.wav", "start": 14337175, "end": 14338519}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0001.wav", "start": 14338519, "end": 14339863}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0002.wav", "start": 14339863, "end": 14341207}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0003.wav", "start": 14341207, "end": 14342551}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0004.wav", "start": 14342551, "end": 14343895}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0005.wav", "start": 14343895, "end": 14345239}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0006.wav", "start": 14345239, "end": 14346583}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0007.wav", "start": 14346583, "end": 14347927}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0008.wav", "start": 14347927, "end": 14349271}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0009.wav", "start": 14349271, "end": 14350615}, {"filename": "/waveforms/AKWF/AKWF_vgame_0001.wav", "start": 14350615, "end": 14351959}, {"filename": "/waveforms/AKWF/AKWF_vgame_0002.wav", "start": 14351959, "end": 14353303}, {"filename": "/waveforms/AKWF/AKWF_vgame_0003.wav", "start": 14353303, "end": 14354647}, {"filename": "/waveforms/AKWF/AKWF_vgame_0004.wav", "start": 14354647, "end": 14355991}, {"filename": "/waveforms/AKWF/AKWF_vgame_0005.wav", "start": 14355991, "end": 14357335}, {"filename": "/waveforms/AKWF/AKWF_vgame_0006.wav", "start": 14357335, "end": 14358679}, {"filename": "/waveforms/AKWF/AKWF_vgame_0007.wav", "start": 14358679, "end": 14360023}, {"filename": "/waveforms/AKWF/AKWF_vgame_0008.wav", "start": 14360023, "end": 14361367}, {"filename": "/waveforms/AKWF/AKWF_vgame_0009.wav", "start": 14361367, "end": 14362711}, {"filename": "/waveforms/AKWF/AKWF_vgame_0010.wav", "start": 14362711, "end": 14364055}, {"filename": "/waveforms/AKWF/AKWF_vgame_0011.wav", "start": 14364055, "end": 14365399}, {"filename": "/waveforms/AKWF/AKWF_vgame_0012.wav", "start": 14365399, "end": 14366743}, {"filename": "/waveforms/AKWF/AKWF_violin_0001.wav", "start": 14366743, "end": 14368087}, {"filename": "/waveforms/AKWF/AKWF_violin_0002.wav", "start": 14368087, "end": 14369431}, {"filename": "/waveforms/AKWF/AKWF_violin_0003.wav", "start": 14369431, "end": 14370775}, {"filename": "/waveforms/AKWF/AKWF_violin_0004.wav", "start": 14370775, "end": 14372119}, {"filename": "/waveforms/AKWF/AKWF_violin_0005.wav", "start": 14372119, "end": 14373463}, {"filename": "/waveforms/AKWF/AKWF_violin_0006.wav", "start": 14373463, "end": 14374807}, {"filename": "/waveforms/AKWF/AKWF_violin_0007.wav", "start": 14374807, "end": 14376151}, {"filename": "/waveforms/AKWF/AKWF_violin_0008.wav", "start": 14376151, "end": 14377495}, {"filename": "/waveforms/AKWF/AKWF_violin_0009.wav", "start": 14377495, "end": 14378839}, {"filename": "/waveforms/AKWF/AKWF_violin_0010.wav", "start": 14378839, "end": 14380183}, {"filename": "/waveforms/AKWF/AKWF_violin_0011.wav", "start": 14380183, "end": 14381527}, {"filename": "/waveforms/AKWF/AKWF_violin_0012.wav", "start": 14381527, "end": 14382871}, {"filename": "/waveforms/AKWF/LICENSE.AKWF-CC0.md", "start": 14382871, "end": 14389542}], "remote_package_size": 14389542});
+    loadPackage({"files": [{"filename": "/AY_wavetables/AY-Waves-4.aywave", "start": 0, "end": 132}, {"filename": "/AY_wavetables/FIFTH.aywave", "start": 132, "end": 165}, {"filename": "/AY_wavetables/NESTRI.aywave", "start": 165, "end": 198}, {"filename": "/AY_wavetables/VRC6DSAW.aywave", "start": 198, "end": 231}, {"filename": "/AY_wavetables/VRC6SAW.aywave", "start": 231, "end": 264}, {"filename": "/SR_wavetables/WaveEdit/11-2020_.WAV", "start": 264, "end": 33076}, {"filename": "/SR_wavetables/WaveEdit/111.WAV", "start": 33076, "end": 65888}, {"filename": "/SR_wavetables/WaveEdit/111___00.WAV", "start": 65888, "end": 98700}, {"filename": "/SR_wavetables/WaveEdit/303.WAV", "start": 98700, "end": 131512}, {"filename": "/SR_wavetables/WaveEdit/AAHWOHYE.WAV", "start": 131512, "end": 164324}, {"filename": "/SR_wavetables/WaveEdit/ACCESS_V.WAV", "start": 164324, "end": 197136}, {"filename": "/SR_wavetables/WaveEdit/ACID_RIN.WAV", "start": 197136, "end": 229948}, {"filename": "/SR_wavetables/WaveEdit/ACID_SP.WAV", "start": 229948, "end": 262760}, {"filename": "/SR_wavetables/WaveEdit/ADDITIVE.WAV", "start": 262760, "end": 295572}, {"filename": "/SR_wavetables/WaveEdit/AEIOUTSX.WAV", "start": 295572, "end": 328384}, {"filename": "/SR_wavetables/WaveEdit/AKVF_GRA.WAV", "start": 328384, "end": 361196}, {"filename": "/SR_wavetables/WaveEdit/AKVF_NES.WAV", "start": 361196, "end": 394008}, {"filename": "/SR_wavetables/WaveEdit/AKVF_VID.WAV", "start": 394008, "end": 426820}, {"filename": "/SR_wavetables/WaveEdit/AKWF_FMS.WAV", "start": 426820, "end": 459632}, {"filename": "/SR_wavetables/WaveEdit/ALIEN_SP.WAV", "start": 459632, "end": 492444}, {"filename": "/SR_wavetables/WaveEdit/ALIEN_VO.WAV", "start": 492444, "end": 525256}, {"filename": "/SR_wavetables/WaveEdit/ALPHA_2_.WAV", "start": 525256, "end": 558068}, {"filename": "/SR_wavetables/WaveEdit/ALTO_SAX.WAV", "start": 558068, "end": 590880}, {"filename": "/SR_wavetables/WaveEdit/AMEN.WAV", "start": 590880, "end": 623692}, {"filename": "/SR_wavetables/WaveEdit/AMEN_LOO.WAV", "start": 623692, "end": 656504}, {"filename": "/SR_wavetables/WaveEdit/AM_SINE.WAV", "start": 656504, "end": 689316}, {"filename": "/SR_wavetables/WaveEdit/ANALOG_W.WAV", "start": 689316, "end": 722128}, {"filename": "/SR_wavetables/WaveEdit/ASSYMETR.WAV", "start": 722128, "end": 754940}, {"filename": "/SR_wavetables/WaveEdit/AUDIOTER.WAV", "start": 754940, "end": 787752}, {"filename": "/SR_wavetables/WaveEdit/A_55HZ_-.WAV", "start": 787752, "end": 820564}, {"filename": "/SR_wavetables/WaveEdit/BANK_410.WAV", "start": 820564, "end": 853376}, {"filename": "/SR_wavetables/WaveEdit/BANK_A.WAV", "start": 853376, "end": 886188}, {"filename": "/SR_wavetables/WaveEdit/BANK_B.WAV", "start": 886188, "end": 919000}, {"filename": "/SR_wavetables/WaveEdit/BANK_C.WAV", "start": 919000, "end": 951812}, {"filename": "/SR_wavetables/WaveEdit/BASIC_TH.WAV", "start": 951812, "end": 984624}, {"filename": "/SR_wavetables/WaveEdit/BASIC_WA.WAV", "start": 984624, "end": 1017436}, {"filename": "/SR_wavetables/WaveEdit/BASS_BY_.WAV", "start": 1017436, "end": 1050248}, {"filename": "/SR_wavetables/WaveEdit/BBELLS.WAV", "start": 1050248, "end": 1083060}, {"filename": "/SR_wavetables/WaveEdit/BELL02.WAV", "start": 1083060, "end": 1115872}, {"filename": "/SR_wavetables/WaveEdit/BELL03.WAV", "start": 1115872, "end": 1148684}, {"filename": "/SR_wavetables/WaveEdit/BELLS.WAV", "start": 1148684, "end": 1181496}, {"filename": "/SR_wavetables/WaveEdit/BEST_OF_.WAV", "start": 1181496, "end": 1214308}, {"filename": "/SR_wavetables/WaveEdit/BOWED_00.WAV", "start": 1214308, "end": 1247120}, {"filename": "/SR_wavetables/WaveEdit/BOWED_CY.WAV", "start": 1247120, "end": 1279932}, {"filename": "/SR_wavetables/WaveEdit/BOWING.WAV", "start": 1279932, "end": 1312744}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS01.WAV", "start": 1312744, "end": 1345556}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS02.WAV", "start": 1345556, "end": 1378368}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS03.WAV", "start": 1378368, "end": 1411180}, {"filename": "/SR_wavetables/WaveEdit/BRAIDS04.WAV", "start": 1411180, "end": 1443992}, {"filename": "/SR_wavetables/WaveEdit/CHEBYSHE.WAV", "start": 1443992, "end": 1476804}, {"filename": "/SR_wavetables/WaveEdit/CLOCK_MU.WAV", "start": 1476804, "end": 1509616}, {"filename": "/SR_wavetables/WaveEdit/COLUNDI-.WAV", "start": 1509616, "end": 1542428}, {"filename": "/SR_wavetables/WaveEdit/CRUSH_AD.WAV", "start": 1542428, "end": 1575240}, {"filename": "/SR_wavetables/WaveEdit/CYBERNET.WAV", "start": 1575240, "end": 1608052}, {"filename": "/SR_wavetables/WaveEdit/CYBORG.WAV", "start": 1608052, "end": 1640864}, {"filename": "/SR_wavetables/WaveEdit/CZ-ISH.WAV", "start": 1640864, "end": 1673676}, {"filename": "/SR_wavetables/WaveEdit/DECIDE.WAV", "start": 1673676, "end": 1706488}, {"filename": "/SR_wavetables/WaveEdit/DIGITAL_.WAV", "start": 1706488, "end": 1739300}, {"filename": "/SR_wavetables/WaveEdit/DIRTY_01.WAV", "start": 1739300, "end": 1772112}, {"filename": "/SR_wavetables/WaveEdit/DIRTY_02.WAV", "start": 1772112, "end": 1804924}, {"filename": "/SR_wavetables/WaveEdit/DISCORDA.WAV", "start": 1804924, "end": 1837736}, {"filename": "/SR_wavetables/WaveEdit/DISTORTE.WAV", "start": 1837736, "end": 1870548}, {"filename": "/SR_wavetables/WaveEdit/DOSE_WIT.WAV", "start": 1870548, "end": 1903360}, {"filename": "/SR_wavetables/WaveEdit/DRONE.WAV", "start": 1903360, "end": 1936172}, {"filename": "/SR_wavetables/WaveEdit/DRONE_.WAV", "start": 1936172, "end": 1968984}, {"filename": "/SR_wavetables/WaveEdit/DRUMSTRU.WAV", "start": 1968984, "end": 2001796}, {"filename": "/SR_wavetables/WaveEdit/E.GUITAR.WAV", "start": 2001796, "end": 2034608}, {"filename": "/SR_wavetables/WaveEdit/ELOB_A.WAV", "start": 2034608, "end": 2067420}, {"filename": "/SR_wavetables/WaveEdit/ELOB_B.WAV", "start": 2067420, "end": 2100232}, {"filename": "/SR_wavetables/WaveEdit/ELOB_C.WAV", "start": 2100232, "end": 2133044}, {"filename": "/SR_wavetables/WaveEdit/ENSHTU02.WAV", "start": 2133044, "end": 2165856}, {"filename": "/SR_wavetables/WaveEdit/ENSHTU03.WAV", "start": 2165856, "end": 2198668}, {"filename": "/SR_wavetables/WaveEdit/ENSHTURZ.WAV", "start": 2198668, "end": 2231480}, {"filename": "/SR_wavetables/WaveEdit/ENSONIQ_.WAV", "start": 2231480, "end": 2264292}, {"filename": "/SR_wavetables/WaveEdit/ENVELO00.WAV", "start": 2264292, "end": 2297104}, {"filename": "/SR_wavetables/WaveEdit/ENVELO01.WAV", "start": 2297104, "end": 2329916}, {"filename": "/SR_wavetables/WaveEdit/ENVELOPE.WAV", "start": 2329916, "end": 2362728}, {"filename": "/SR_wavetables/WaveEdit/ESQ1-HI.WAV", "start": 2362728, "end": 2395540}, {"filename": "/SR_wavetables/WaveEdit/ESQ1-LO.WAV", "start": 2395540, "end": 2428352}, {"filename": "/SR_wavetables/WaveEdit/EUCLIDEA.WAV", "start": 2428352, "end": 2461164}, {"filename": "/SR_wavetables/WaveEdit/FAIRLI01.WAV", "start": 2461164, "end": 2493976}, {"filename": "/SR_wavetables/WaveEdit/FAIRLIGH.WAV", "start": 2493976, "end": 2526788}, {"filename": "/SR_wavetables/WaveEdit/FEEDBACK.WAV", "start": 2526788, "end": 2559600}, {"filename": "/SR_wavetables/WaveEdit/FMADDI02.WAV", "start": 2559600, "end": 2592412}, {"filename": "/SR_wavetables/WaveEdit/FM_-_COM.WAV", "start": 2592412, "end": 2625224}, {"filename": "/SR_wavetables/WaveEdit/FOLDFEED.WAV", "start": 2625224, "end": 2658036}, {"filename": "/SR_wavetables/WaveEdit/FOLDING_.WAV", "start": 2658036, "end": 2690848}, {"filename": "/SR_wavetables/WaveEdit/FOURIER.WAV", "start": 2690848, "end": 2723660}, {"filename": "/SR_wavetables/WaveEdit/FOURIER2.WAV", "start": 2723660, "end": 2756472}, {"filename": "/SR_wavetables/WaveEdit/FRACTA01.WAV", "start": 2756472, "end": 2789284}, {"filename": "/SR_wavetables/WaveEdit/FRACTA02.WAV", "start": 2789284, "end": 2822096}, {"filename": "/SR_wavetables/WaveEdit/FRACTA03.WAV", "start": 2822096, "end": 2854908}, {"filename": "/SR_wavetables/WaveEdit/FRED_DUR.WAV", "start": 2854908, "end": 2887720}, {"filename": "/SR_wavetables/WaveEdit/FX_BITNO.WAV", "start": 2887720, "end": 2920532}, {"filename": "/SR_wavetables/WaveEdit/FX_BIT_N.WAV", "start": 2920532, "end": 2953344}, {"filename": "/SR_wavetables/WaveEdit/G2_ASTRA.WAV", "start": 2953344, "end": 2986156}, {"filename": "/SR_wavetables/WaveEdit/GENTLE_M.WAV", "start": 2986156, "end": 3018968}, {"filename": "/SR_wavetables/WaveEdit/GEOMETRI.WAV", "start": 3018968, "end": 3051780}, {"filename": "/SR_wavetables/WaveEdit/GLITCHBO.WAV", "start": 3051780, "end": 3084592}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A1.WAV", "start": 3084592, "end": 3117404}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A10.WAV", "start": 3117404, "end": 3150216}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A2.WAV", "start": 3150216, "end": 3183028}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A3.WAV", "start": 3183028, "end": 3215840}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A4.WAV", "start": 3215840, "end": 3248652}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A5.WAV", "start": 3248652, "end": 3281464}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A6.WAV", "start": 3281464, "end": 3314276}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A7.WAV", "start": 3314276, "end": 3347088}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A8.WAV", "start": 3347088, "end": 3379900}, {"filename": "/SR_wavetables/WaveEdit/GRAV-A9.WAV", "start": 3379900, "end": 3412712}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B1.WAV", "start": 3412712, "end": 3445524}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B10.WAV", "start": 3445524, "end": 3478336}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B2.WAV", "start": 3478336, "end": 3511148}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B3.WAV", "start": 3511148, "end": 3543960}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B4.WAV", "start": 3543960, "end": 3576772}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B5.WAV", "start": 3576772, "end": 3609584}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B6.WAV", "start": 3609584, "end": 3642396}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B7.WAV", "start": 3642396, "end": 3675208}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B8.WAV", "start": 3675208, "end": 3708020}, {"filename": "/SR_wavetables/WaveEdit/GRAV-B9.WAV", "start": 3708020, "end": 3740832}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C1.WAV", "start": 3740832, "end": 3773644}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C10.WAV", "start": 3773644, "end": 3806456}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C2.WAV", "start": 3806456, "end": 3839268}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C3.WAV", "start": 3839268, "end": 3872080}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C5.WAV", "start": 3872080, "end": 3904892}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C6.WAV", "start": 3904892, "end": 3937704}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C7.WAV", "start": 3937704, "end": 3970516}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C8.WAV", "start": 3970516, "end": 4003328}, {"filename": "/SR_wavetables/WaveEdit/GRAV-C9.WAV", "start": 4003328, "end": 4036140}, {"filename": "/SR_wavetables/WaveEdit/HARMOMET.WAV", "start": 4036140, "end": 4068952}, {"filename": "/SR_wavetables/WaveEdit/HARMON00.WAV", "start": 4068952, "end": 4101764}, {"filename": "/SR_wavetables/WaveEdit/HARMONIC.WAV", "start": 4101764, "end": 4134576}, {"filename": "/SR_wavetables/WaveEdit/HARMONIO.WAV", "start": 4134576, "end": 4167388}, {"filename": "/SR_wavetables/WaveEdit/HARMONIX.WAV", "start": 4167388, "end": 4200200}, {"filename": "/SR_wavetables/WaveEdit/HIENHARM.WAV", "start": 4200200, "end": 4233012}, {"filename": "/SR_wavetables/WaveEdit/HIGH_FRE.WAV", "start": 4233012, "end": 4265824}, {"filename": "/SR_wavetables/WaveEdit/HMMMMMMM.WAV", "start": 4265824, "end": 4298636}, {"filename": "/SR_wavetables/WaveEdit/HORROR.WAV", "start": 4298636, "end": 4331448}, {"filename": "/SR_wavetables/WaveEdit/HVOICEA.WAV", "start": 4331448, "end": 4364260}, {"filename": "/SR_wavetables/WaveEdit/HYPERBOL.WAV", "start": 4364260, "end": 4397072}, {"filename": "/SR_wavetables/WaveEdit/ISOBELLE.WAV", "start": 4397072, "end": 4429884}, {"filename": "/SR_wavetables/WaveEdit/ISOLDE.WAV", "start": 4429884, "end": 4462696}, {"filename": "/SR_wavetables/WaveEdit/ITERAT00.WAV", "start": 4462696, "end": 4495508}, {"filename": "/SR_wavetables/WaveEdit/ITERATIV.WAV", "start": 4495508, "end": 4528320}, {"filename": "/SR_wavetables/WaveEdit/I_HEART_.WAV", "start": 4528320, "end": 4561132}, {"filename": "/SR_wavetables/WaveEdit/JUNOX_HO.WAV", "start": 4561132, "end": 4593944}, {"filename": "/SR_wavetables/WaveEdit/JUST_RAN.WAV", "start": 4593944, "end": 4626756}, {"filename": "/SR_wavetables/WaveEdit/KAWAI_K1.WAV", "start": 4626756, "end": 4659568}, {"filename": "/SR_wavetables/WaveEdit/KEEN.WAV", "start": 4659568, "end": 4692380}, {"filename": "/SR_wavetables/WaveEdit/KERMIT00.WAV", "start": 4692380, "end": 4725192}, {"filename": "/SR_wavetables/WaveEdit/KERMIT01.WAV", "start": 4725192, "end": 4758004}, {"filename": "/SR_wavetables/WaveEdit/KERMITEN.WAV", "start": 4758004, "end": 4790816}, {"filename": "/SR_wavetables/WaveEdit/KERMIT_0.WAV", "start": 4790816, "end": 4823628}, {"filename": "/SR_wavetables/WaveEdit/KERMIT_K.WAV", "start": 4823628, "end": 4856440}, {"filename": "/SR_wavetables/WaveEdit/KERMIT_R.WAV", "start": 4856440, "end": 4889252}, {"filename": "/SR_wavetables/WaveEdit/KOMPLE01.WAV", "start": 4889252, "end": 4922064}, {"filename": "/SR_wavetables/WaveEdit/KONBANWA.WAV", "start": 4922064, "end": 4954876}, {"filename": "/SR_wavetables/WaveEdit/KUATO.WAV", "start": 4954876, "end": 4987688}, {"filename": "/SR_wavetables/WaveEdit/KYMA_PAR.WAV", "start": 4987688, "end": 5020500}, {"filename": "/SR_wavetables/WaveEdit/LASER_CR.WAV", "start": 5020500, "end": 5053312}, {"filename": "/SR_wavetables/WaveEdit/LERNING2.WAV", "start": 5053312, "end": 5086124}, {"filename": "/SR_wavetables/WaveEdit/LFO_PL00.WAV", "start": 5086124, "end": 5118936}, {"filename": "/SR_wavetables/WaveEdit/LFO_PLAY.WAV", "start": 5118936, "end": 5151748}, {"filename": "/SR_wavetables/WaveEdit/LICENSE.CC0.md", "start": 5151748, "end": 5152093}, {"filename": "/SR_wavetables/WaveEdit/LIGHT_00.WAV", "start": 5152093, "end": 5184905}, {"filename": "/SR_wavetables/WaveEdit/LIGHT_YE.WAV", "start": 5184905, "end": 5217717}, {"filename": "/SR_wavetables/WaveEdit/LOFIRISE.WAV", "start": 5217717, "end": 5250529}, {"filename": "/SR_wavetables/WaveEdit/LOM_A.WAV", "start": 5250529, "end": 5283341}, {"filename": "/SR_wavetables/WaveEdit/LSDJ_WAV.WAV", "start": 5283341, "end": 5316153}, {"filename": "/SR_wavetables/WaveEdit/MAGNET00.WAV", "start": 5316153, "end": 5348965}, {"filename": "/SR_wavetables/WaveEdit/MAGNETIC.WAV", "start": 5348965, "end": 5381777}, {"filename": "/SR_wavetables/WaveEdit/MELLOW_D.WAV", "start": 5381777, "end": 5414589}, {"filename": "/SR_wavetables/WaveEdit/MERAVIGL.WAV", "start": 5414589, "end": 5447401}, {"filename": "/SR_wavetables/WaveEdit/MICROBRU.WAV", "start": 5447401, "end": 5480213}, {"filename": "/SR_wavetables/WaveEdit/MICROW02.WAV", "start": 5480213, "end": 5513025}, {"filename": "/SR_wavetables/WaveEdit/MICRO_Q_.WAV", "start": 5513025, "end": 5545837}, {"filename": "/SR_wavetables/WaveEdit/MIXED02.WAV", "start": 5545837, "end": 5578649}, {"filename": "/SR_wavetables/WaveEdit/MIXED_AS.WAV", "start": 5578649, "end": 5611461}, {"filename": "/SR_wavetables/WaveEdit/MK_DWG_H.WAV", "start": 5611461, "end": 5644273}, {"filename": "/SR_wavetables/WaveEdit/MODDROP.WAV", "start": 5644273, "end": 5677085}, {"filename": "/SR_wavetables/WaveEdit/MONICS.WAV", "start": 5677085, "end": 5709897}, {"filename": "/SR_wavetables/WaveEdit/MORPHING.WAV", "start": 5709897, "end": 5742709}, {"filename": "/SR_wavetables/WaveEdit/MS2K.WAV", "start": 5742709, "end": 5775521}, {"filename": "/SR_wavetables/WaveEdit/MUTATION.WAV", "start": 5775521, "end": 5808333}, {"filename": "/SR_wavetables/WaveEdit/NOISE_WA.WAV", "start": 5808333, "end": 5841145}, {"filename": "/SR_wavetables/WaveEdit/NOMAD.WAV", "start": 5841145, "end": 5873957}, {"filename": "/SR_wavetables/WaveEdit/ORGANIC_.WAV", "start": 5873957, "end": 5906769}, {"filename": "/SR_wavetables/WaveEdit/ORGANS01.WAV", "start": 5906769, "end": 5939581}, {"filename": "/SR_wavetables/WaveEdit/ORGAN_DI.WAV", "start": 5939581, "end": 5972393}, {"filename": "/SR_wavetables/WaveEdit/OSMAOS.WAV", "start": 5972393, "end": 6005205}, {"filename": "/SR_wavetables/WaveEdit/PD101.WAV", "start": 6005205, "end": 6038017}, {"filename": "/SR_wavetables/WaveEdit/PD102.WAV", "start": 6038017, "end": 6070829}, {"filename": "/SR_wavetables/WaveEdit/PD103.WAV", "start": 6070829, "end": 6103641}, {"filename": "/SR_wavetables/WaveEdit/PD104.WAV", "start": 6103641, "end": 6136453}, {"filename": "/SR_wavetables/WaveEdit/PHANTOMS.WAV", "start": 6136453, "end": 6169265}, {"filename": "/SR_wavetables/WaveEdit/PISTON_H.WAV", "start": 6169265, "end": 6202077}, {"filename": "/SR_wavetables/WaveEdit/PLAITS01.WAV", "start": 6202077, "end": 6234889}, {"filename": "/SR_wavetables/WaveEdit/PLAITS02.WAV", "start": 6234889, "end": 6267701}, {"filename": "/SR_wavetables/WaveEdit/PLAITS03.WAV", "start": 6267701, "end": 6300513}, {"filename": "/SR_wavetables/WaveEdit/PLESANT_.WAV", "start": 6300513, "end": 6333325}, {"filename": "/SR_wavetables/WaveEdit/PPG_BES.WAV", "start": 6333325, "end": 6366137}, {"filename": "/SR_wavetables/WaveEdit/PPG_UPPE.WAV", "start": 6366137, "end": 6398949}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA00.WAV", "start": 6398949, "end": 6431761}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA01.WAV", "start": 6431761, "end": 6464573}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA02.WAV", "start": 6464573, "end": 6497385}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA03.WAV", "start": 6497385, "end": 6530197}, {"filename": "/SR_wavetables/WaveEdit/PPG_WA04.WAV", "start": 6530197, "end": 6563009}, {"filename": "/fonts/Console.cnfont", "start": 6563009, "end": 6763792}, {"filename": "/fonts/Default.cnfont", "start": 6763792, "end": 6964572}, {"filename": "/fonts/IBM_VGA.cnfont", "start": 6964572, "end": 7165380}, {"filename": "/fonts/PSGCAPITAL.cnfont", "start": 7165380, "end": 7366640}, {"filename": "/fonts/Pixel16x24/01_TechMonoAudit.cnfont", "start": 7366640, "end": 7380606}, {"filename": "/fonts/Pixel16x24/02_DepartureMono.cnfont", "start": 7380606, "end": 7394571}, {"filename": "/fonts/Pixel16x24/03_Spleen.cnfont", "start": 7394571, "end": 7408534}, {"filename": "/fonts/Pixel16x24/04_Cozette.cnfont", "start": 7408534, "end": 7422484}, {"filename": "/fonts/Pixel16x24/README.txt", "start": 7422484, "end": 7425667}, {"filename": "/fonts/Pixel16x24/licenses/Cozette-LICENSE.txt", "start": 7425667, "end": 7426747}, {"filename": "/fonts/Pixel16x24/licenses/DepartureMono-OFL.txt", "start": 7426747, "end": 7431104}, {"filename": "/fonts/Pixel16x24/licenses/ShareTechMono-OFL.txt", "start": 7431104, "end": 7435533}, {"filename": "/fonts/Pixel16x24/licenses/Spleen-LICENSE.txt", "start": 7435533, "end": 7436846}, {"filename": "/fonts/RobotoMono.cnfont", "start": 7436846, "end": 7637656}, {"filename": "/fonts/tm-prosto-constructivist.cnfont", "start": 7637656, "end": 7838468}, {"filename": "/instruments/BD 1.cni", "start": 7838468, "end": 7839231}, {"filename": "/instruments/BD Bass 1.cni", "start": 7839231, "end": 7839999}, {"filename": "/instruments/Bass 1.cni", "start": 7839999, "end": 7840766}, {"filename": "/instruments/Bass 2.cni", "start": 7840766, "end": 7841535}, {"filename": "/instruments/Bass Saw 1.cni", "start": 7841535, "end": 7842303}, {"filename": "/instruments/Bass Slap 1.cni", "start": 7842303, "end": 7843074}, {"filename": "/instruments/Bass Slap 2.cni", "start": 7843074, "end": 7843845}, {"filename": "/instruments/Bass Slap 3.cni", "start": 7843845, "end": 7844616}, {"filename": "/instruments/Bass Tri 1.cni", "start": 7844616, "end": 7845384}, {"filename": "/instruments/Clap.cni", "start": 7845384, "end": 7846149}, {"filename": "/instruments/DrumSynth Clap.cni", "start": 7846149, "end": 7846594}, {"filename": "/instruments/DrumSynth Clave.cni", "start": 7846594, "end": 7847041}, {"filename": "/instruments/DrumSynth Cowbell.cni", "start": 7847041, "end": 7847493}, {"filename": "/instruments/DrumSynth Cymbal.cni", "start": 7847493, "end": 7847943}, {"filename": "/instruments/DrumSynth FM.cni", "start": 7847943, "end": 7848389}, {"filename": "/instruments/DrumSynth Hat.cni", "start": 7848389, "end": 7848835}, {"filename": "/instruments/DrumSynth Kick.cni", "start": 7848835, "end": 7849282}, {"filename": "/instruments/DrumSynth Noise.cni", "start": 7849282, "end": 7849728}, {"filename": "/instruments/DrumSynth Rim.cni", "start": 7849728, "end": 7850172}, {"filename": "/instruments/DrumSynth Shaker.cni", "start": 7850172, "end": 7850620}, {"filename": "/instruments/DrumSynth Snare.cni", "start": 7850620, "end": 7851068}, {"filename": "/instruments/DrumSynth Tom.cni", "start": 7851068, "end": 7851513}, {"filename": "/instruments/FACTORY/1-the-fat-man-2-op.zip", "start": 7851513, "end": 7971660}, {"filename": "/instruments/FACTORY/101-opendx7-originals.zip", "start": 7971660, "end": 8034762}, {"filename": "/instruments/FACTORY/102-yse-originals.zip", "start": 8034762, "end": 8084413}, {"filename": "/instruments/FACTORY/103-choochoo-dx7-originals.zip", "start": 8084413, "end": 8147792}, {"filename": "/instruments/FACTORY/2-the-fat-man-4-op.zip", "start": 8147792, "end": 8269901}, {"filename": "/instruments/FACTORY/200-choochoo-genesis.zip", "start": 8269901, "end": 8328396}, {"filename": "/instruments/FACTORY/201-choochoo-arcade.zip", "start": 8328396, "end": 8386931}, {"filename": "/instruments/FACTORY/210-16-bit-fm-music-station.zip", "start": 8386931, "end": 8454547}, {"filename": "/instruments/FACTORY/211-ymulator-arcade-collection.zip", "start": 8454547, "end": 8524580}, {"filename": "/instruments/FACTORY/3-dmxopl3.zip", "start": 8524580, "end": 8708050}, {"filename": "/instruments/FACTORY/317-opll-msx.zip", "start": 8708050, "end": 8761505}, {"filename": "/instruments/FACTORY/318-vrc7.zip", "start": 8761505, "end": 8814920}, {"filename": "/instruments/FACTORY/321-sega-psg.zip", "start": 8814920, "end": 8872783}, {"filename": "/instruments/FACTORY/322-gb-pulse.zip", "start": 8872783, "end": 8930505}, {"filename": "/instruments/FACTORY/323-gb-noise.zip", "start": 8930505, "end": 8989846}, {"filename": "/instruments/FACTORY/390-emu2413-ym2413.zip", "start": 8989846, "end": 9043308}, {"filename": "/instruments/FACTORY/391-emu2413-vrc7.zip", "start": 9043308, "end": 9095608}, {"filename": "/instruments/FACTORY/392-emu2413-ymf281b.zip", "start": 9095608, "end": 9148331}, {"filename": "/instruments/FACTORY/393-choochoo-opll-programs.zip", "start": 9148331, "end": 9203003}, {"filename": "/instruments/FACTORY/400-emu2413-ym2413.zip", "start": 9203003, "end": 9256464}, {"filename": "/instruments/FACTORY/401-emu2413-vrc7.zip", "start": 9256464, "end": 9308757}, {"filename": "/instruments/FACTORY/402-emu2413-ymf281b.zip", "start": 9308757, "end": 9361478}, {"filename": "/instruments/FACTORY/403-choochoo-opll-programs.zip", "start": 9361478, "end": 9416144}, {"filename": "/instruments/FACTORY/600-choochoo-sid-originals.zip", "start": 9416144, "end": 9475541}, {"filename": "/instruments/FACTORY/601-sidkit-effects.zip", "start": 9475541, "end": 9532061}, {"filename": "/instruments/FACTORY/README.txt", "start": 9532061, "end": 9532377}, {"filename": "/instruments/FACTORY/builtins-manifest.json", "start": 9532377, "end": 9550568}, {"filename": "/instruments/FACTORY/builtins.tsv", "start": 9550568, "end": 9555958}, {"filename": "/instruments/FACTORY/catalog.tsv", "start": 9555958, "end": 9654953}, {"filename": "/instruments/FACTORY/dx7-manifest.json", "start": 9654953, "end": 9681632}, {"filename": "/instruments/FACTORY/expansion-manifest.json", "start": 9681632, "end": 9770508}, {"filename": "/instruments/FACTORY/manifest.json", "start": 9770508, "end": 10224658}, {"filename": "/instruments/Fall.cni", "start": 10224658, "end": 10225423}, {"filename": "/instruments/Hat 1.cni", "start": 10225423, "end": 10226186}, {"filename": "/instruments/Lead 1.cni", "start": 10226186, "end": 10226953}, {"filename": "/instruments/Pluck 1.cni", "start": 10226953, "end": 10227719}, {"filename": "/instruments/Rim.cni", "start": 10227719, "end": 10228482}, {"filename": "/instruments/Riser 1.cni", "start": 10228482, "end": 10229249}, {"filename": "/instruments/Sax.cni", "start": 10229249, "end": 10230013}, {"filename": "/instruments/ShortArp 1.cni", "start": 10230013, "end": 10230783}, {"filename": "/instruments/Sintered Burst.cni", "start": 10230783, "end": 10231109}, {"filename": "/instruments/Sintered Comb.cni", "start": 10231109, "end": 10231437}, {"filename": "/instruments/Sintered Knot.cni", "start": 10231437, "end": 10231885}, {"filename": "/instruments/Sintered Logic.cni", "start": 10231885, "end": 10232214}, {"filename": "/instruments/Sintered Melt.cni", "start": 10232214, "end": 10232541}, {"filename": "/instruments/Sintered Shard.cni", "start": 10232541, "end": 10232869}, {"filename": "/instruments/Snare 1.cni", "start": 10232869, "end": 10233632}, {"filename": "/instruments/Snare 2.cni", "start": 10233632, "end": 10234398}, {"filename": "/instruments/Tom 1.cni", "start": 10234398, "end": 10235161}, {"filename": "/instruments/USER/README.txt", "start": 10235161, "end": 10235776}, {"filename": "/instruments/USER/arcade/README.txt", "start": 10235776, "end": 10236192}, {"filename": "/instruments/USER/dx7/README.txt", "start": 10236192, "end": 10236595}, {"filename": "/instruments/USER/gb-noise/README.txt", "start": 10236595, "end": 10237008}, {"filename": "/instruments/USER/gb-pulse/README.txt", "start": 10237008, "end": 10237421}, {"filename": "/instruments/USER/genesis/README.txt", "start": 10237421, "end": 10237838}, {"filename": "/instruments/USER/opl2/README.txt", "start": 10237838, "end": 10238266}, {"filename": "/instruments/USER/opl3/README.txt", "start": 10238266, "end": 10238694}, {"filename": "/instruments/USER/opll/README.txt", "start": 10238694, "end": 10239098}, {"filename": "/instruments/USER/sega/README.txt", "start": 10239098, "end": 10239507}, {"filename": "/instruments/USER/sid/README.txt", "start": 10239507, "end": 10239932}, {"filename": "/instruments/USER/vrc7/README.txt", "start": 10239932, "end": 10240336}, {"filename": "/instruments/Waves.cni", "start": 10240336, "end": 10241104}, {"filename": "/licenses/INSERT_FX.txt", "start": 10241104, "end": 10249330}, {"filename": "/licenses/chip-banks/builtin-opll-notice.txt", "start": 10249330, "end": 10249554}, {"filename": "/licenses/chip-banks/choochoo-dx7.txt", "start": 10249554, "end": 10249997}, {"filename": "/licenses/chip-banks/choochoo-four-op-MIT.txt", "start": 10249997, "end": 10251146}, {"filename": "/licenses/chip-banks/choochoo-simple-MIT.txt", "start": 10251146, "end": 10252244}, {"filename": "/licenses/chip-banks/dmxopl3.txt", "start": 10252244, "end": 10253495}, {"filename": "/licenses/chip-banks/expansion/16bit-station.wopn", "start": 10253495, "end": 10271245}, {"filename": "/licenses/chip-banks/expansion/16bit-station.wopn.LICENSE", "start": 10271245, "end": 10278293}, {"filename": "/licenses/chip-banks/expansion/README.txt", "start": 10278293, "end": 10279512}, {"filename": "/licenses/chip-banks/expansion/emu2413.c", "start": 10279512, "end": 10324749}, {"filename": "/licenses/chip-banks/expansion/emu2413.c.LICENSE", "start": 10324749, "end": 10325838}, {"filename": "/licenses/chip-banks/expansion/expansion.py", "start": 10325838, "end": 10334681}, {"filename": "/licenses/chip-banks/expansion/four_op.py", "start": 10334681, "end": 10342509}, {"filename": "/licenses/chip-banks/expansion/sources.json", "start": 10342509, "end": 10343902}, {"filename": "/licenses/chip-banks/expansion/ymulator.opm", "start": 10343902, "end": 10356238}, {"filename": "/licenses/chip-banks/expansion/ymulator.opm.LICENSE", "start": 10356238, "end": 10391387}, {"filename": "/licenses/chip-banks/fatman-2op.txt", "start": 10391387, "end": 10392838}, {"filename": "/licenses/chip-banks/fatman-4op.txt", "start": 10392838, "end": 10394280}, {"filename": "/licenses/chip-banks/opendx7.txt", "start": 10394280, "end": 10395348}, {"filename": "/licenses/chip-banks/yse-originals.txt", "start": 10395348, "end": 10395924}, {"filename": "/licenses/emu76489/LICENSE", "start": 10395924, "end": 10397008}, {"filename": "/licenses/gb_apu/Blip_Buffer.txt", "start": 10397008, "end": 10398080}, {"filename": "/licenses/gb_apu/LICENCE.txt", "start": 10398080, "end": 10399149}, {"filename": "/licenses/gb_apu/upstream-README.md", "start": 10399149, "end": 10401886}, {"filename": "/licenses/miniz.txt", "start": 10401886, "end": 10403302}, {"filename": "/licenses/msfa/LICENSE", "start": 10403302, "end": 10414660}, {"filename": "/licenses/msfa/NOTICE", "start": 10414660, "end": 10415173}, {"filename": "/licenses/sid/NOTICE.txt", "start": 10415173, "end": 10415975}, {"filename": "/licenses/sid/SIDkit-LICENSE", "start": 10415975, "end": 10417054}, {"filename": "/licenses/sid/chips-LICENSE", "start": 10417054, "end": 10417947}, {"filename": "/licenses/sid/chips-NOTICE.txt", "start": 10417947, "end": 10418731}, {"filename": "/licenses/ymfm/LICENSE", "start": 10418731, "end": 10420250}, {"filename": "/pitch-tables/24TET Linear.csv", "start": 10420250, "end": 10422245}, {"filename": "/pitch-tables/Just D Phrygian 177 433.csv", "start": 10422245, "end": 10423557}, {"filename": "/pitch-tables/PT3-0.csv", "start": 10423557, "end": 10424321}, {"filename": "/pitch-tables/PT3-1.csv", "start": 10424321, "end": 10425093}, {"filename": "/pitch-tables/PT3-2.csv", "start": 10425093, "end": 10425859}, {"filename": "/pitch-tables/PT3-3.csv", "start": 10425859, "end": 10426625}, {"filename": "/projects/DNB.cct", "start": 10426625, "end": 10433297}, {"filename": "/projects/alf dance.cct", "start": 10433297, "end": 10443252}, {"filename": "/projects/dub-reich.cct", "start": 10443252, "end": 10453538}, {"filename": "/projects/grieg-mountain-king-fm.cct", "start": 10453538, "end": 10539193}, {"filename": "/projects/maple-leaf-rag.cct", "start": 10539193, "end": 10624634}, {"filename": "/projects/native-chip-audition.cct", "start": 10624634, "end": 10642055}, {"filename": "/projects/psy.cct", "start": 10642055, "end": 10654265}, {"filename": "/samples/909/BT0A0A7.WAV", "start": 10654265, "end": 10679417}, {"filename": "/samples/909/BT0A0D0.WAV", "start": 10679417, "end": 10688439}, {"filename": "/samples/909/BT0A0D3.WAV", "start": 10688439, "end": 10703621}, {"filename": "/samples/909/BT0A0DA.WAV", "start": 10703621, "end": 10747649}, {"filename": "/samples/909/BT0AAD0.WAV", "start": 10747649, "end": 10757277}, {"filename": "/samples/909/BT0AADA.WAV", "start": 10757277, "end": 10801297}, {"filename": "/samples/909/BT3A0D0.WAV", "start": 10801297, "end": 10810037}, {"filename": "/samples/909/BT3A0D3.WAV", "start": 10810037, "end": 10825961}, {"filename": "/samples/909/BT3A0D7.WAV", "start": 10825961, "end": 10854555}, {"filename": "/samples/909/BT3A0DA.WAV", "start": 10854555, "end": 10897435}, {"filename": "/samples/909/BT3AAD0.WAV", "start": 10897435, "end": 10906141}, {"filename": "/samples/909/BT3AADA.WAV", "start": 10906141, "end": 10949041}, {"filename": "/samples/909/BT7A0D0.WAV", "start": 10949041, "end": 10958513}, {"filename": "/samples/909/BT7A0D3.WAV", "start": 10958513, "end": 10973473}, {"filename": "/samples/909/BT7A0D7.WAV", "start": 10973473, "end": 11001017}, {"filename": "/samples/909/BT7A0DA.WAV", "start": 11001017, "end": 11044685}, {"filename": "/samples/909/BT7AAD0.WAV", "start": 11044685, "end": 11054133}, {"filename": "/samples/909/BT7AADA.WAV", "start": 11054133, "end": 11097749}, {"filename": "/samples/909/BTAA0D0.WAV", "start": 11097749, "end": 11106969}, {"filename": "/samples/909/BTAA0D3.WAV", "start": 11106969, "end": 11123279}, {"filename": "/samples/909/BTAA0D7.WAV", "start": 11123279, "end": 11152153}, {"filename": "/samples/909/BTAA0DA.WAV", "start": 11152153, "end": 11195163}, {"filename": "/samples/909/BTAAAD0.WAV", "start": 11195163, "end": 11204379}, {"filename": "/samples/909/BTAAADA.WAV", "start": 11204379, "end": 11247393}, {"filename": "/samples/909/CLOP1.WAV", "start": 11247393, "end": 11286407}, {"filename": "/samples/909/CLOP2.WAV", "start": 11286407, "end": 11309551}, {"filename": "/samples/909/CLOP3.WAV", "start": 11309551, "end": 11362715}, {"filename": "/samples/909/CLOP4.WAV", "start": 11362715, "end": 11383011}, {"filename": "/samples/909/CSHD0.WAV", "start": 11383011, "end": 11480837}, {"filename": "/samples/909/CSHD2.WAV", "start": 11480837, "end": 11571827}, {"filename": "/samples/909/CSHD4.WAV", "start": 11571827, "end": 11651451}, {"filename": "/samples/909/CSHD6.WAV", "start": 11651451, "end": 11716061}, {"filename": "/samples/909/CSHD8.WAV", "start": 11716061, "end": 11771015}, {"filename": "/samples/909/CSHDA.WAV", "start": 11771015, "end": 11818699}, {"filename": "/samples/909/HANDCLP1.WAV", "start": 11818699, "end": 11858091}, {"filename": "/samples/909/HANDCLP2.WAV", "start": 11858091, "end": 11890403}, {"filename": "/samples/909/HHCD0.WAV", "start": 11890403, "end": 11894207}, {"filename": "/samples/909/HHCD2.WAV", "start": 11894207, "end": 11901819}, {"filename": "/samples/909/HHCD4.WAV", "start": 11901819, "end": 11911851}, {"filename": "/samples/909/HHCD6.WAV", "start": 11911851, "end": 11923601}, {"filename": "/samples/909/HHCD8.WAV", "start": 11923601, "end": 11935689}, {"filename": "/samples/909/HHCDA.WAV", "start": 11935689, "end": 11948483}, {"filename": "/samples/909/HHOD0.WAV", "start": 11948483, "end": 11970851}, {"filename": "/samples/909/HHOD2.WAV", "start": 11970851, "end": 12000119}, {"filename": "/samples/909/HHOD4.WAV", "start": 12000119, "end": 12035387}, {"filename": "/samples/909/HHOD6.WAV", "start": 12035387, "end": 12074075}, {"filename": "/samples/909/HHOD8.WAV", "start": 12074075, "end": 12119631}, {"filename": "/samples/909/HHODA.WAV", "start": 12119631, "end": 12165289}, {"filename": "/samples/909/HT0D0.WAV", "start": 12165289, "end": 12186123}, {"filename": "/samples/909/HT0D3.WAV", "start": 12186123, "end": 12211743}, {"filename": "/samples/909/HT0D7.WAV", "start": 12211743, "end": 12246059}, {"filename": "/samples/909/HT0DA.WAV", "start": 12246059, "end": 12283471}, {"filename": "/samples/909/HT3D0.WAV", "start": 12283471, "end": 12303459}, {"filename": "/samples/909/HT3D3.WAV", "start": 12303459, "end": 12328877}, {"filename": "/samples/909/HT3D7.WAV", "start": 12328877, "end": 12364559}, {"filename": "/samples/909/HT3DA.WAV", "start": 12364559, "end": 12402597}, {"filename": "/samples/909/HT7D0.WAV", "start": 12402597, "end": 12423235}, {"filename": "/samples/909/HT7D3.WAV", "start": 12423235, "end": 12449495}, {"filename": "/samples/909/HT7D7.WAV", "start": 12449495, "end": 12486209}, {"filename": "/samples/909/HT7DA.WAV", "start": 12486209, "end": 12524765}, {"filename": "/samples/909/HTAD0.WAV", "start": 12524765, "end": 12545423}, {"filename": "/samples/909/HTAD3.WAV", "start": 12545423, "end": 12572217}, {"filename": "/samples/909/HTAD7.WAV", "start": 12572217, "end": 12607261}, {"filename": "/samples/909/HTADA.WAV", "start": 12607261, "end": 12647495}, {"filename": "/samples/909/LT0D0.WAV", "start": 12647495, "end": 12679067}, {"filename": "/samples/909/LT0D3.WAV", "start": 12679067, "end": 12718003}, {"filename": "/samples/909/LT0D7.WAV", "start": 12718003, "end": 12771245}, {"filename": "/samples/909/LT0DA.WAV", "start": 12771245, "end": 12831321}, {"filename": "/samples/909/LT3D0.WAV", "start": 12831321, "end": 12862503}, {"filename": "/samples/909/LT3D3.WAV", "start": 12862503, "end": 12901823}, {"filename": "/samples/909/LT3D7.WAV", "start": 12901823, "end": 12956403}, {"filename": "/samples/909/LT3DA.WAV", "start": 12956403, "end": 13015991}, {"filename": "/samples/909/LT7D0.WAV", "start": 13015991, "end": 13048571}, {"filename": "/samples/909/LT7D3.WAV", "start": 13048571, "end": 13090677}, {"filename": "/samples/909/LT7D7.WAV", "start": 13090677, "end": 13148867}, {"filename": "/samples/909/LT7DA.WAV", "start": 13148867, "end": 13210861}, {"filename": "/samples/909/LTAD0.WAV", "start": 13210861, "end": 13243263}, {"filename": "/samples/909/LTAD3.WAV", "start": 13243263, "end": 13285243}, {"filename": "/samples/909/LTAD7.WAV", "start": 13285243, "end": 13342859}, {"filename": "/samples/909/LTADA.WAV", "start": 13342859, "end": 13406509}, {"filename": "/samples/909/MT0D0.WAV", "start": 13406509, "end": 13425961}, {"filename": "/samples/909/MT0D3.WAV", "start": 13425961, "end": 13451703}, {"filename": "/samples/909/MT0D7.WAV", "start": 13451703, "end": 13486095}, {"filename": "/samples/909/MT0DA.WAV", "start": 13486095, "end": 13522671}, {"filename": "/samples/909/MT3D0.WAV", "start": 13522671, "end": 13542549}, {"filename": "/samples/909/MT3D3.WAV", "start": 13542549, "end": 13568315}, {"filename": "/samples/909/MT3D7.WAV", "start": 13568315, "end": 13604855}, {"filename": "/samples/909/MT3DA.WAV", "start": 13604855, "end": 13643811}, {"filename": "/samples/909/MT7D0.WAV", "start": 13643811, "end": 13663211}, {"filename": "/samples/909/MT7D3.WAV", "start": 13663211, "end": 13690083}, {"filename": "/samples/909/MT7D7.WAV", "start": 13690083, "end": 13725691}, {"filename": "/samples/909/MT7DA.WAV", "start": 13725691, "end": 13766847}, {"filename": "/samples/909/MTAD0.WAV", "start": 13766847, "end": 13787273}, {"filename": "/samples/909/MTAD3.WAV", "start": 13787273, "end": 13812981}, {"filename": "/samples/909/MTAD7.WAV", "start": 13812981, "end": 13851075}, {"filename": "/samples/909/MTADA.WAV", "start": 13851075, "end": 13892539}, {"filename": "/samples/909/OPCL1.WAV", "start": 13892539, "end": 13927585}, {"filename": "/samples/909/OPCL2.WAV", "start": 13927585, "end": 13954253}, {"filename": "/samples/909/OPCL3.WAV", "start": 13954253, "end": 13975023}, {"filename": "/samples/909/OPCL4.WAV", "start": 13975023, "end": 14025499}, {"filename": "/samples/909/RIDED0.WAV", "start": 14025499, "end": 14128347}, {"filename": "/samples/909/RIDED2.WAV", "start": 14128347, "end": 14224561}, {"filename": "/samples/909/RIDED4.WAV", "start": 14224561, "end": 14294643}, {"filename": "/samples/909/RIDED6.WAV", "start": 14294643, "end": 14364725}, {"filename": "/samples/909/RIDED8.WAV", "start": 14364725, "end": 14422597}, {"filename": "/samples/909/RIDEDA.WAV", "start": 14422597, "end": 14470237}, {"filename": "/samples/909/RIM127.WAV", "start": 14470237, "end": 14473819}, {"filename": "/samples/909/RIM63.WAV", "start": 14473819, "end": 14477401}, {"filename": "/samples/909/ST0T0S0.WAV", "start": 14477401, "end": 14493183}, {"filename": "/samples/909/ST0T0S3.WAV", "start": 14493183, "end": 14506679}, {"filename": "/samples/909/ST0T0S7.WAV", "start": 14506679, "end": 14520487}, {"filename": "/samples/909/ST0T0SA.WAV", "start": 14520487, "end": 14534035}, {"filename": "/samples/909/ST0T3S3.WAV", "start": 14534035, "end": 14549757}, {"filename": "/samples/909/ST0T3S7.WAV", "start": 14549757, "end": 14565723}, {"filename": "/samples/909/ST0T3SA.WAV", "start": 14565723, "end": 14581779}, {"filename": "/samples/909/ST0T7S3.WAV", "start": 14581779, "end": 14603197}, {"filename": "/samples/909/ST0T7S7.WAV", "start": 14603197, "end": 14626091}, {"filename": "/samples/909/ST0T7SA.WAV", "start": 14626091, "end": 14649625}, {"filename": "/samples/909/ST0TAS3.WAV", "start": 14649625, "end": 14672461}, {"filename": "/samples/909/ST0TAS7.WAV", "start": 14672461, "end": 14697525}, {"filename": "/samples/909/ST0TASA.WAV", "start": 14697525, "end": 14723161}, {"filename": "/samples/909/ST3T0S0.WAV", "start": 14723161, "end": 14737187}, {"filename": "/samples/909/ST3T0S3.WAV", "start": 14737187, "end": 14751355}, {"filename": "/samples/909/ST3T0S7.WAV", "start": 14751355, "end": 14764871}, {"filename": "/samples/909/ST3T0SA.WAV", "start": 14764871, "end": 14779645}, {"filename": "/samples/909/ST3T3S3.WAV", "start": 14779645, "end": 14795233}, {"filename": "/samples/909/ST3T3S7.WAV", "start": 14795233, "end": 14811207}, {"filename": "/samples/909/ST3T3SA.WAV", "start": 14811207, "end": 14827153}, {"filename": "/samples/909/ST3T7S3.WAV", "start": 14827153, "end": 14848315}, {"filename": "/samples/909/ST3T7S7.WAV", "start": 14848315, "end": 14871055}, {"filename": "/samples/909/ST3T7SA.WAV", "start": 14871055, "end": 14894587}, {"filename": "/samples/909/ST3TAS3.WAV", "start": 14894587, "end": 14917477}, {"filename": "/samples/909/ST3TAS7.WAV", "start": 14917477, "end": 14942669}, {"filename": "/samples/909/ST3TASA.WAV", "start": 14942669, "end": 14968375}, {"filename": "/samples/909/ST7T0S0.WAV", "start": 14968375, "end": 14982451}, {"filename": "/samples/909/ST7T0S3.WAV", "start": 14982451, "end": 14996457}, {"filename": "/samples/909/ST7T0S7.WAV", "start": 14996457, "end": 15010903}, {"filename": "/samples/909/ST7T0SA.WAV", "start": 15010903, "end": 15025541}, {"filename": "/samples/909/ST7T3S3.WAV", "start": 15025541, "end": 15041303}, {"filename": "/samples/909/ST7T3S7.WAV", "start": 15041303, "end": 15057271}, {"filename": "/samples/909/ST7T3SA.WAV", "start": 15057271, "end": 15073611}, {"filename": "/samples/909/ST7T7S3.WAV", "start": 15073611, "end": 15094583}, {"filename": "/samples/909/ST7T7S7.WAV", "start": 15094583, "end": 15118239}, {"filename": "/samples/909/ST7T7SA.WAV", "start": 15118239, "end": 15141893}, {"filename": "/samples/909/ST7TAS3.WAV", "start": 15141893, "end": 15164657}, {"filename": "/samples/909/ST7TAS7.WAV", "start": 15164657, "end": 15190359}, {"filename": "/samples/909/ST7TASA.WAV", "start": 15190359, "end": 15216257}, {"filename": "/samples/909/STAT0S0.WAV", "start": 15216257, "end": 15230519}, {"filename": "/samples/909/STAT0S3.WAV", "start": 15230519, "end": 15245157}, {"filename": "/samples/909/STAT0S7.WAV", "start": 15245157, "end": 15259793}, {"filename": "/samples/909/STAT0SA.WAV", "start": 15259793, "end": 15274101}, {"filename": "/samples/909/STAT3S3.WAV", "start": 15274101, "end": 15290189}, {"filename": "/samples/909/STAT3S7.WAV", "start": 15290189, "end": 15306725}, {"filename": "/samples/909/STAT3SA.WAV", "start": 15306725, "end": 15323457}, {"filename": "/samples/909/STAT7S3.WAV", "start": 15323457, "end": 15344301}, {"filename": "/samples/909/STAT7S7.WAV", "start": 15344301, "end": 15367753}, {"filename": "/samples/909/STAT7SA.WAV", "start": 15367753, "end": 15391157}, {"filename": "/samples/909/STATAS3.WAV", "start": 15391157, "end": 15414109}, {"filename": "/samples/909/STATAS7.WAV", "start": 15414109, "end": 15440131}, {"filename": "/samples/909/STATASA.WAV", "start": 15440131, "end": 15465839}, {"filename": "/samples/909/TR909SET.TXT", "start": 15465839, "end": 15472489}, {"filename": "/samples/ChocolateAmen/01-kik.wav", "start": 15472489, "end": 15474147}, {"filename": "/samples/ChocolateAmen/02-hat.wav", "start": 15474147, "end": 15475805}, {"filename": "/samples/ChocolateAmen/03-sn1.wav", "start": 15475805, "end": 15477463}, {"filename": "/samples/ChocolateAmen/04-gsn.wav", "start": 15477463, "end": 15479121}, {"filename": "/samples/ChocolateAmen/05-sn2.wav", "start": 15479121, "end": 15480779}, {"filename": "/samples/ChocolateAmen/06-csh.wav", "start": 15480779, "end": 15483789}, {"filename": "/samples/ST-01/Alien.wav", "start": 15483789, "end": 15491633}, {"filename": "/samples/ST-01/Aligator.wav", "start": 15491633, "end": 15494377}, {"filename": "/samples/ST-01/AnalogString.wav", "start": 15494377, "end": 15503221}, {"filename": "/samples/ST-01/Asia.wav", "start": 15503221, "end": 15511465}, {"filename": "/samples/ST-01/BassDrum1.wav", "start": 15511465, "end": 15512609}, {"filename": "/samples/ST-01/BassDrum2.wav", "start": 15512609, "end": 15515653}, {"filename": "/samples/ST-01/BassDrum3.wav", "start": 15515653, "end": 15519097}, {"filename": "/samples/ST-01/BassDrum4.wav", "start": 15519097, "end": 15522641}, {"filename": "/samples/ST-01/BigBow.wav", "start": 15522641, "end": 15530485}, {"filename": "/samples/ST-01/Blast.wav", "start": 15530485, "end": 15540429}, {"filename": "/samples/ST-01/Blubzing.wav", "start": 15540429, "end": 15541773}, {"filename": "/samples/ST-01/Breath.wav", "start": 15541773, "end": 15545617}, {"filename": "/samples/ST-01/Call.wav", "start": 15545617, "end": 15553661}, {"filename": "/samples/ST-01/Celeste.wav", "start": 15553661, "end": 15561705}, {"filename": "/samples/ST-01/Chink.wav", "start": 15561705, "end": 15567649}, {"filename": "/samples/ST-01/Cinema.wav", "start": 15567649, "end": 15572193}, {"filename": "/samples/ST-01/Claps1.wav", "start": 15572193, "end": 15574537}, {"filename": "/samples/ST-01/Claps2.wav", "start": 15574537, "end": 15575981}, {"filename": "/samples/ST-01/Claves.wav", "start": 15575981, "end": 15579025}, {"filename": "/samples/ST-01/CloseHiHat.wav", "start": 15579025, "end": 15580269}, {"filename": "/samples/ST-01/Conga.wav", "start": 15580269, "end": 15581913}, {"filename": "/samples/ST-01/CowBell.wav", "start": 15581913, "end": 15583357}, {"filename": "/samples/ST-01/DXBass.wav", "start": 15583357, "end": 15586101}, {"filename": "/samples/ST-01/Dangerous.wav", "start": 15586101, "end": 15593145}, {"filename": "/samples/ST-01/DeepBass.wav", "start": 15593145, "end": 15601389}, {"filename": "/samples/ST-01/Detune.wav", "start": 15601389, "end": 15607133}, {"filename": "/samples/ST-01/DigDug.wav", "start": 15607133, "end": 15610277}, {"filename": "/samples/ST-01/DigiHarp.wav", "start": 15610277, "end": 15614321}, {"filename": "/samples/ST-01/DreamBells.wav", "start": 15614321, "end": 15623565}, {"filename": "/samples/ST-01/DxTom.wav", "start": 15623565, "end": 15627609}, {"filename": "/samples/ST-01/EPiano.wav", "start": 15627609, "end": 15635653}, {"filename": "/samples/ST-01/ElecTom.wav", "start": 15635653, "end": 15638697}, {"filename": "/samples/ST-01/ExBells.wav", "start": 15638697, "end": 15642241}, {"filename": "/samples/ST-01/FaeryTale.wav", "start": 15642241, "end": 15651185}, {"filename": "/samples/ST-01/FilterBass.wav", "start": 15651185, "end": 15657129}, {"filename": "/samples/ST-01/FunBass.wav", "start": 15657129, "end": 15663673}, {"filename": "/samples/ST-01/FunkBass.wav", "start": 15663673, "end": 15669017}, {"filename": "/samples/ST-01/Gato.wav", "start": 15669017, "end": 15674061}, {"filename": "/samples/ST-01/Great.wav", "start": 15674061, "end": 15679105}, {"filename": "/samples/ST-01/HallBrass.wav", "start": 15679105, "end": 15688549}, {"filename": "/samples/ST-01/Heaven.wav", "start": 15688549, "end": 15695193}, {"filename": "/samples/ST-01/HeavySynth.wav", "start": 15695193, "end": 15705037}, {"filename": "/samples/ST-01/Heifer.wav", "start": 15705037, "end": 15707681}, {"filename": "/samples/ST-01/HiHat1.wav", "start": 15707681, "end": 15709125}, {"filename": "/samples/ST-01/HiHat2.wav", "start": 15709125, "end": 15711169}, {"filename": "/samples/ST-01/Hooman.wav", "start": 15711169, "end": 15717713}, {"filename": "/samples/ST-01/Horns.wav", "start": 15717713, "end": 15720257}, {"filename": "/samples/ST-01/JahrMarkt1.wav", "start": 15720257, "end": 15730101}, {"filename": "/samples/ST-01/JahrMarkt2.wav", "start": 15730101, "end": 15739945}, {"filename": "/samples/ST-01/Jetes.wav", "start": 15739945, "end": 15749589}, {"filename": "/samples/ST-01/Klickorgan.wav", "start": 15749589, "end": 15755333}, {"filename": "/samples/ST-01/KorgBass.wav", "start": 15755333, "end": 15759377}, {"filename": "/samples/ST-01/KorgBeau.wav", "start": 15759377, "end": 15766421}, {"filename": "/samples/ST-01/KorgBow.wav", "start": 15766421, "end": 15771865}, {"filename": "/samples/ST-01/KorgFilter.wav", "start": 15771865, "end": 15775309}, {"filename": "/samples/ST-01/KorgString.wav", "start": 15775309, "end": 15779353}, {"filename": "/samples/ST-01/Koto.wav", "start": 15779353, "end": 15786497}, {"filename": "/samples/ST-01/Leader.wav", "start": 15786497, "end": 15789941}, {"filename": "/samples/ST-01/Licks.wav", "start": 15789941, "end": 15796185}, {"filename": "/samples/ST-01/Magic.wav", "start": 15796185, "end": 15805129}, {"filename": "/samples/ST-01/Marimba.wav", "start": 15805129, "end": 15813173}, {"filename": "/samples/ST-01/Mechanic1.wav", "start": 15813173, "end": 15820717}, {"filename": "/samples/ST-01/Mechanic2.wav", "start": 15820717, "end": 15830461}, {"filename": "/samples/ST-01/MetalKeys.wav", "start": 15830461, "end": 15839905}, {"filename": "/samples/ST-01/MonoBass.wav", "start": 15839905, "end": 15846549}, {"filename": "/samples/ST-01/MonsterBass.wav", "start": 15846549, "end": 15855593}, {"filename": "/samples/ST-01/MuteClav.wav", "start": 15855593, "end": 15860737}, {"filename": "/samples/ST-01/Nice.wav", "start": 15860737, "end": 15867381}, {"filename": "/samples/ST-01/NightMare.wav", "start": 15867381, "end": 15877325}, {"filename": "/samples/ST-01/NoteMan.wav", "start": 15877325, "end": 15884369}, {"filename": "/samples/ST-01/Organ.wav", "start": 15884369, "end": 15890813}, {"filename": "/samples/ST-01/Outlaw.wav", "start": 15890813, "end": 15899257}, {"filename": "/samples/ST-01/PanFlute.wav", "start": 15899257, "end": 15909201}, {"filename": "/samples/ST-01/Perco.wav", "start": 15909201, "end": 15913745}, {"filename": "/samples/ST-01/PingBells.wav", "start": 15913745, "end": 15919189}, {"filename": "/samples/ST-01/Pizza.wav", "start": 15919189, "end": 15928633}, {"filename": "/samples/ST-01/PolySynth.wav", "start": 15928633, "end": 15938577}, {"filename": "/samples/ST-01/PopBass.wav", "start": 15938577, "end": 15941321}, {"filename": "/samples/ST-01/PopSnare1.wav", "start": 15941321, "end": 15943365}, {"filename": "/samples/ST-01/PopSnare2.wav", "start": 15943365, "end": 15947409}, {"filename": "/samples/ST-01/PopSnare3.wav", "start": 15947409, "end": 15950153}, {"filename": "/samples/ST-01/Pulse.wav", "start": 15950153, "end": 15956597}, {"filename": "/samples/ST-01/RichString.wav", "start": 15956597, "end": 15963541}, {"filename": "/samples/ST-01/RingPiano.wav", "start": 15963541, "end": 15973485}, {"filename": "/samples/ST-01/RoomBrass.wav", "start": 15973485, "end": 15978129}, {"filename": "/samples/ST-01/RubberBass.wav", "start": 15978129, "end": 15987173}, {"filename": "/samples/ST-01/Shaker.wav", "start": 15987173, "end": 15989517}, {"filename": "/samples/ST-01/Shamus.wav", "start": 15989517, "end": 15998561}, {"filename": "/samples/ST-01/SineCZ.wav", "start": 15998561, "end": 16002505}, {"filename": "/samples/ST-01/SixTease.wav", "start": 16002505, "end": 16010949}, {"filename": "/samples/ST-01/SlapBass.wav", "start": 16010949, "end": 16015893}, {"filename": "/samples/ST-01/Smash1.wav", "start": 16015893, "end": 16019437}, {"filename": "/samples/ST-01/Smash2.wav", "start": 16019437, "end": 16023881}, {"filename": "/samples/ST-01/Snare1.wav", "start": 16023881, "end": 16025925}, {"filename": "/samples/ST-01/Snare2.wav", "start": 16025925, "end": 16027869}, {"filename": "/samples/ST-01/Snare3.wav", "start": 16027869, "end": 16031713}, {"filename": "/samples/ST-01/Snare4.wav", "start": 16031713, "end": 16033757}, {"filename": "/samples/ST-01/Snare5.wav", "start": 16033757, "end": 16037801}, {"filename": "/samples/ST-01/SoftBass.wav", "start": 16037801, "end": 16042745}, {"filename": "/samples/ST-01/Soundtrack.wav", "start": 16042745, "end": 16052689}, {"filename": "/samples/ST-01/Squares.wav", "start": 16052689, "end": 16062633}, {"filename": "/samples/ST-01/Stabs.wav", "start": 16062633, "end": 16070077}, {"filename": "/samples/ST-01/Steinway.wav", "start": 16070077, "end": 16077021}, {"filename": "/samples/ST-01/Strange.wav", "start": 16077021, "end": 16084065}, {"filename": "/samples/ST-01/Strings1.wav", "start": 16084065, "end": 16093009}, {"filename": "/samples/ST-01/Strings2.wav", "start": 16093009, "end": 16102753}, {"filename": "/samples/ST-01/Strings3.wav", "start": 16102753, "end": 16111297}, {"filename": "/samples/ST-01/Strings4.wav", "start": 16111297, "end": 16121041}, {"filename": "/samples/ST-01/Strings5.wav", "start": 16121041, "end": 16130985}, {"filename": "/samples/ST-01/Strings7.wav", "start": 16130985, "end": 16140929}, {"filename": "/samples/ST-01/Strings8.wav", "start": 16140929, "end": 16149073}, {"filename": "/samples/ST-01/Sweep.wav", "start": 16149073, "end": 16156417}, {"filename": "/samples/ST-01/SynBrass.wav", "start": 16156417, "end": 16160461}, {"filename": "/samples/ST-01/SynClaves.wav", "start": 16160461, "end": 16161505}, {"filename": "/samples/ST-01/SynthPiano.wav", "start": 16161505, "end": 16167049}, {"filename": "/samples/ST-01/SyntheBass.wav", "start": 16167049, "end": 16174993}, {"filename": "/samples/ST-01/TechBass.wav", "start": 16174993, "end": 16180137}, {"filename": "/samples/ST-01/TheEgg.wav", "start": 16180137, "end": 16190081}, {"filename": "/samples/ST-01/TineWave.wav", "start": 16190081, "end": 16200025}, {"filename": "/samples/ST-01/Touch.wav", "start": 16200025, "end": 16209269}, {"filename": "/samples/ST-01/TuneBass.wav", "start": 16209269, "end": 16214113}, {"filename": "/samples/ST-01/Voices.wav", "start": 16214113, "end": 16224057}, {"filename": "/samples/ST-01/WabberString.wav", "start": 16224057, "end": 16228001}, {"filename": "/samples/ST-01/WoodBlock.wav", "start": 16228001, "end": 16229245}, {"filename": "/samples/ST-01/WowBass.wav", "start": 16229245, "end": 16234289}, {"filename": "/samples/ST-01/st-notes.txt", "start": 16234289, "end": 16234516}, {"filename": "/samples/ST-01/strings6.wav", "start": 16234516, "end": 16244562}, {"filename": "/themes/Choo.cth", "start": 16244562, "end": 16244812}, {"filename": "/themes/DarkPink.cth", "start": 16244812, "end": 16245062}, {"filename": "/themes/Default.cth", "start": 16245062, "end": 16245312}, {"filename": "/themes/IDEColorThemes/AbletonDark.cth", "start": 16245312, "end": 16245562}, {"filename": "/themes/IDEColorThemes/AbletonLight.cth", "start": 16245562, "end": 16245812}, {"filename": "/themes/IDEColorThemes/AtomOneDark.cth", "start": 16245812, "end": 16246062}, {"filename": "/themes/IDEColorThemes/AtomOneLight.cth", "start": 16246062, "end": 16246312}, {"filename": "/themes/IDEColorThemes/CatpuccinDrk.cth", "start": 16246312, "end": 16246562}, {"filename": "/themes/IDEColorThemes/CatpuccinLight.cth", "start": 16246562, "end": 16246812}, {"filename": "/themes/IDEColorThemes/CyberpunkDark.cth", "start": 16246812, "end": 16247062}, {"filename": "/themes/IDEColorThemes/CyberpunkLight.cth", "start": 16247062, "end": 16247312}, {"filename": "/themes/IDEColorThemes/DraculaDark.cth", "start": 16247312, "end": 16247562}, {"filename": "/themes/IDEColorThemes/DraculaLight.cth", "start": 16247562, "end": 16247812}, {"filename": "/themes/IDEColorThemes/FLStudioDark.cth", "start": 16247812, "end": 16248062}, {"filename": "/themes/IDEColorThemes/FLStudioLight.cth", "start": 16248062, "end": 16248312}, {"filename": "/themes/IDEColorThemes/GBDMGDark.cth", "start": 16248312, "end": 16248562}, {"filename": "/themes/IDEColorThemes/GBDMGLight.cth", "start": 16248562, "end": 16248812}, {"filename": "/themes/IDEColorThemes/GitHubDark.cth", "start": 16248812, "end": 16249062}, {"filename": "/themes/IDEColorThemes/GitHubLight.cth", "start": 16249062, "end": 16249312}, {"filename": "/themes/IDEColorThemes/GruvDark.cth", "start": 16249312, "end": 16249562}, {"filename": "/themes/IDEColorThemes/GruvLight.cth", "start": 16249562, "end": 16249812}, {"filename": "/themes/IDEColorThemes/MatchaDark.cth", "start": 16249812, "end": 16250062}, {"filename": "/themes/IDEColorThemes/MatchaLight.cth", "start": 16250062, "end": 16250312}, {"filename": "/themes/IDEColorThemes/MonokaiProDark.cth", "start": 16250312, "end": 16250562}, {"filename": "/themes/IDEColorThemes/MonokaiProLight.cth", "start": 16250562, "end": 16250812}, {"filename": "/themes/IDEColorThemes/NordDark.cth", "start": 16250812, "end": 16251062}, {"filename": "/themes/IDEColorThemes/NordLight.cth", "start": 16251062, "end": 16251312}, {"filename": "/themes/IDEColorThemes/NostromoAmberDark.cth", "start": 16251312, "end": 16251562}, {"filename": "/themes/IDEColorThemes/NostromoAmberLight.cth", "start": 16251562, "end": 16251812}, {"filename": "/themes/IDEColorThemes/TokyoNightDark.cth", "start": 16251812, "end": 16252062}, {"filename": "/themes/IDEColorThemes/TokyoNightLight.cth", "start": 16252062, "end": 16252312}, {"filename": "/themes/IDEColorThemes/WLTerminalGreenDark.cth", "start": 16252312, "end": 16252562}, {"filename": "/themes/IDEColorThemes/WLTerminalGreenLight.cth", "start": 16252562, "end": 16252812}, {"filename": "/themes/IDEColorThemes/ZenBurnDark.cth", "start": 16252812, "end": 16253062}, {"filename": "/themes/IDEColorThemes/ZenBurnLight.cth", "start": 16253062, "end": 16253312}, {"filename": "/themes/NostromoAmberDa2.cth", "start": 16253312, "end": 16253562}, {"filename": "/themes/Wood.cth", "start": 16253562, "end": 16253812}, {"filename": "/themes/cndef.cth", "start": 16253812, "end": 16254062}, {"filename": "/themes/nIkO.cth", "start": 16254062, "end": 16254312}, {"filename": "/title/SNES_ART.md", "start": 16254312, "end": 16255373}, {"filename": "/title/snes_foreground.bmp", "start": 16255373, "end": 16390595}, {"filename": "/title/snes_logo.bmp", "start": 16390595, "end": 16407065}, {"filename": "/title/snes_scene.bmp", "start": 16407065, "end": 16553615}, {"filename": "/title/snes_sky.bmp", "start": 16553615, "end": 16897733}, {"filename": "/title/snes_train.bmp", "start": 16897733, "end": 16920827}, {"filename": "/title/snes_viaduct.bmp", "start": 16920827, "end": 16961489}, {"filename": "/waveforms/AKWF/AKWF_cello_0001.wav", "start": 16961489, "end": 16962833}, {"filename": "/waveforms/AKWF/AKWF_cello_0002.wav", "start": 16962833, "end": 16964177}, {"filename": "/waveforms/AKWF/AKWF_cello_0003.wav", "start": 16964177, "end": 16965521}, {"filename": "/waveforms/AKWF/AKWF_clarinett_0001.wav", "start": 16965521, "end": 16966865}, {"filename": "/waveforms/AKWF/AKWF_clarinett_0002.wav", "start": 16966865, "end": 16968209}, {"filename": "/waveforms/AKWF/AKWF_piano_0001.wav", "start": 16968209, "end": 16969553}, {"filename": "/waveforms/AKWF/AKWF_piano_0002.wav", "start": 16969553, "end": 16970897}, {"filename": "/waveforms/AKWF/AKWF_piano_0003.wav", "start": 16970897, "end": 16972241}, {"filename": "/waveforms/AKWF/AKWF_piano_0004.wav", "start": 16972241, "end": 16973585}, {"filename": "/waveforms/AKWF/AKWF_piano_0005.wav", "start": 16973585, "end": 16974929}, {"filename": "/waveforms/AKWF/AKWF_piano_0006.wav", "start": 16974929, "end": 16976273}, {"filename": "/waveforms/AKWF/AKWF_piano_0007.wav", "start": 16976273, "end": 16977617}, {"filename": "/waveforms/AKWF/AKWF_piano_0008.wav", "start": 16977617, "end": 16978961}, {"filename": "/waveforms/AKWF/AKWF_piano_0009.wav", "start": 16978961, "end": 16980305}, {"filename": "/waveforms/AKWF/AKWF_piano_0010.wav", "start": 16980305, "end": 16981649}, {"filename": "/waveforms/AKWF/AKWF_piano_0011.wav", "start": 16981649, "end": 16982993}, {"filename": "/waveforms/AKWF/AKWF_piano_0012.wav", "start": 16982993, "end": 16984337}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0001.wav", "start": 16984337, "end": 16985681}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0002.wav", "start": 16985681, "end": 16987025}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0003.wav", "start": 16987025, "end": 16988369}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0004.wav", "start": 16988369, "end": 16989713}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0005.wav", "start": 16989713, "end": 16991057}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0006.wav", "start": 16991057, "end": 16992401}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0007.wav", "start": 16992401, "end": 16993745}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0008.wav", "start": 16993745, "end": 16995089}, {"filename": "/waveforms/AKWF/AKWF_pluckalgo_0009.wav", "start": 16995089, "end": 16996433}, {"filename": "/waveforms/AKWF/AKWF_vgame_0001.wav", "start": 16996433, "end": 16997777}, {"filename": "/waveforms/AKWF/AKWF_vgame_0002.wav", "start": 16997777, "end": 16999121}, {"filename": "/waveforms/AKWF/AKWF_vgame_0003.wav", "start": 16999121, "end": 17000465}, {"filename": "/waveforms/AKWF/AKWF_vgame_0004.wav", "start": 17000465, "end": 17001809}, {"filename": "/waveforms/AKWF/AKWF_vgame_0005.wav", "start": 17001809, "end": 17003153}, {"filename": "/waveforms/AKWF/AKWF_vgame_0006.wav", "start": 17003153, "end": 17004497}, {"filename": "/waveforms/AKWF/AKWF_vgame_0007.wav", "start": 17004497, "end": 17005841}, {"filename": "/waveforms/AKWF/AKWF_vgame_0008.wav", "start": 17005841, "end": 17007185}, {"filename": "/waveforms/AKWF/AKWF_vgame_0009.wav", "start": 17007185, "end": 17008529}, {"filename": "/waveforms/AKWF/AKWF_vgame_0010.wav", "start": 17008529, "end": 17009873}, {"filename": "/waveforms/AKWF/AKWF_vgame_0011.wav", "start": 17009873, "end": 17011217}, {"filename": "/waveforms/AKWF/AKWF_vgame_0012.wav", "start": 17011217, "end": 17012561}, {"filename": "/waveforms/AKWF/AKWF_violin_0001.wav", "start": 17012561, "end": 17013905}, {"filename": "/waveforms/AKWF/AKWF_violin_0002.wav", "start": 17013905, "end": 17015249}, {"filename": "/waveforms/AKWF/AKWF_violin_0003.wav", "start": 17015249, "end": 17016593}, {"filename": "/waveforms/AKWF/AKWF_violin_0004.wav", "start": 17016593, "end": 17017937}, {"filename": "/waveforms/AKWF/AKWF_violin_0005.wav", "start": 17017937, "end": 17019281}, {"filename": "/waveforms/AKWF/AKWF_violin_0006.wav", "start": 17019281, "end": 17020625}, {"filename": "/waveforms/AKWF/AKWF_violin_0007.wav", "start": 17020625, "end": 17021969}, {"filename": "/waveforms/AKWF/AKWF_violin_0008.wav", "start": 17021969, "end": 17023313}, {"filename": "/waveforms/AKWF/AKWF_violin_0009.wav", "start": 17023313, "end": 17024657}, {"filename": "/waveforms/AKWF/AKWF_violin_0010.wav", "start": 17024657, "end": 17026001}, {"filename": "/waveforms/AKWF/AKWF_violin_0011.wav", "start": 17026001, "end": 17027345}, {"filename": "/waveforms/AKWF/AKWF_violin_0012.wav", "start": 17027345, "end": 17028689}, {"filename": "/waveforms/AKWF/LICENSE.AKWF-CC0.md", "start": 17028689, "end": 17035244}], "remote_package_size": 17035244});
 
   })();
 
-// end include: C:\Users\surga\AppData\Local\Temp\tmpko3f4nbn.js
-// include: C:\Users\surga\AppData\Local\Temp\tmpllz76qk7.js
+// end include: /var/folders/g9/899ky8t11x9g4x5pskvtwrrh0000gn/T/tmp_9y3r7ef.js
+// include: /var/folders/g9/899ky8t11x9g4x5pskvtwrrh0000gn/T/tmpllha6ik2.js
 
     // All the pre-js content up to here must remain later on, we need to run
     // it.
     if ((typeof ENVIRONMENT_IS_WASM_WORKER != 'undefined' && ENVIRONMENT_IS_WASM_WORKER) || (typeof ENVIRONMENT_IS_PTHREAD != 'undefined' && ENVIRONMENT_IS_PTHREAD) || (typeof ENVIRONMENT_IS_AUDIO_WORKLET != 'undefined' && ENVIRONMENT_IS_AUDIO_WORKLET)) Module['preRun'] = [];
     var necessaryPreJSTasks = Module['preRun'].slice();
-  // end include: C:\Users\surga\AppData\Local\Temp\tmpllz76qk7.js
-// include: C:\Users\surga\AppData\Local\Temp\tmp9rob0v96.js
+  // end include: /var/folders/g9/899ky8t11x9g4x5pskvtwrrh0000gn/T/tmpllha6ik2.js
+// include: /var/folders/g9/899ky8t11x9g4x5pskvtwrrh0000gn/T/tmp_b46abx2.js
 
     if (!Module['preRun']) throw 'Module.preRun should exist because file support used it; did a pre-js delete it?';
     necessaryPreJSTasks.forEach((task) => {
       if (Module['preRun'].indexOf(task) < 0) throw 'All preRun tasks that exist before user pre-js code should remain after; did you replace Module or modify Module.preRun?';
     });
-  // end include: C:\Users\surga\AppData\Local\Temp\tmp9rob0v96.js
+  // end include: /var/folders/g9/899ky8t11x9g4x5pskvtwrrh0000gn/T/tmp_b46abx2.js
 
 
 var programArgs = [];
@@ -447,9 +470,19 @@ var isFileURI = (filename) => filename.startsWith('file://');
 // include: runtime_common.js
 // include: runtime_exceptions.js
 // Base Emscripten EH error class
-class EmscriptenEH {}
+class EmscriptenEH extends Error {}
 
 class EmscriptenSjLj extends EmscriptenEH {}
+
+class CppException extends EmscriptenEH {
+  constructor(excPtr) {
+    super(excPtr);
+    this.excPtr = excPtr;
+    const excInfo = getExceptionMessage(this);
+    this.name = excInfo[0];
+    this.message = excInfo[1];
+  }
+}
 
 // end include: runtime_exceptions.js
 // include: runtime_debug.js
@@ -820,12 +853,9 @@ async function instantiateAsync(binary, binaryFile, imports) {
   if (!binary
       // Don't use streaming for file:// delivered objects in a webview, fetch them synchronously.
       && !isFileURI(binaryFile)
-      // Avoid instantiateStreaming() on Node.js environment for now, as while
-      // Node.js v18.1.0 implements it, it does not have a full fetch()
-      // implementation yet.
-      //
-      // Reference:
-      //   https://github.com/emscripten-core/emscripten/pull/16917
+      // Avoid using instantiateStreaming() on Node.js since the `fetch()` API
+      // does not support `file://` URLs.
+      // See: https://github.com/emscripten-core/emscripten/pull/16917
       && !ENVIRONMENT_IS_NODE
      ) {
     try {
@@ -1002,6 +1032,104 @@ async function createWasm() {
 
   
 
+  var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
+  
+  
+    /**
+   * heapOrArray is either a regular array, or a JavaScript typed array view.
+   * @param {number} idx
+   * @param {number=} maxBytesToRead
+   * @param {boolean=} ignoreNul
+   * @return {number}
+   */
+  var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
+      var maxIdx = idx + maxBytesToRead;
+      if (ignoreNul) return maxIdx;
+      // TextDecoder needs to know the byte length in advance, it doesn't stop on
+      // null terminator by itself.
+      // As a tiny code save trick, compare idx against maxIdx using a negation,
+      // so that maxBytesToRead=undefined/NaN means Infinity.
+      while (heapOrArray[idx] && !(idx >= maxIdx)) ++idx;
+      return idx;
+    };
+  
+  
+    /**
+   * Given a pointer 'idx' to a null-terminated UTF8-encoded string in the given
+   * array that contains uint8 values, returns a copy of that string as a
+   * Javascript String object.
+   * heapOrArray is either a regular array, or a JavaScript typed array view.
+   * @param {number=} idx
+   * @param {number=} maxBytesToRead
+   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
+   * @return {string}
+   */
+  var UTF8ArrayToString = (heapOrArray, idx = 0, maxBytesToRead, ignoreNul) => {
+  
+      var endPtr = findStringEnd(heapOrArray, idx, maxBytesToRead, ignoreNul);
+  
+      // When using conditional TextDecoder, skip it for short strings as the overhead of the native call is not worth it.
+      if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
+        return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
+      }
+      var str = '';
+      while (idx < endPtr) {
+        // For UTF8 byte structure, see:
+        // http://en.wikipedia.org/wiki/UTF-8#Description
+        // https://www.ietf.org/rfc/rfc2279.txt
+        // https://tools.ietf.org/html/rfc3629
+        var u0 = heapOrArray[idx++];
+        if (!(u0 & 0x80)) { str += String.fromCharCode(u0); continue; }
+        var u1 = heapOrArray[idx++] & 63;
+        if ((u0 & 0xE0) == 0xC0) { str += String.fromCharCode(((u0 & 31) << 6) | u1); continue; }
+        var u2 = heapOrArray[idx++] & 63;
+        if ((u0 & 0xF0) == 0xE0) {
+          u0 = ((u0 & 15) << 12) | (u1 << 6) | u2;
+        } else {
+          if ((u0 & 0xF8) != 0xF0) warnOnce(`Invalid UTF-8 leading byte ${ptrToString(u0)} encountered when deserializing a UTF-8 string in wasm memory to a JS string!`);
+          u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (heapOrArray[idx++] & 63);
+        }
+  
+        if (u0 < 0x10000) {
+          str += String.fromCharCode(u0);
+        } else {
+          var ch = u0 - 0x10000;
+          str += String.fromCharCode(0xD800 | (ch >> 10), 0xDC00 | (ch & 0x3FF));
+        }
+      }
+      return str;
+    };
+  
+  /** @type {!Uint8Array} */
+  var HEAPU8;
+  
+    /**
+   * Given a pointer 'ptr' to a null-terminated UTF8-encoded string in the
+   * emscripten HEAP, returns a copy of that string as a Javascript String object.
+   *
+   * @param {number} ptr
+   * @param {number=} maxBytesToRead - An optional length that specifies the
+   *   maximum number of bytes to read. You can omit this parameter to scan the
+   *   string until the first 0 byte. If maxBytesToRead is passed, and the string
+   *   at [ptr, ptr+maxBytesToReadr[ contains a null byte in the middle, then the
+   *   string will cut short at that byte index.
+   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
+   * @return {string}
+   */
+  var UTF8ToString = (ptr, maxBytesToRead, ignoreNul) => {
+      assert(typeof ptr == 'number', `UTF8ToString expects a number (got ${typeof ptr})`);
+      return ptr ? UTF8ArrayToString(HEAPU8, ptr, maxBytesToRead, ignoreNul) : '';
+    };
+  var ___assert_fail = (condition, filename, line, func) =>
+      abort(`Assertion failed: ${UTF8ToString(condition)}, at: ` + [filename ? UTF8ToString(filename) : 'unknown filename', line, func ? UTF8ToString(func) : 'unknown function']);
+
+  var ___call_sighandler = (fp, sig) => ((a1) => dynCall_vi(fp, a1))(sig);
+
+  var exceptionCaught =  [];
+  
+  
+  var uncaughtExceptionCount = 0;
+  
   
   class ExceptionInfo {
       // excPtr - Thrown object pointer to wrap. Metadata pointer is calculated from it.
@@ -1059,14 +1187,149 @@ async function createWasm() {
         return HEAPU32[(((this.ptr)+(16))>>2)];
       }
     }
+  var ___cxa_begin_catch = (ptr) => {
+      var info = new ExceptionInfo(ptr);
+      if (!info.get_caught()) {
+        info.set_caught(true);
+        uncaughtExceptionCount--;
+      }
+      info.set_rethrown(false);
+      exceptionCaught.push(info);
+      return ___cxa_get_exception_ptr(ptr);
+    };
+
   
-  var uncaughtExceptionCount = 0;
+  
+  
+  var exceptionLast = null;
+  var ___cxa_end_catch = () => {
+      // Clear state flag.
+      _setThrew(0, 0);
+      assert(exceptionCaught.length > 0);
+      // Call destructor if one is registered then clear it.
+      var info = exceptionCaught.pop();
+  
+      ___cxa_decrement_exception_refcount(info.excPtr);
+      exceptionLast = null; // XXX in decRef?
+    };
+
+  var setTempRet0 = (val) => __emscripten_tempret_set(val);
+  
+  
+  
+  var findMatchingCatch = (args) => {
+      var thrown = exceptionLast?.excPtr;
+      if (!thrown) {
+        // just pass through the null ptr
+        setTempRet0(0);
+        return 0;
+      }
+      var info = new ExceptionInfo(thrown);
+      info.set_adjusted_ptr(thrown);
+      var thrownType = info.get_type();
+      if (!thrownType) {
+        // just pass through the thrown ptr
+        setTempRet0(0);
+        return thrown;
+      }
+  
+      // can_catch receives a **, add indirection
+      // The different catch blocks are denoted by different types.
+      // Due to inheritance, those types may not precisely match the
+      // type of the thrown object. Find one which matches, and
+      // return the type of the catch block which should be called.
+      for (var caughtType of args) {
+        if (!caughtType || caughtType === thrownType) {
+          // Catch all clause matched or exactly the same type is caught
+          break;
+        }
+        var adjusted_ptr_addr = info.ptr + 16;
+        if (___cxa_can_catch(caughtType, thrownType, adjusted_ptr_addr)) {
+          setTempRet0(caughtType);
+          return thrown;
+        }
+      }
+      setTempRet0(thrownType);
+      return thrown;
+    };
+  var ___cxa_find_matching_catch_2 = () => findMatchingCatch([]);
+
+  var ___cxa_find_matching_catch_3 = (arg0) => findMatchingCatch([arg0]);
+
+  
+  
+  
+  
+  var __Unwind_RaiseException = (ex) => {
+      throw ex;
+    };
+  var ___cxa_rethrow = () => {
+      if (!exceptionCaught.length) {
+        abort('no exception to throw');
+      }
+      var info = exceptionCaught.at(-1);
+      var ptr = info.excPtr;
+      info.set_rethrown(true);
+      info.set_caught(false);
+      uncaughtExceptionCount++;
+      ___cxa_increment_exception_refcount(ptr);
+      ptr = exceptionLast = new CppException(ptr);
+      __Unwind_RaiseException(ptr);
+    };
+
+  
+  
+  
+  
+  
+  
+  
+  
+  var stackAlloc = (sz) => __emscripten_stack_alloc(sz);
+  
+  
+  var getExceptionMessageCommon = (ptr) => {
+      var sp = stackSave();
+      var type_addr_addr = stackAlloc(4);
+      var message_addr_addr = stackAlloc(4);
+      ___get_exception_message(ptr, type_addr_addr, message_addr_addr);
+      var type_addr = HEAPU32[((type_addr_addr)>>2)];
+      var message_addr = HEAPU32[((message_addr_addr)>>2)];
+      var type = UTF8ToString(type_addr);
+      _free(type_addr);
+      var message;
+      if (message_addr) {
+        message = UTF8ToString(message_addr);
+        _free(message_addr);
+      }
+      stackRestore(sp);
+      return [type, message];
+    };
+  var getExceptionMessage = (exn) => getExceptionMessageCommon(exn.excPtr);
+  
+  var decrementExceptionRefcount = (exn) => ___cxa_decrement_exception_refcount(exn.excPtr);
+  
+  var incrementExceptionRefcount = (exn) => ___cxa_increment_exception_refcount(exn.excPtr);
+  
   var ___cxa_throw = (ptr, type, destructor) => {
       var info = new ExceptionInfo(ptr);
       // Initialize ExceptionInfo content after it was allocated in __cxa_allocate_exception.
       info.init(type, destructor);
+      ___cxa_increment_exception_refcount(ptr);
+      ptr = exceptionLast = new CppException(ptr);
       uncaughtExceptionCount++;
-      assert(false, 'Exception thrown, but exception catching is not enabled. Compile with -sNO_DISABLE_EXCEPTION_CATCHING or -sEXCEPTION_CATCHING_ALLOWED=[..] to catch.');
+      __Unwind_RaiseException(ptr);
+    };
+
+  var ___cxa_uncaught_exceptions = () => uncaughtExceptionCount;
+
+  
+  var __Unwind_Resume = (ex) => {
+      throw ex;
+    };
+  var ___resumeException = (ptr) => {
+      ptr = exceptionLast ??= new CppException(ptr);
+      __Unwind_Resume(ptr);
     };
 
   var syscallGetVarargI = () => {
@@ -1208,140 +1471,73 @@ relative:(from, to) => {
 };
 
 
-var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
 
+var FS_stdin_getChar_buffer = [];
 
-  /**
-   * heapOrArray is either a regular array, or a JavaScript typed array view.
-   * @param {number} idx
-   * @param {number=} maxBytesToRead
-   * @param {boolean=} ignoreNul
-   * @return {number}
-   */
-  var findStringEnd = (heapOrArray, idx, maxBytesToRead, ignoreNul) => {
-      var maxIdx = idx + maxBytesToRead;
-      if (ignoreNul) return maxIdx;
-      // TextDecoder needs to know the byte length in advance, it doesn't stop on
-      // null terminator by itself.
-      // As a tiny code save trick, compare idx against maxIdx using a negation,
-      // so that maxBytesToRead=undefined/NaN means Infinity.
-      while (heapOrArray[idx] && !(idx >= maxIdx)) ++idx;
-      return idx;
-    };
-  
-  
-    /**
-   * Given a pointer 'idx' to a null-terminated UTF8-encoded string in the given
-   * array that contains uint8 values, returns a copy of that string as a
-   * Javascript String object.
-   * heapOrArray is either a regular array, or a JavaScript typed array view.
-   * @param {number=} idx
-   * @param {number=} maxBytesToRead
-   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
-   * @return {string}
-   */
-  var UTF8ArrayToString = (heapOrArray, idx = 0, maxBytesToRead, ignoreNul) => {
-  
-      var endPtr = findStringEnd(heapOrArray, idx, maxBytesToRead, ignoreNul);
-  
-      // When using conditional TextDecoder, skip it for short strings as the overhead of the native call is not worth it.
-      if (endPtr - idx > 16 && heapOrArray.buffer && UTF8Decoder) {
-        return UTF8Decoder.decode(heapOrArray.subarray(idx, endPtr));
+var lengthBytesUTF8 = (str) => {
+    var len = 0;
+    for (var i = 0; i < str.length; ++i) {
+      // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code
+      // unit, not a Unicode code point of the character! So decode
+      // UTF16->UTF32->UTF8.
+      // See http://unicode.org/faq/utf_bom.html#utf16-3
+      var c = str.charCodeAt(i); // possibly a lead surrogate
+      if (c <= 0x7F) {
+        len++;
+      } else if (c <= 0x7FF) {
+        len += 2;
+      } else if (c >= 0xD800 && c <= 0xDFFF) {
+        len += 4; ++i;
+      } else {
+        len += 3;
       }
-      var str = '';
-      while (idx < endPtr) {
-        // For UTF8 byte structure, see:
-        // http://en.wikipedia.org/wiki/UTF-8#Description
-        // https://www.ietf.org/rfc/rfc2279.txt
-        // https://tools.ietf.org/html/rfc3629
-        var u0 = heapOrArray[idx++];
-        if (!(u0 & 0x80)) { str += String.fromCharCode(u0); continue; }
-        var u1 = heapOrArray[idx++] & 63;
-        if ((u0 & 0xE0) == 0xC0) { str += String.fromCharCode(((u0 & 31) << 6) | u1); continue; }
-        var u2 = heapOrArray[idx++] & 63;
-        if ((u0 & 0xF0) == 0xE0) {
-          u0 = ((u0 & 15) << 12) | (u1 << 6) | u2;
-        } else {
-          if ((u0 & 0xF8) != 0xF0) warnOnce(`Invalid UTF-8 leading byte ${ptrToString(u0)} encountered when deserializing a UTF-8 string in wasm memory to a JS string!`);
-          u0 = ((u0 & 7) << 18) | (u1 << 12) | (u2 << 6) | (heapOrArray[idx++] & 63);
-        }
-  
-        if (u0 < 0x10000) {
-          str += String.fromCharCode(u0);
-        } else {
-          var ch = u0 - 0x10000;
-          str += String.fromCharCode(0xD800 | (ch >> 10), 0xDC00 | (ch & 0x3FF));
-        }
+    }
+    return len;
+  };
+
+var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
+    assert(typeof str === 'string', `stringToUTF8Array expects a string (got ${typeof str})`);
+    // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
+    // undefined and false each don't write out any bytes.
+    if (!(maxBytesToWrite > 0))
+      return 0;
+
+    var startIdx = outIdx;
+    var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
+    for (var i = 0; i < str.length; ++i) {
+      // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description
+      // and https://www.ietf.org/rfc/rfc2279.txt
+      // and https://tools.ietf.org/html/rfc3629
+      var u = str.codePointAt(i);
+      if (u <= 0x7F) {
+        if (outIdx >= endIdx) break;
+        heap[outIdx++] = u;
+      } else if (u <= 0x7FF) {
+        if (outIdx + 1 >= endIdx) break;
+        heap[outIdx++] = 0xC0 | (u >> 6);
+        heap[outIdx++] = 0x80 | (u & 63);
+      } else if (u <= 0xFFFF) {
+        if (outIdx + 2 >= endIdx) break;
+        heap[outIdx++] = 0xE0 | (u >> 12);
+        heap[outIdx++] = 0x80 | ((u >> 6) & 63);
+        heap[outIdx++] = 0x80 | (u & 63);
+      } else {
+        if (outIdx + 3 >= endIdx) break;
+        if (u > 0x10FFFF) warnOnce(`Invalid Unicode code point ${ptrToString(u)} encountered when serializing a JS string to a UTF-8 string in wasm memory! (Valid unicode code points should be in range 0-0x10FFFF).`);
+        heap[outIdx++] = 0xF0 | (u >> 18);
+        heap[outIdx++] = 0x80 | ((u >> 12) & 63);
+        heap[outIdx++] = 0x80 | ((u >> 6) & 63);
+        heap[outIdx++] = 0x80 | (u & 63);
+        // Gotcha: if codePoint is over 0xFFFF, it is represented as a surrogate pair in UTF-16.
+        // We need to manually skip over the second code unit for correct iteration.
+        i++;
       }
-      return str;
-    };
-  
-  var FS_stdin_getChar_buffer = [];
-  
-  var lengthBytesUTF8 = (str) => {
-      var len = 0;
-      for (var i = 0; i < str.length; ++i) {
-        // Gotcha: charCodeAt returns a 16-bit word that is a UTF-16 encoded code
-        // unit, not a Unicode code point of the character! So decode
-        // UTF16->UTF32->UTF8.
-        // See http://unicode.org/faq/utf_bom.html#utf16-3
-        var c = str.charCodeAt(i); // possibly a lead surrogate
-        if (c <= 0x7F) {
-          len++;
-        } else if (c <= 0x7FF) {
-          len += 2;
-        } else if (c >= 0xD800 && c <= 0xDFFF) {
-          len += 4; ++i;
-        } else {
-          len += 3;
-        }
-      }
-      return len;
-    };
-  
-  var stringToUTF8Array = (str, heap, outIdx, maxBytesToWrite) => {
-      assert(typeof str === 'string', `stringToUTF8Array expects a string (got ${typeof str})`);
-      // Parameter maxBytesToWrite is not optional. Negative values, 0, null,
-      // undefined and false each don't write out any bytes.
-      if (!(maxBytesToWrite > 0))
-        return 0;
-  
-      var startIdx = outIdx;
-      var endIdx = outIdx + maxBytesToWrite - 1; // -1 for string null terminator.
-      for (var i = 0; i < str.length; ++i) {
-        // For UTF8 byte structure, see http://en.wikipedia.org/wiki/UTF-8#Description
-        // and https://www.ietf.org/rfc/rfc2279.txt
-        // and https://tools.ietf.org/html/rfc3629
-        var u = str.codePointAt(i);
-        if (u <= 0x7F) {
-          if (outIdx >= endIdx) break;
-          heap[outIdx++] = u;
-        } else if (u <= 0x7FF) {
-          if (outIdx + 1 >= endIdx) break;
-          heap[outIdx++] = 0xC0 | (u >> 6);
-          heap[outIdx++] = 0x80 | (u & 63);
-        } else if (u <= 0xFFFF) {
-          if (outIdx + 2 >= endIdx) break;
-          heap[outIdx++] = 0xE0 | (u >> 12);
-          heap[outIdx++] = 0x80 | ((u >> 6) & 63);
-          heap[outIdx++] = 0x80 | (u & 63);
-        } else {
-          if (outIdx + 3 >= endIdx) break;
-          if (u > 0x10FFFF) warnOnce(`Invalid Unicode code point ${ptrToString(u)} encountered when serializing a JS string to a UTF-8 string in wasm memory! (Valid unicode code points should be in range 0-0x10FFFF).`);
-          heap[outIdx++] = 0xF0 | (u >> 18);
-          heap[outIdx++] = 0x80 | ((u >> 12) & 63);
-          heap[outIdx++] = 0x80 | ((u >> 6) & 63);
-          heap[outIdx++] = 0x80 | (u & 63);
-          // Gotcha: if codePoint is over 0xFFFF, it is represented as a surrogate pair in UTF-16.
-          // We need to manually skip over the second code unit for correct iteration.
-          i++;
-        }
-      }
-      // Null-terminate the pointer to the buffer.
-      heap[outIdx] = 0;
-      return outIdx - startIdx;
-    };
-  /** @type {function(string, boolean=, number=)} */
+    }
+    // Null-terminate the pointer to the buffer.
+    heap[outIdx] = 0;
+    return outIdx - startIdx;
+  };
+/** @type {function(string, boolean=, number=)} */
   var intArrayFromString = (stringy, dontAddNull, length) => {
       var len = length > 0 ? length : lengthBytesUTF8(stringy)+1;
       var u8array = new Array(len);
@@ -1457,6 +1653,9 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
             if (result === null || result === undefined) break;
             bytesRead++;
             buffer[offset+i] = result;
+            // We currently only support canonical mode (ICANON), where
+            // read(2) returns as soon as a line delimiter is read.
+            if (result === 10) break;
           }
           if (bytesRead) {
             stream.node.atime = Date.now();
@@ -2258,27 +2457,6 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   };
   
   
-  
-  /** @type {!Uint8Array} */
-  var HEAPU8;
-  
-    /**
-   * Given a pointer 'ptr' to a null-terminated UTF8-encoded string in the
-   * emscripten HEAP, returns a copy of that string as a Javascript String object.
-   *
-   * @param {number} ptr
-   * @param {number=} maxBytesToRead - An optional length that specifies the
-   *   maximum number of bytes to read. You can omit this parameter to scan the
-   *   string until the first 0 byte. If maxBytesToRead is passed, and the string
-   *   at [ptr, ptr+maxBytesToReadr[ contains a null byte in the middle, then the
-   *   string will cut short at that byte index.
-   * @param {boolean=} ignoreNul - If true, the function will not stop on a NUL character.
-   * @return {string}
-   */
-  var UTF8ToString = (ptr, maxBytesToRead, ignoreNul) => {
-      assert(typeof ptr == 'number', `UTF8ToString expects a number (got ${typeof ptr})`);
-      return ptr ? UTF8ArrayToString(HEAPU8, ptr, maxBytesToRead, ignoreNul) : '';
-    };
   
   var strError = (errno) => UTF8ToString(_strerror(errno));
   
@@ -4632,6 +4810,31 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   }
   
 
+  
+  
+  
+  function ___syscall_readlinkat(dirfd, path, buf, bufsize) {
+  try {
+  
+      path = SYSCALLS.getStr(path);
+      path = SYSCALLS.calculateAt(dirfd, path);
+      if (bufsize <= 0) return -28;
+      var ret = FS.readlink(path);
+  
+      var len = Math.min(bufsize, lengthBytesUTF8(ret));
+      var endChar = HEAP8[buf+len];
+      stringToUTF8(ret, buf, bufsize+1);
+      // readlink is one of the rare functions that write out a C string, but does never append a null to the output buffer(!)
+      // stringToUTF8() always appends a null byte, so restore the character under the null byte after the write.
+      HEAP8[buf+len] = endChar;
+      return len;
+    } catch (e) {
+    if (typeof FS == 'undefined' || !(e.name === 'ErrnoError')) throw e;
+    return -e.errno;
+  }
+  }
+  
+
   function ___syscall_rmdir(path) {
   try {
   
@@ -4680,42 +4883,21 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   var __abort_js = () =>
       abort('native code called abort()');
 
-  var _emscripten_get_now = () => performance.now();
-  
-  var _emscripten_date_now = () => Date.now();
-  
-  var nowIsMonotonic = 1;
-  
-  var checkWasiClock = (clock_id) => clock_id >= 0 && clock_id <= 3;
-  
-  var INT53_MAX = 9007199254740992;
-  
-  var INT53_MIN = -9007199254740992;
-  var bigintToI53Checked = (num) => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
-  
-  function _clock_time_get(clk_id, ignored_precision, ptime) {
-    ignored_precision = bigintToI53Checked(ignored_precision);
-  
-  
-      if (!checkWasiClock(clk_id)) {
-        return 28;
-      }
-      var now;
-      // all wasi clocks but realtime are monotonic
-      if (clk_id === 0) {
-        now = _emscripten_date_now();
-      } else if (nowIsMonotonic) {
-        now = _emscripten_get_now();
-      } else {
-        return 52;
-      }
-      // "now" is in ms, and wasi times are in ns.
-      var nsec = Math.round(now * 1000 * 1000);
-      HEAP64[((ptime)>>3)] = BigInt(nsec);
-      return 0;
-    ;
-  }
+  var runtimeKeepaliveCounter = 0;
+  var __emscripten_runtime_keepalive_clear = () => {
+      noExitRuntime = false;
+      runtimeKeepaliveCounter = 0;
+    };
 
+  var timers = {
+  };
+  
+  var clearTimers = () => {
+      for (var t of Object.values(timers)) {
+        clearTimeout(t.id);
+      }
+    };
+  
   var handleException = (e) => {
       // Certain exception types we do not treat as errors since they are used for
       // internal control flow.
@@ -4735,7 +4917,6 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
     };
   
   
-  var runtimeKeepaliveCounter = 0;
   var keepRuntimeAlive = () => noExitRuntime || runtimeKeepaliveCounter > 0;
   var _proc_exit = (code) => {
       EXITSTATUS = code;
@@ -4787,6 +4968,120 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
       }
     };
   
+  
+  var _emscripten_get_now = () => performance.now();
+  var __setitimer_js = (which, timeout_ms) => {
+      // First, clear any existing timer.
+      if (timers[which]) {
+        clearTimeout(timers[which].id);
+        delete timers[which];
+      }
+  
+      // A timeout of zero simply cancels the current timeout so we have nothing
+      // more to do.
+      if (!timeout_ms) return 0;
+  
+      var id = setTimeout(() => {
+        assert(which in timers);
+        delete timers[which];
+        callUserCallback(() => __emscripten_timeout(which, _emscripten_get_now()));
+      }, timeout_ms);
+      timers[which] = { id, timeout_ms };
+      return 0;
+    };
+
+  
+  
+  
+  var __tzset_js = (timezone, daylight, std_name, dst_name) => {
+      // TODO: Use (malleable) environment variables instead of system settings.
+      var currentYear = new Date().getFullYear();
+      var winter = new Date(currentYear, 0, 1);
+      var summer = new Date(currentYear, 6, 1);
+      var winterOffset = winter.getTimezoneOffset();
+      var summerOffset = summer.getTimezoneOffset();
+  
+      // Local standard timezone offset. Local standard time is not adjusted for
+      // daylight savings.  This code uses the fact that getTimezoneOffset returns
+      // a greater value during Standard Time versus Daylight Saving Time (DST).
+      // Thus it determines the expected output during Standard Time, and it
+      // compares whether the output of the given date the same (Standard) or less
+      // (DST).
+      var stdTimezoneOffset = Math.max(winterOffset, summerOffset);
+  
+      // timezone is specified as seconds west of UTC ("The external variable
+      // `timezone` shall be set to the difference, in seconds, between
+      // Coordinated Universal Time (UTC) and local standard time."), the same
+      // as returned by stdTimezoneOffset.
+      // See http://pubs.opengroup.org/onlinepubs/009695399/functions/tzset.html
+      HEAPU32[((timezone)>>2)] = stdTimezoneOffset * 60;
+  
+      HEAP32[((daylight)>>2)] = Number(winterOffset != summerOffset);
+  
+      var extractZone = (timezoneOffset) => {
+        // Why inverse sign?
+        // Read here https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Global_Objects/Date/getTimezoneOffset
+        var sign = timezoneOffset >= 0 ? '-' : '+';
+  
+        var absOffset = Math.abs(timezoneOffset)
+        var hours = String(Math.floor(absOffset / 60)).padStart(2, '0');
+        var minutes = String(absOffset % 60).padStart(2, '0');
+  
+        return `UTC${sign}${hours}${minutes}`;
+      }
+  
+      var winterName = extractZone(winterOffset);
+      var summerName = extractZone(summerOffset);
+      assert(winterName);
+      assert(summerName);
+      assert(lengthBytesUTF8(winterName) <= 16, `timezone name truncated to fit in TZNAME_MAX (${winterName})`);
+      assert(lengthBytesUTF8(summerName) <= 16, `timezone name truncated to fit in TZNAME_MAX (${summerName})`);
+      if (summerOffset < winterOffset) {
+        // Northern hemisphere
+        stringToUTF8(winterName, std_name, 17);
+        stringToUTF8(summerName, dst_name, 17);
+      } else {
+        stringToUTF8(winterName, dst_name, 17);
+        stringToUTF8(summerName, std_name, 17);
+      }
+    };
+
+  
+  var _emscripten_date_now = () => Date.now();
+  
+  var nowIsMonotonic = 1;
+  
+  var checkWasiClock = (clock_id) => clock_id >= 0 && clock_id <= 3;
+  
+  var INT53_MAX = 9007199254740992;
+  
+  var INT53_MIN = -9007199254740992;
+  var bigintToI53Checked = (num) => (num < INT53_MIN || num > INT53_MAX) ? NaN : Number(num);
+  
+  function _clock_time_get(clk_id, ignored_precision, ptime) {
+    ignored_precision = bigintToI53Checked(ignored_precision);
+  
+  
+      if (!checkWasiClock(clk_id)) {
+        return 28;
+      }
+      var now;
+      // all wasi clocks but realtime are monotonic
+      if (clk_id === 0) {
+        now = _emscripten_date_now();
+      } else if (nowIsMonotonic) {
+        now = _emscripten_get_now();
+      } else {
+        return 52;
+      }
+      // "now" is in ms, and wasi times are in ns.
+      var nsec = Math.round(now * 1000 * 1000);
+      HEAP64[((ptime)>>3)] = BigInt(nsec);
+      return 0;
+    ;
+  }
+
+  
   function getFullscreenElement() {
       return document.fullscreenElement
              ?? document.webkitFullscreenElement
@@ -4796,10 +5091,15 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   /** @param {number=} timeout */
   var safeSetTimeout = (func, timeout) => {
       
-      return setTimeout(() => {
+      // Slot 0 is reserved so that, like setTimeout, ids are always non-zero.
+      safeSetTimeout.mapping ||= [0];
+      var id = safeSetTimeout.mapping.length;
+      safeSetTimeout.mapping[id] = setTimeout(() => {
+        safeSetTimeout.mapping[id] = undefined;
         
         callUserCallback(func);
       }, timeout);
+      return id;
     };
   
   
@@ -5989,7 +6289,6 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
       var thisMainLoopId = MainLoop.currentlyRunningMainloop;
       function checkIsRunning() {
         if (thisMainLoopId < MainLoop.currentlyRunningMainloop) {
-          
           maybeExit();
           return false;
         }
@@ -5998,10 +6297,7 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   
       // We create the loop runner here but it is not actually running until
       // _emscripten_set_main_loop_timing is called (which might happen at a
-      // later time).  This member signifies that the current runner has not
-      // yet been started so that we can call runtimeKeepalivePush when it
-      // gets its timing set for the first time.
-      MainLoop.running = false;
+      // later time).
       MainLoop.runner = function MainLoop_runner() {
         if (ABORT) return;
         if (MainLoop.queue.length > 0) {
@@ -6070,10 +6366,9 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   
   
   var MainLoop = {
-  running:false,
+  func:null,
   scheduler:null,
   currentlyRunningMainloop:0,
-  func:null,
   arg:0,
   timingMode:0,
   timingValue:0,
@@ -6082,9 +6377,12 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   preMainLoop:[],
   postMainLoop:[],
   pause() {
-        MainLoop.scheduler = null;
-        // Incrementing this signals the previous main loop that it's now become old, and it must return.
-        MainLoop.currentlyRunningMainloop++;
+        if (MainLoop.scheduler) {
+          MainLoop.scheduler = null;
+          // Incrementing this signals the previous main loop that it's now become old, and it must return.
+          MainLoop.currentlyRunningMainloop++;
+          
+        }
       },
   resume() {
         MainLoop.currentlyRunningMainloop++;
@@ -6159,10 +6457,6 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
         return 1; // Return non-zero on failure, can't set timing mode when there is no main loop.
       }
   
-      if (!MainLoop.running) {
-        
-        MainLoop.running = true;
-      }
       if (mode == 0) {
         MainLoop.scheduler = function MainLoop_scheduler_setTimeout() {
           var timeUntilNextTick = Math.max(0, MainLoop.tickStartTime + value - _emscripten_get_now())|0;
@@ -6479,7 +6773,6 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   
   
   
-  var stackAlloc = (sz) => __emscripten_stack_alloc(sz);
   var stringToUTF8OnStack = (str) => {
       var size = lengthBytesUTF8(str) + 1;
       var ret = stackAlloc(size);
@@ -6716,10 +7009,6 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
     };
 
   
-  var __emscripten_runtime_keepalive_clear = () => {
-      noExitRuntime = false;
-      runtimeKeepaliveCounter = 0;
-    };
   
   var _emscripten_force_exit = (status) => {
       warnOnce('emscripten_force_exit cannot actually shut down the runtime, as the build does not have EXIT_RUNTIME set');
@@ -9493,6 +9782,9 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
   }
   
 
+  var _llvm_eh_typeid_for = (type) => type;
+
+
 
 
 
@@ -9509,6 +9801,14 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
 
 
 
+
+  
+  /** @suppress{checkTypes} */
+  var getWasmTableEntry = (funcPtr) => {
+      // In -Os and -Oz builds, do not implement a JS side wasm table mirror for small
+      // code size, but directly access wasmTable, which is a bit slower as uncached.
+      return wasmTable.get(funcPtr);
+    };
 
 
   var runAndAbortIfError = (func) => {
@@ -9788,6 +10088,7 @@ var UTF8Decoder = globalThis.TextDecoder && new TextDecoder();
 
 
 
+
   
   
   
@@ -10024,7 +10325,6 @@ if (Module['printErr']) err = Module['printErr'];
   'convertI32PairToI53Checked',
   'convertU32PairToI53',
   'getTempRet0',
-  'setTempRet0',
   'zeroMemory',
   'withStackSave',
   'inetPton4',
@@ -10035,7 +10335,6 @@ if (Module['printErr']) err = Module['printErr'];
   'writeSockaddr',
   'getDynCaller',
   'setWasmTableEntry',
-  'getWasmTableEntry',
   'asmjsMangle',
   'HandleAllocator',
   'addOnInit',
@@ -10080,6 +10379,7 @@ if (Module['printErr']) err = Module['printErr'];
   'convertPCtoSourceLocation',
   'wasiRightsToMuslOFlags',
   'wasiOFlagsToMuslOFlags',
+  'safeClearTimeout',
   'setImmediateWrapped',
   'safeRequestAnimationFrame',
   'clearImmediateWrapped',
@@ -10090,7 +10390,6 @@ if (Module['printErr']) err = Module['printErr'];
   'addPromise',
   'idsToPromises',
   'makePromiseCallback',
-  'findMatchingCatch',
   'incrementUncaughtExceptionCount',
   'decrementUncaughtExceptionCount',
   'Browser_asyncPrepareDataCounter',
@@ -10142,6 +10441,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'stackSave',
   'stackRestore',
   'stackAlloc',
+  'setTempRet0',
   'createNamedFunction',
   'ptrToString',
   'exitJS',
@@ -10164,6 +10464,7 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'autoResumeAudioContext',
   'dynCallLegacy',
   'dynCall',
+  'getWasmTableEntry',
   'handleException',
   'keepRuntimeAlive',
   'runtimeKeepalivePush',
@@ -10243,8 +10544,14 @@ missingLibrarySymbols.forEach(missingLibrarySymbol)
   'emClearImmediate',
   'promiseMap',
   'uncaughtExceptionCount',
+  'exceptionLast',
   'exceptionCaught',
   'ExceptionInfo',
+  'findMatchingCatch',
+  'getExceptionMessageCommon',
+  'incrementExceptionRefcount',
+  'decrementExceptionRefcount',
+  'getExceptionMessage',
   'Browser',
   'setCanvasSize',
   'getUserMedia',
@@ -10446,57 +10753,72 @@ function checkIncomingModuleAPI() {
   ignoredModuleProp('wasmBinary');
 }
 var ASM_CONSTS = {
-  434928: ($0) => { var str = UTF8ToString($0) + '\n\n' + 'Abort/Retry/Ignore/AlwaysIgnore? [ariA] :'; var reply = window.prompt(str, "i"); if (reply === null) { reply = "i"; } return reply.length === 1 ? reply.charCodeAt(0) : -1; },  
- 435143: () => { if (typeof(AudioContext) !== 'undefined') { return true; } else if (typeof(webkitAudioContext) !== 'undefined') { return true; } return false; },  
- 435290: () => { if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return true; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return true; } return false; },  
- 435524: ($0) => { if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { if ((typeof navigator.userActivation) === 'undefined') { autoResumeAudioContext(SDL2.audioContext); } } } return SDL2.audioContext === undefined ? -1 : 0; },  
- 436076: () => { var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate; },  
- 436144: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; SDL2.capture.silenceBuffer = undefined } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); } },  
- 437837: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); SDL2.audio.silenceTimer = undefined; SDL2.audio.silenceBuffer = undefined; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vp', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']); if (SDL2.audioContext.state === 'suspended') { SDL2.audio.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.audio.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { if ((typeof navigator.userActivation) !== 'undefined') { if (navigator.userActivation.hasBeenActive) { SDL2.audioContext.resume(); } } SDL2.audio.currentOutputBuffer = SDL2.audio.silenceBuffer; dynCall('vp', $2, [$3]); SDL2.audio.currentOutputBuffer = undefined; }; SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); } },  
- 439012: ($0, $1) => { var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } } },  
- 439617: ($0, $1) => { var SDL2 = Module['SDL2']; var buf = $0 >>> 2; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[buf + (j*numChannels + c)]; } } },  
- 440106: ($0) => { var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; } },  
- 441112: ($0, $1, $2) => { var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Browser.createContext(Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); SDL2.data32Data = data; } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); },  
- 442578: ($0, $1, $2, $3, $4) => { var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf; },  
- 443566: ($0) => { if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } },  
- 443649: () => { if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; } },  
- 443718: () => { return window.innerWidth; },  
- 443748: () => { return window.innerHeight; }
+  445328: ($0) => { var str = UTF8ToString($0) + '\n\n' + 'Abort/Retry/Ignore/AlwaysIgnore? [ariA] :'; var reply = window.prompt(str, "i"); if (reply === null) { reply = "i"; } return reply.length === 1 ? reply.charCodeAt(0) : -1; },  
+ 445543: () => { if (typeof(AudioContext) !== 'undefined') { return true; } else if (typeof(webkitAudioContext) !== 'undefined') { return true; } return false; },  
+ 445690: () => { if ((typeof(navigator.mediaDevices) !== 'undefined') && (typeof(navigator.mediaDevices.getUserMedia) !== 'undefined')) { return true; } else if (typeof(navigator.webkitGetUserMedia) !== 'undefined') { return true; } return false; },  
+ 445924: ($0) => { if(typeof(Module['SDL2']) === 'undefined') { Module['SDL2'] = {}; } var SDL2 = Module['SDL2']; if (!$0) { SDL2.audio = {}; } else { SDL2.capture = {}; } if (!SDL2.audioContext) { if (typeof(AudioContext) !== 'undefined') { SDL2.audioContext = new AudioContext(); } else if (typeof(webkitAudioContext) !== 'undefined') { SDL2.audioContext = new webkitAudioContext(); } if (SDL2.audioContext) { if ((typeof navigator.userActivation) === 'undefined') { autoResumeAudioContext(SDL2.audioContext); } } } return SDL2.audioContext === undefined ? -1 : 0; },  
+ 446476: () => { var SDL2 = Module['SDL2']; return SDL2.audioContext.sampleRate; },  
+ 446544: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; var have_microphone = function(stream) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); SDL2.capture.silenceTimer = undefined; SDL2.capture.silenceBuffer = undefined } SDL2.capture.mediaStreamNode = SDL2.audioContext.createMediaStreamSource(stream); SDL2.capture.scriptProcessorNode = SDL2.audioContext.createScriptProcessor($1, $0, 1); SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) { if ((SDL2 === undefined) || (SDL2.capture === undefined)) { return; } audioProcessingEvent.outputBuffer.getChannelData(0).fill(0.0); SDL2.capture.currentCaptureBuffer = audioProcessingEvent.inputBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.mediaStreamNode.connect(SDL2.capture.scriptProcessorNode); SDL2.capture.scriptProcessorNode.connect(SDL2.audioContext.destination); SDL2.capture.stream = stream; }; var no_microphone = function(error) { }; SDL2.capture.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.capture.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { SDL2.capture.currentCaptureBuffer = SDL2.capture.silenceBuffer; dynCall('vp', $2, [$3]); }; SDL2.capture.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); if ((navigator.mediaDevices !== undefined) && (navigator.mediaDevices.getUserMedia !== undefined)) { navigator.mediaDevices.getUserMedia({ audio: true, video: false }).then(have_microphone).catch(no_microphone); } else if (navigator.webkitGetUserMedia !== undefined) { navigator.webkitGetUserMedia({ audio: true, video: false }, have_microphone, no_microphone); } },  
+ 448237: ($0, $1, $2, $3) => { var SDL2 = Module['SDL2']; SDL2.audio.scriptProcessorNode = SDL2.audioContext['createScriptProcessor']($1, 0, $0); SDL2.audio.scriptProcessorNode['onaudioprocess'] = function (e) { if ((SDL2 === undefined) || (SDL2.audio === undefined)) { return; } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); SDL2.audio.silenceTimer = undefined; SDL2.audio.silenceBuffer = undefined; } SDL2.audio.currentOutputBuffer = e['outputBuffer']; dynCall('vp', $2, [$3]); }; SDL2.audio.scriptProcessorNode['connect'](SDL2.audioContext['destination']); if (SDL2.audioContext.state === 'suspended') { SDL2.audio.silenceBuffer = SDL2.audioContext.createBuffer($0, $1, SDL2.audioContext.sampleRate); SDL2.audio.silenceBuffer.getChannelData(0).fill(0.0); var silence_callback = function() { if ((typeof navigator.userActivation) !== 'undefined') { if (navigator.userActivation.hasBeenActive) { SDL2.audioContext.resume(); } } SDL2.audio.currentOutputBuffer = SDL2.audio.silenceBuffer; dynCall('vp', $2, [$3]); SDL2.audio.currentOutputBuffer = undefined; }; SDL2.audio.silenceTimer = setInterval(silence_callback, ($1 / SDL2.audioContext.sampleRate) * 1000); } },  
+ 449412: ($0, $1) => { var SDL2 = Module['SDL2']; var numChannels = SDL2.capture.currentCaptureBuffer.numberOfChannels; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.capture.currentCaptureBuffer.getChannelData(c); if (channelData.length != $1) { throw 'Web Audio capture buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } if (numChannels == 1) { for (var j = 0; j < $1; ++j) { setValue($0 + (j * 4), channelData[j], 'float'); } } else { for (var j = 0; j < $1; ++j) { setValue($0 + (((j * numChannels) + c) * 4), channelData[j], 'float'); } } } },  
+ 450017: ($0, $1) => { var SDL2 = Module['SDL2']; var buf = $0 >>> 2; var numChannels = SDL2.audio.currentOutputBuffer['numberOfChannels']; for (var c = 0; c < numChannels; ++c) { var channelData = SDL2.audio.currentOutputBuffer['getChannelData'](c); if (channelData.length != $1) { throw 'Web Audio output buffer length mismatch! Destination size: ' + channelData.length + ' samples vs expected ' + $1 + ' samples!'; } for (var j = 0; j < $1; ++j) { channelData[j] = HEAPF32[buf + (j*numChannels + c)]; } } },  
+ 450506: ($0) => { var SDL2 = Module['SDL2']; if ($0) { if (SDL2.capture.silenceTimer !== undefined) { clearInterval(SDL2.capture.silenceTimer); } if (SDL2.capture.stream !== undefined) { var tracks = SDL2.capture.stream.getAudioTracks(); for (var i = 0; i < tracks.length; i++) { SDL2.capture.stream.removeTrack(tracks[i]); } } if (SDL2.capture.scriptProcessorNode !== undefined) { SDL2.capture.scriptProcessorNode.onaudioprocess = function(audioProcessingEvent) {}; SDL2.capture.scriptProcessorNode.disconnect(); } if (SDL2.capture.mediaStreamNode !== undefined) { SDL2.capture.mediaStreamNode.disconnect(); } SDL2.capture = undefined; } else { if (SDL2.audio.scriptProcessorNode != undefined) { SDL2.audio.scriptProcessorNode.disconnect(); } if (SDL2.audio.silenceTimer !== undefined) { clearInterval(SDL2.audio.silenceTimer); } SDL2.audio = undefined; } if ((SDL2.audioContext !== undefined) && (SDL2.audio === undefined) && (SDL2.capture === undefined)) { SDL2.audioContext.close(); SDL2.audioContext = undefined; } },  
+ 451512: () => { return window.innerWidth; },  
+ 451542: () => { return window.innerHeight; },  
+ 451573: ($0, $1, $2) => { var w = $0; var h = $1; var pixels = $2; if (!Module['SDL2']) Module['SDL2'] = {}; var SDL2 = Module['SDL2']; if (SDL2.ctxCanvas !== Module['canvas']) { SDL2.ctx = Browser.createContext(Module['canvas'], false, true); SDL2.ctxCanvas = Module['canvas']; } if (SDL2.w !== w || SDL2.h !== h || SDL2.imageCtx !== SDL2.ctx) { SDL2.image = SDL2.ctx.createImageData(w, h); SDL2.w = w; SDL2.h = h; SDL2.imageCtx = SDL2.ctx; } var data = SDL2.image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = 0xff; src++; dst += 4; } } else { if (SDL2.data32Data !== data) { SDL2.data32 = new Int32Array(data.buffer); SDL2.data8 = new Uint8Array(data.buffer); SDL2.data32Data = data; } var data32 = SDL2.data32; num = data32.length; data32.set(HEAP32.subarray(src, src + num)); var data8 = SDL2.data8; var i = 3; var j = i + 4*num; if (num % 8 == 0) { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; data8[i] = 0xff; i = i + 4 | 0; } } else { while (i < j) { data8[i] = 0xff; i = i + 4 | 0; } } } SDL2.ctx.putImageData(SDL2.image, 0, 0); },  
+ 453039: ($0, $1, $2, $3, $4) => { var w = $0; var h = $1; var hot_x = $2; var hot_y = $3; var pixels = $4; var canvas = document.createElement("canvas"); canvas.width = w; canvas.height = h; var ctx = canvas.getContext("2d"); var image = ctx.createImageData(w, h); var data = image.data; var src = pixels / 4; var dst = 0; var num; if (typeof CanvasPixelArray !== 'undefined' && data instanceof CanvasPixelArray) { num = data.length; while (dst < num) { var val = HEAP32[src]; data[dst ] = val & 0xff; data[dst+1] = (val >> 8) & 0xff; data[dst+2] = (val >> 16) & 0xff; data[dst+3] = (val >> 24) & 0xff; src++; dst += 4; } } else { var data32 = new Int32Array(data.buffer); num = data32.length; data32.set(HEAP32.subarray(src, src + num)); } ctx.putImageData(image, 0, 0); var url = hot_x === 0 && hot_y === 0 ? "url(" + canvas.toDataURL() + "), auto" : "url(" + canvas.toDataURL() + ") " + hot_x + " " + hot_y + ", auto"; var urlBuf = _malloc(url.length + 1); stringToUTF8(url, urlBuf, url.length + 1); return urlBuf; },  
+ 454027: ($0) => { if (Module['canvas']) { Module['canvas'].style['cursor'] = UTF8ToString($0); } },  
+ 454110: () => { if (Module['canvas']) { Module['canvas'].style['cursor'] = 'none'; } }
 };
+function webDownloadSupportReport(path) { if (window.choochooDownloadFile) { window.choochooDownloadFile(UTF8ToString(path)); } }
 function webDownloadExportFile(path) { if (window.choochooDownloadFile) window.choochooDownloadFile(UTF8ToString(path)); }
 
 // Imports from the Wasm binary.
-var _webSaveProject = Module['_webSaveProject'] = makeInvalidEarlyAccess('_webSaveProject');
-var _free = makeInvalidEarlyAccess('_free');
 var _malloc = makeInvalidEarlyAccess('_malloc');
+var _free = makeInvalidEarlyAccess('_free');
+var _webSaveProject = Module['_webSaveProject'] = makeInvalidEarlyAccess('_webSaveProject');
+var _fflush = makeInvalidEarlyAccess('_fflush');
 var _webLoadProject = Module['_webLoadProject'] = makeInvalidEarlyAccess('_webLoadProject');
 var _main = Module['_main'] = makeInvalidEarlyAccess('_main');
 var _webQueueButton = Module['_webQueueButton'] = makeInvalidEarlyAccess('_webQueueButton');
 var _strerror = makeInvalidEarlyAccess('_strerror');
-var _fflush = makeInvalidEarlyAccess('_fflush');
 var _emscripten_stack_get_end = makeInvalidEarlyAccess('_emscripten_stack_get_end');
 var _emscripten_stack_get_base = makeInvalidEarlyAccess('_emscripten_stack_get_base');
+var __emscripten_timeout = makeInvalidEarlyAccess('__emscripten_timeout');
+var _setThrew = makeInvalidEarlyAccess('_setThrew');
+var __emscripten_tempret_set = makeInvalidEarlyAccess('__emscripten_tempret_set');
 var _emscripten_stack_init = makeInvalidEarlyAccess('_emscripten_stack_init');
 var _emscripten_stack_get_free = makeInvalidEarlyAccess('_emscripten_stack_get_free');
 var __emscripten_stack_restore = makeInvalidEarlyAccess('__emscripten_stack_restore');
 var __emscripten_stack_alloc = makeInvalidEarlyAccess('__emscripten_stack_alloc');
 var _emscripten_stack_get_current = makeInvalidEarlyAccess('_emscripten_stack_get_current');
-var dynCall_vii = makeInvalidEarlyAccess('dynCall_vii');
+var ___cxa_decrement_exception_refcount = makeInvalidEarlyAccess('___cxa_decrement_exception_refcount');
+var ___cxa_increment_exception_refcount = makeInvalidEarlyAccess('___cxa_increment_exception_refcount');
+var ___get_exception_message = makeInvalidEarlyAccess('___get_exception_message');
+var ___cxa_can_catch = makeInvalidEarlyAccess('___cxa_can_catch');
+var ___cxa_get_exception_ptr = makeInvalidEarlyAccess('___cxa_get_exception_ptr');
 var dynCall_iii = makeInvalidEarlyAccess('dynCall_iii');
-var dynCall_v = makeInvalidEarlyAccess('dynCall_v');
-var dynCall_vi = makeInvalidEarlyAccess('dynCall_vi');
-var dynCall_i = makeInvalidEarlyAccess('dynCall_i');
 var dynCall_ii = makeInvalidEarlyAccess('dynCall_ii');
-var dynCall_iiii = makeInvalidEarlyAccess('dynCall_iiii');
-var dynCall_fif = makeInvalidEarlyAccess('dynCall_fif');
-var dynCall_viiiii = makeInvalidEarlyAccess('dynCall_viiiii');
-var dynCall_viiii = makeInvalidEarlyAccess('dynCall_viiii');
-var dynCall_viiiiii = makeInvalidEarlyAccess('dynCall_viiiiii');
-var dynCall_fi = makeInvalidEarlyAccess('dynCall_fi');
+var dynCall_vii = makeInvalidEarlyAccess('dynCall_vii');
+var dynCall_v = makeInvalidEarlyAccess('dynCall_v');
 var dynCall_viii = makeInvalidEarlyAccess('dynCall_viii');
-var dynCall_viiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiii');
+var dynCall_vi = makeInvalidEarlyAccess('dynCall_vi');
 var dynCall_iiiiii = makeInvalidEarlyAccess('dynCall_iiiiii');
+var dynCall_viiii = makeInvalidEarlyAccess('dynCall_viiii');
+var dynCall_iiii = makeInvalidEarlyAccess('dynCall_iiii');
+var dynCall_fi = makeInvalidEarlyAccess('dynCall_fi');
 var dynCall_iiiii = makeInvalidEarlyAccess('dynCall_iiiii');
+var dynCall_viiiii = makeInvalidEarlyAccess('dynCall_viiiii');
+var dynCall_iij = makeInvalidEarlyAccess('dynCall_iij');
+var dynCall_vif = makeInvalidEarlyAccess('dynCall_vif');
+var dynCall_viiiff = makeInvalidEarlyAccess('dynCall_viiiff');
+var dynCall_viiff = makeInvalidEarlyAccess('dynCall_viiff');
+var dynCall_viiiiii = makeInvalidEarlyAccess('dynCall_viiiiii');
+var dynCall_i = makeInvalidEarlyAccess('dynCall_i');
+var dynCall_iiiiiiifi = makeInvalidEarlyAccess('dynCall_iiiiiiifi');
+var dynCall_iiiiiiif = makeInvalidEarlyAccess('dynCall_iiiiiiif');
+var dynCall_jiji = makeInvalidEarlyAccess('dynCall_jiji');
+var dynCall_ji = makeInvalidEarlyAccess('dynCall_ji');
 var dynCall_iiiiiiii = makeInvalidEarlyAccess('dynCall_iiiiiiii');
 var dynCall_iiiiiiiiii = makeInvalidEarlyAccess('dynCall_iiiiiiiiii');
 var dynCall_iiiiiiiiiiiiiiff = makeInvalidEarlyAccess('dynCall_iiiiiiiiiiiiiiff');
@@ -10504,20 +10826,31 @@ var dynCall_iiiiiiiii = makeInvalidEarlyAccess('dynCall_iiiiiiiii');
 var dynCall_viiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiii');
 var dynCall_viiiiiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiiiiii');
 var dynCall_iiiiiidiiff = makeInvalidEarlyAccess('dynCall_iiiiiidiiff');
-var dynCall_ji = makeInvalidEarlyAccess('dynCall_ji');
-var dynCall_jiji = makeInvalidEarlyAccess('dynCall_jiji');
 var dynCall_vffff = makeInvalidEarlyAccess('dynCall_vffff');
 var dynCall_vf = makeInvalidEarlyAccess('dynCall_vf');
+var dynCall_viiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiii');
 var dynCall_viiiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiiii');
 var dynCall_vff = makeInvalidEarlyAccess('dynCall_vff');
 var dynCall_vfi = makeInvalidEarlyAccess('dynCall_vfi');
 var dynCall_viif = makeInvalidEarlyAccess('dynCall_viif');
-var dynCall_vif = makeInvalidEarlyAccess('dynCall_vif');
 var dynCall_viff = makeInvalidEarlyAccess('dynCall_viff');
 var dynCall_vifff = makeInvalidEarlyAccess('dynCall_vifff');
 var dynCall_viffff = makeInvalidEarlyAccess('dynCall_viffff');
 var dynCall_vfff = makeInvalidEarlyAccess('dynCall_vfff');
 var dynCall_iidiiiii = makeInvalidEarlyAccess('dynCall_iidiiiii');
+var dynCall_iiij = makeInvalidEarlyAccess('dynCall_iiij');
+var dynCall_iiiij = makeInvalidEarlyAccess('dynCall_iiiij');
+var dynCall_iiiiij = makeInvalidEarlyAccess('dynCall_iiiiij');
+var dynCall_iiiiiii = makeInvalidEarlyAccess('dynCall_iiiiiii');
+var dynCall_iiiiiiiiiiii = makeInvalidEarlyAccess('dynCall_iiiiiiiiiiii');
+var dynCall_viiiiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiiiii');
+var dynCall_viiiiiiiiiiiiiii = makeInvalidEarlyAccess('dynCall_viiiiiiiiiiiiiii');
+var dynCall_fif = makeInvalidEarlyAccess('dynCall_fif');
+var dynCall_viij = makeInvalidEarlyAccess('dynCall_viij');
+var dynCall_viijii = makeInvalidEarlyAccess('dynCall_viijii');
+var dynCall_iiiiid = makeInvalidEarlyAccess('dynCall_iiiiid');
+var dynCall_iiiiijj = makeInvalidEarlyAccess('dynCall_iiiiijj');
+var dynCall_iiiiiijj = makeInvalidEarlyAccess('dynCall_iiiiiijj');
 var _asyncify_start_unwind = makeInvalidEarlyAccess('_asyncify_start_unwind');
 var _asyncify_stop_unwind = makeInvalidEarlyAccess('_asyncify_stop_unwind');
 var _asyncify_start_rewind = makeInvalidEarlyAccess('_asyncify_start_rewind');
@@ -10525,39 +10858,54 @@ var _asyncify_stop_rewind = makeInvalidEarlyAccess('_asyncify_stop_rewind');
 var memory = makeInvalidEarlyAccess('memory');
 var __indirect_function_table = makeInvalidEarlyAccess('__indirect_function_table');
 var wasmMemory = makeInvalidEarlyAccess('wasmMemory');
+var wasmTable = makeInvalidEarlyAccess('wasmTable');
 
 function assignWasmExports(wasmExports) {
-  assert(typeof wasmExports['webSaveProject'] != 'undefined', 'missing Wasm export: webSaveProject');
-  assert(typeof wasmExports['free'] != 'undefined', 'missing Wasm export: free');
   assert(typeof wasmExports['malloc'] != 'undefined', 'missing Wasm export: malloc');
+  assert(typeof wasmExports['free'] != 'undefined', 'missing Wasm export: free');
+  assert(typeof wasmExports['webSaveProject'] != 'undefined', 'missing Wasm export: webSaveProject');
+  assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
   assert(typeof wasmExports['webLoadProject'] != 'undefined', 'missing Wasm export: webLoadProject');
   assert(typeof wasmExports['__main_argc_argv'] != 'undefined', 'missing Wasm export: __main_argc_argv');
   assert(typeof wasmExports['webQueueButton'] != 'undefined', 'missing Wasm export: webQueueButton');
   assert(typeof wasmExports['strerror'] != 'undefined', 'missing Wasm export: strerror');
-  assert(typeof wasmExports['fflush'] != 'undefined', 'missing Wasm export: fflush');
   assert(typeof wasmExports['emscripten_stack_get_end'] != 'undefined', 'missing Wasm export: emscripten_stack_get_end');
   assert(typeof wasmExports['emscripten_stack_get_base'] != 'undefined', 'missing Wasm export: emscripten_stack_get_base');
+  assert(typeof wasmExports['_emscripten_timeout'] != 'undefined', 'missing Wasm export: _emscripten_timeout');
+  assert(typeof wasmExports['setThrew'] != 'undefined', 'missing Wasm export: setThrew');
+  assert(typeof wasmExports['_emscripten_tempret_set'] != 'undefined', 'missing Wasm export: _emscripten_tempret_set');
   assert(typeof wasmExports['emscripten_stack_init'] != 'undefined', 'missing Wasm export: emscripten_stack_init');
   assert(typeof wasmExports['emscripten_stack_get_free'] != 'undefined', 'missing Wasm export: emscripten_stack_get_free');
   assert(typeof wasmExports['_emscripten_stack_restore'] != 'undefined', 'missing Wasm export: _emscripten_stack_restore');
   assert(typeof wasmExports['_emscripten_stack_alloc'] != 'undefined', 'missing Wasm export: _emscripten_stack_alloc');
   assert(typeof wasmExports['emscripten_stack_get_current'] != 'undefined', 'missing Wasm export: emscripten_stack_get_current');
-  assert(typeof wasmExports['dynCall_vii'] != 'undefined', 'missing Wasm export: dynCall_vii');
+  assert(typeof wasmExports['__cxa_decrement_exception_refcount'] != 'undefined', 'missing Wasm export: __cxa_decrement_exception_refcount');
+  assert(typeof wasmExports['__cxa_increment_exception_refcount'] != 'undefined', 'missing Wasm export: __cxa_increment_exception_refcount');
+  assert(typeof wasmExports['__get_exception_message'] != 'undefined', 'missing Wasm export: __get_exception_message');
+  assert(typeof wasmExports['__cxa_can_catch'] != 'undefined', 'missing Wasm export: __cxa_can_catch');
+  assert(typeof wasmExports['__cxa_get_exception_ptr'] != 'undefined', 'missing Wasm export: __cxa_get_exception_ptr');
   assert(typeof wasmExports['dynCall_iii'] != 'undefined', 'missing Wasm export: dynCall_iii');
-  assert(typeof wasmExports['dynCall_v'] != 'undefined', 'missing Wasm export: dynCall_v');
-  assert(typeof wasmExports['dynCall_vi'] != 'undefined', 'missing Wasm export: dynCall_vi');
-  assert(typeof wasmExports['dynCall_i'] != 'undefined', 'missing Wasm export: dynCall_i');
   assert(typeof wasmExports['dynCall_ii'] != 'undefined', 'missing Wasm export: dynCall_ii');
-  assert(typeof wasmExports['dynCall_iiii'] != 'undefined', 'missing Wasm export: dynCall_iiii');
-  assert(typeof wasmExports['dynCall_fif'] != 'undefined', 'missing Wasm export: dynCall_fif');
-  assert(typeof wasmExports['dynCall_viiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiii');
-  assert(typeof wasmExports['dynCall_viiii'] != 'undefined', 'missing Wasm export: dynCall_viiii');
-  assert(typeof wasmExports['dynCall_viiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiii');
-  assert(typeof wasmExports['dynCall_fi'] != 'undefined', 'missing Wasm export: dynCall_fi');
+  assert(typeof wasmExports['dynCall_vii'] != 'undefined', 'missing Wasm export: dynCall_vii');
+  assert(typeof wasmExports['dynCall_v'] != 'undefined', 'missing Wasm export: dynCall_v');
   assert(typeof wasmExports['dynCall_viii'] != 'undefined', 'missing Wasm export: dynCall_viii');
-  assert(typeof wasmExports['dynCall_viiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiiiii');
+  assert(typeof wasmExports['dynCall_vi'] != 'undefined', 'missing Wasm export: dynCall_vi');
   assert(typeof wasmExports['dynCall_iiiiii'] != 'undefined', 'missing Wasm export: dynCall_iiiiii');
+  assert(typeof wasmExports['dynCall_viiii'] != 'undefined', 'missing Wasm export: dynCall_viiii');
+  assert(typeof wasmExports['dynCall_iiii'] != 'undefined', 'missing Wasm export: dynCall_iiii');
+  assert(typeof wasmExports['dynCall_fi'] != 'undefined', 'missing Wasm export: dynCall_fi');
   assert(typeof wasmExports['dynCall_iiiii'] != 'undefined', 'missing Wasm export: dynCall_iiiii');
+  assert(typeof wasmExports['dynCall_viiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiii');
+  assert(typeof wasmExports['dynCall_iij'] != 'undefined', 'missing Wasm export: dynCall_iij');
+  assert(typeof wasmExports['dynCall_vif'] != 'undefined', 'missing Wasm export: dynCall_vif');
+  assert(typeof wasmExports['dynCall_viiiff'] != 'undefined', 'missing Wasm export: dynCall_viiiff');
+  assert(typeof wasmExports['dynCall_viiff'] != 'undefined', 'missing Wasm export: dynCall_viiff');
+  assert(typeof wasmExports['dynCall_viiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiii');
+  assert(typeof wasmExports['dynCall_i'] != 'undefined', 'missing Wasm export: dynCall_i');
+  assert(typeof wasmExports['dynCall_iiiiiiifi'] != 'undefined', 'missing Wasm export: dynCall_iiiiiiifi');
+  assert(typeof wasmExports['dynCall_iiiiiiif'] != 'undefined', 'missing Wasm export: dynCall_iiiiiiif');
+  assert(typeof wasmExports['dynCall_jiji'] != 'undefined', 'missing Wasm export: dynCall_jiji');
+  assert(typeof wasmExports['dynCall_ji'] != 'undefined', 'missing Wasm export: dynCall_ji');
   assert(typeof wasmExports['dynCall_iiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_iiiiiiii');
   assert(typeof wasmExports['dynCall_iiiiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_iiiiiiiiii');
   assert(typeof wasmExports['dynCall_iiiiiiiiiiiiiiff'] != 'undefined', 'missing Wasm export: dynCall_iiiiiiiiiiiiiiff');
@@ -10565,57 +10913,82 @@ function assignWasmExports(wasmExports) {
   assert(typeof wasmExports['dynCall_viiiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiiii');
   assert(typeof wasmExports['dynCall_viiiiiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiiiiiiii');
   assert(typeof wasmExports['dynCall_iiiiiidiiff'] != 'undefined', 'missing Wasm export: dynCall_iiiiiidiiff');
-  assert(typeof wasmExports['dynCall_ji'] != 'undefined', 'missing Wasm export: dynCall_ji');
-  assert(typeof wasmExports['dynCall_jiji'] != 'undefined', 'missing Wasm export: dynCall_jiji');
   assert(typeof wasmExports['dynCall_vffff'] != 'undefined', 'missing Wasm export: dynCall_vffff');
   assert(typeof wasmExports['dynCall_vf'] != 'undefined', 'missing Wasm export: dynCall_vf');
+  assert(typeof wasmExports['dynCall_viiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiiiii');
   assert(typeof wasmExports['dynCall_viiiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiiiiii');
   assert(typeof wasmExports['dynCall_vff'] != 'undefined', 'missing Wasm export: dynCall_vff');
   assert(typeof wasmExports['dynCall_vfi'] != 'undefined', 'missing Wasm export: dynCall_vfi');
   assert(typeof wasmExports['dynCall_viif'] != 'undefined', 'missing Wasm export: dynCall_viif');
-  assert(typeof wasmExports['dynCall_vif'] != 'undefined', 'missing Wasm export: dynCall_vif');
   assert(typeof wasmExports['dynCall_viff'] != 'undefined', 'missing Wasm export: dynCall_viff');
   assert(typeof wasmExports['dynCall_vifff'] != 'undefined', 'missing Wasm export: dynCall_vifff');
   assert(typeof wasmExports['dynCall_viffff'] != 'undefined', 'missing Wasm export: dynCall_viffff');
   assert(typeof wasmExports['dynCall_vfff'] != 'undefined', 'missing Wasm export: dynCall_vfff');
   assert(typeof wasmExports['dynCall_iidiiiii'] != 'undefined', 'missing Wasm export: dynCall_iidiiiii');
+  assert(typeof wasmExports['dynCall_iiij'] != 'undefined', 'missing Wasm export: dynCall_iiij');
+  assert(typeof wasmExports['dynCall_iiiij'] != 'undefined', 'missing Wasm export: dynCall_iiiij');
+  assert(typeof wasmExports['dynCall_iiiiij'] != 'undefined', 'missing Wasm export: dynCall_iiiiij');
+  assert(typeof wasmExports['dynCall_iiiiiii'] != 'undefined', 'missing Wasm export: dynCall_iiiiiii');
+  assert(typeof wasmExports['dynCall_iiiiiiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_iiiiiiiiiiii');
+  assert(typeof wasmExports['dynCall_viiiiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiiiiiii');
+  assert(typeof wasmExports['dynCall_viiiiiiiiiiiiiii'] != 'undefined', 'missing Wasm export: dynCall_viiiiiiiiiiiiiii');
+  assert(typeof wasmExports['dynCall_fif'] != 'undefined', 'missing Wasm export: dynCall_fif');
+  assert(typeof wasmExports['dynCall_viij'] != 'undefined', 'missing Wasm export: dynCall_viij');
+  assert(typeof wasmExports['dynCall_viijii'] != 'undefined', 'missing Wasm export: dynCall_viijii');
+  assert(typeof wasmExports['dynCall_iiiiid'] != 'undefined', 'missing Wasm export: dynCall_iiiiid');
+  assert(typeof wasmExports['dynCall_iiiiijj'] != 'undefined', 'missing Wasm export: dynCall_iiiiijj');
+  assert(typeof wasmExports['dynCall_iiiiiijj'] != 'undefined', 'missing Wasm export: dynCall_iiiiiijj');
   assert(typeof wasmExports['asyncify_start_unwind'] != 'undefined', 'missing Wasm export: asyncify_start_unwind');
   assert(typeof wasmExports['asyncify_stop_unwind'] != 'undefined', 'missing Wasm export: asyncify_stop_unwind');
   assert(typeof wasmExports['asyncify_start_rewind'] != 'undefined', 'missing Wasm export: asyncify_start_rewind');
   assert(typeof wasmExports['asyncify_stop_rewind'] != 'undefined', 'missing Wasm export: asyncify_stop_rewind');
   assert(typeof wasmExports['memory'] != 'undefined', 'missing Wasm export: memory');
   assert(typeof wasmExports['__indirect_function_table'] != 'undefined', 'missing Wasm export: __indirect_function_table');
-  _webSaveProject = Module['_webSaveProject'] = createExportWrapper('webSaveProject', wasmExports['webSaveProject'], 1);
-  _free = createExportWrapper('free', wasmExports['free'], 1);
   _malloc = createExportWrapper('malloc', wasmExports['malloc'], 1);
+  _free = createExportWrapper('free', wasmExports['free'], 1);
+  _webSaveProject = Module['_webSaveProject'] = createExportWrapper('webSaveProject', wasmExports['webSaveProject'], 1);
+  _fflush = createExportWrapper('fflush', wasmExports['fflush'], 1);
   _webLoadProject = Module['_webLoadProject'] = createExportWrapper('webLoadProject', wasmExports['webLoadProject'], 1);
   _main = Module['_main'] = createExportWrapper('__main_argc_argv', wasmExports['__main_argc_argv'], 2);
   _webQueueButton = Module['_webQueueButton'] = createExportWrapper('webQueueButton', wasmExports['webQueueButton'], 2);
   _strerror = createExportWrapper('strerror', wasmExports['strerror'], 1);
-  _fflush = createExportWrapper('fflush', wasmExports['fflush'], 1);
   _emscripten_stack_get_end = wasmExports['emscripten_stack_get_end'];
   _emscripten_stack_get_base = wasmExports['emscripten_stack_get_base'];
+  __emscripten_timeout = createExportWrapper('_emscripten_timeout', wasmExports['_emscripten_timeout'], 2);
+  _setThrew = createExportWrapper('setThrew', wasmExports['setThrew'], 2);
+  __emscripten_tempret_set = createExportWrapper('_emscripten_tempret_set', wasmExports['_emscripten_tempret_set'], 1);
   _emscripten_stack_init = wasmExports['emscripten_stack_init'];
   _emscripten_stack_get_free = wasmExports['emscripten_stack_get_free'];
   __emscripten_stack_restore = wasmExports['_emscripten_stack_restore'];
   __emscripten_stack_alloc = wasmExports['_emscripten_stack_alloc'];
   _emscripten_stack_get_current = wasmExports['emscripten_stack_get_current'];
-  dynCall_vii = dynCalls['vii'] = createExportWrapper('dynCall_vii', wasmExports['dynCall_vii'], 3);
+  ___cxa_decrement_exception_refcount = createExportWrapper('__cxa_decrement_exception_refcount', wasmExports['__cxa_decrement_exception_refcount'], 1);
+  ___cxa_increment_exception_refcount = createExportWrapper('__cxa_increment_exception_refcount', wasmExports['__cxa_increment_exception_refcount'], 1);
+  ___get_exception_message = createExportWrapper('__get_exception_message', wasmExports['__get_exception_message'], 3);
+  ___cxa_can_catch = createExportWrapper('__cxa_can_catch', wasmExports['__cxa_can_catch'], 3);
+  ___cxa_get_exception_ptr = createExportWrapper('__cxa_get_exception_ptr', wasmExports['__cxa_get_exception_ptr'], 1);
   dynCall_iii = dynCalls['iii'] = createExportWrapper('dynCall_iii', wasmExports['dynCall_iii'], 3);
-  dynCall_v = dynCalls['v'] = createExportWrapper('dynCall_v', wasmExports['dynCall_v'], 1);
-  dynCall_vi = dynCalls['vi'] = createExportWrapper('dynCall_vi', wasmExports['dynCall_vi'], 2);
-  dynCall_i = dynCalls['i'] = createExportWrapper('dynCall_i', wasmExports['dynCall_i'], 1);
   dynCall_ii = dynCalls['ii'] = createExportWrapper('dynCall_ii', wasmExports['dynCall_ii'], 2);
-  dynCall_iiii = dynCalls['iiii'] = createExportWrapper('dynCall_iiii', wasmExports['dynCall_iiii'], 4);
-  dynCall_fif = dynCalls['fif'] = createExportWrapper('dynCall_fif', wasmExports['dynCall_fif'], 3);
-  dynCall_viiiii = dynCalls['viiiii'] = createExportWrapper('dynCall_viiiii', wasmExports['dynCall_viiiii'], 6);
-  dynCall_viiii = dynCalls['viiii'] = createExportWrapper('dynCall_viiii', wasmExports['dynCall_viiii'], 5);
-  dynCall_viiiiii = dynCalls['viiiiii'] = createExportWrapper('dynCall_viiiiii', wasmExports['dynCall_viiiiii'], 7);
-  dynCall_fi = dynCalls['fi'] = createExportWrapper('dynCall_fi', wasmExports['dynCall_fi'], 2);
+  dynCall_vii = dynCalls['vii'] = createExportWrapper('dynCall_vii', wasmExports['dynCall_vii'], 3);
+  dynCall_v = dynCalls['v'] = createExportWrapper('dynCall_v', wasmExports['dynCall_v'], 1);
   dynCall_viii = dynCalls['viii'] = createExportWrapper('dynCall_viii', wasmExports['dynCall_viii'], 4);
-  dynCall_viiiiiiii = dynCalls['viiiiiiii'] = createExportWrapper('dynCall_viiiiiiii', wasmExports['dynCall_viiiiiiii'], 9);
+  dynCall_vi = dynCalls['vi'] = createExportWrapper('dynCall_vi', wasmExports['dynCall_vi'], 2);
   dynCall_iiiiii = dynCalls['iiiiii'] = createExportWrapper('dynCall_iiiiii', wasmExports['dynCall_iiiiii'], 6);
+  dynCall_viiii = dynCalls['viiii'] = createExportWrapper('dynCall_viiii', wasmExports['dynCall_viiii'], 5);
+  dynCall_iiii = dynCalls['iiii'] = createExportWrapper('dynCall_iiii', wasmExports['dynCall_iiii'], 4);
+  dynCall_fi = dynCalls['fi'] = createExportWrapper('dynCall_fi', wasmExports['dynCall_fi'], 2);
   dynCall_iiiii = dynCalls['iiiii'] = createExportWrapper('dynCall_iiiii', wasmExports['dynCall_iiiii'], 5);
+  dynCall_viiiii = dynCalls['viiiii'] = createExportWrapper('dynCall_viiiii', wasmExports['dynCall_viiiii'], 6);
+  dynCall_iij = dynCalls['iij'] = createExportWrapper('dynCall_iij', wasmExports['dynCall_iij'], 3);
+  dynCall_vif = dynCalls['vif'] = createExportWrapper('dynCall_vif', wasmExports['dynCall_vif'], 3);
+  dynCall_viiiff = dynCalls['viiiff'] = createExportWrapper('dynCall_viiiff', wasmExports['dynCall_viiiff'], 6);
+  dynCall_viiff = dynCalls['viiff'] = createExportWrapper('dynCall_viiff', wasmExports['dynCall_viiff'], 5);
+  dynCall_viiiiii = dynCalls['viiiiii'] = createExportWrapper('dynCall_viiiiii', wasmExports['dynCall_viiiiii'], 7);
+  dynCall_i = dynCalls['i'] = createExportWrapper('dynCall_i', wasmExports['dynCall_i'], 1);
+  dynCall_iiiiiiifi = dynCalls['iiiiiiifi'] = createExportWrapper('dynCall_iiiiiiifi', wasmExports['dynCall_iiiiiiifi'], 9);
+  dynCall_iiiiiiif = dynCalls['iiiiiiif'] = createExportWrapper('dynCall_iiiiiiif', wasmExports['dynCall_iiiiiiif'], 8);
+  dynCall_jiji = dynCalls['jiji'] = createExportWrapper('dynCall_jiji', wasmExports['dynCall_jiji'], 4);
+  dynCall_ji = dynCalls['ji'] = createExportWrapper('dynCall_ji', wasmExports['dynCall_ji'], 2);
   dynCall_iiiiiiii = dynCalls['iiiiiiii'] = createExportWrapper('dynCall_iiiiiiii', wasmExports['dynCall_iiiiiiii'], 8);
   dynCall_iiiiiiiiii = dynCalls['iiiiiiiiii'] = createExportWrapper('dynCall_iiiiiiiiii', wasmExports['dynCall_iiiiiiiiii'], 10);
   dynCall_iiiiiiiiiiiiiiff = dynCalls['iiiiiiiiiiiiiiff'] = createExportWrapper('dynCall_iiiiiiiiiiiiiiff', wasmExports['dynCall_iiiiiiiiiiiiiiff'], 16);
@@ -10623,31 +10996,60 @@ function assignWasmExports(wasmExports) {
   dynCall_viiiiiii = dynCalls['viiiiiii'] = createExportWrapper('dynCall_viiiiiii', wasmExports['dynCall_viiiiiii'], 8);
   dynCall_viiiiiiiiiii = dynCalls['viiiiiiiiiii'] = createExportWrapper('dynCall_viiiiiiiiiii', wasmExports['dynCall_viiiiiiiiiii'], 12);
   dynCall_iiiiiidiiff = dynCalls['iiiiiidiiff'] = createExportWrapper('dynCall_iiiiiidiiff', wasmExports['dynCall_iiiiiidiiff'], 11);
-  dynCall_ji = dynCalls['ji'] = createExportWrapper('dynCall_ji', wasmExports['dynCall_ji'], 2);
-  dynCall_jiji = dynCalls['jiji'] = createExportWrapper('dynCall_jiji', wasmExports['dynCall_jiji'], 4);
   dynCall_vffff = dynCalls['vffff'] = createExportWrapper('dynCall_vffff', wasmExports['dynCall_vffff'], 5);
   dynCall_vf = dynCalls['vf'] = createExportWrapper('dynCall_vf', wasmExports['dynCall_vf'], 2);
+  dynCall_viiiiiiii = dynCalls['viiiiiiii'] = createExportWrapper('dynCall_viiiiiiii', wasmExports['dynCall_viiiiiiii'], 9);
   dynCall_viiiiiiiii = dynCalls['viiiiiiiii'] = createExportWrapper('dynCall_viiiiiiiii', wasmExports['dynCall_viiiiiiiii'], 10);
   dynCall_vff = dynCalls['vff'] = createExportWrapper('dynCall_vff', wasmExports['dynCall_vff'], 3);
   dynCall_vfi = dynCalls['vfi'] = createExportWrapper('dynCall_vfi', wasmExports['dynCall_vfi'], 3);
   dynCall_viif = dynCalls['viif'] = createExportWrapper('dynCall_viif', wasmExports['dynCall_viif'], 4);
-  dynCall_vif = dynCalls['vif'] = createExportWrapper('dynCall_vif', wasmExports['dynCall_vif'], 3);
   dynCall_viff = dynCalls['viff'] = createExportWrapper('dynCall_viff', wasmExports['dynCall_viff'], 4);
   dynCall_vifff = dynCalls['vifff'] = createExportWrapper('dynCall_vifff', wasmExports['dynCall_vifff'], 5);
   dynCall_viffff = dynCalls['viffff'] = createExportWrapper('dynCall_viffff', wasmExports['dynCall_viffff'], 6);
   dynCall_vfff = dynCalls['vfff'] = createExportWrapper('dynCall_vfff', wasmExports['dynCall_vfff'], 4);
   dynCall_iidiiiii = dynCalls['iidiiiii'] = createExportWrapper('dynCall_iidiiiii', wasmExports['dynCall_iidiiiii'], 8);
+  dynCall_iiij = dynCalls['iiij'] = createExportWrapper('dynCall_iiij', wasmExports['dynCall_iiij'], 4);
+  dynCall_iiiij = dynCalls['iiiij'] = createExportWrapper('dynCall_iiiij', wasmExports['dynCall_iiiij'], 5);
+  dynCall_iiiiij = dynCalls['iiiiij'] = createExportWrapper('dynCall_iiiiij', wasmExports['dynCall_iiiiij'], 6);
+  dynCall_iiiiiii = dynCalls['iiiiiii'] = createExportWrapper('dynCall_iiiiiii', wasmExports['dynCall_iiiiiii'], 7);
+  dynCall_iiiiiiiiiiii = dynCalls['iiiiiiiiiiii'] = createExportWrapper('dynCall_iiiiiiiiiiii', wasmExports['dynCall_iiiiiiiiiiii'], 12);
+  dynCall_viiiiiiiiii = dynCalls['viiiiiiiiii'] = createExportWrapper('dynCall_viiiiiiiiii', wasmExports['dynCall_viiiiiiiiii'], 11);
+  dynCall_viiiiiiiiiiiiiii = dynCalls['viiiiiiiiiiiiiii'] = createExportWrapper('dynCall_viiiiiiiiiiiiiii', wasmExports['dynCall_viiiiiiiiiiiiiii'], 16);
+  dynCall_fif = dynCalls['fif'] = createExportWrapper('dynCall_fif', wasmExports['dynCall_fif'], 3);
+  dynCall_viij = dynCalls['viij'] = createExportWrapper('dynCall_viij', wasmExports['dynCall_viij'], 4);
+  dynCall_viijii = dynCalls['viijii'] = createExportWrapper('dynCall_viijii', wasmExports['dynCall_viijii'], 6);
+  dynCall_iiiiid = dynCalls['iiiiid'] = createExportWrapper('dynCall_iiiiid', wasmExports['dynCall_iiiiid'], 6);
+  dynCall_iiiiijj = dynCalls['iiiiijj'] = createExportWrapper('dynCall_iiiiijj', wasmExports['dynCall_iiiiijj'], 7);
+  dynCall_iiiiiijj = dynCalls['iiiiiijj'] = createExportWrapper('dynCall_iiiiiijj', wasmExports['dynCall_iiiiiijj'], 8);
   _asyncify_start_unwind = createExportWrapper('asyncify_start_unwind', wasmExports['asyncify_start_unwind'], 1);
   _asyncify_stop_unwind = createExportWrapper('asyncify_stop_unwind', wasmExports['asyncify_stop_unwind'], 0);
   _asyncify_start_rewind = createExportWrapper('asyncify_start_rewind', wasmExports['asyncify_start_rewind'], 1);
   _asyncify_stop_rewind = createExportWrapper('asyncify_stop_rewind', wasmExports['asyncify_stop_rewind'], 0);
   memory = wasmMemory = wasmExports['memory'];
-  __indirect_function_table = wasmExports['__indirect_function_table'];
+  __indirect_function_table = wasmTable = wasmExports['__indirect_function_table'];
 }
 
 var wasmImports = {
   /** @export */
+  __assert_fail: ___assert_fail,
+  /** @export */
+  __call_sighandler: ___call_sighandler,
+  /** @export */
+  __cxa_begin_catch: ___cxa_begin_catch,
+  /** @export */
+  __cxa_end_catch: ___cxa_end_catch,
+  /** @export */
+  __cxa_find_matching_catch_2: ___cxa_find_matching_catch_2,
+  /** @export */
+  __cxa_find_matching_catch_3: ___cxa_find_matching_catch_3,
+  /** @export */
+  __cxa_rethrow: ___cxa_rethrow,
+  /** @export */
   __cxa_throw: ___cxa_throw,
+  /** @export */
+  __cxa_uncaught_exceptions: ___cxa_uncaught_exceptions,
+  /** @export */
+  __resumeException: ___resumeException,
   /** @export */
   __syscall_fcntl64: ___syscall_fcntl64,
   /** @export */
@@ -10667,6 +11069,8 @@ var wasmImports = {
   /** @export */
   __syscall_openat: ___syscall_openat,
   /** @export */
+  __syscall_readlinkat: ___syscall_readlinkat,
+  /** @export */
   __syscall_rmdir: ___syscall_rmdir,
   /** @export */
   __syscall_stat64: ___syscall_stat64,
@@ -10674,6 +11078,12 @@ var wasmImports = {
   __syscall_unlinkat: ___syscall_unlinkat,
   /** @export */
   _abort_js: __abort_js,
+  /** @export */
+  _emscripten_runtime_keepalive_clear: __emscripten_runtime_keepalive_clear,
+  /** @export */
+  _setitimer_js: __setitimer_js,
+  /** @export */
+  _tzset_js: __tzset_js,
   /** @export */
   clock_time_get: _clock_time_get,
   /** @export */
@@ -11143,8 +11553,378 @@ var wasmImports = {
   /** @export */
   fd_write: _fd_write,
   /** @export */
-  webDownloadExportFile
+  invoke_i,
+  /** @export */
+  invoke_ii,
+  /** @export */
+  invoke_iii,
+  /** @export */
+  invoke_iiii,
+  /** @export */
+  invoke_iiiii,
+  /** @export */
+  invoke_iiiiii,
+  /** @export */
+  invoke_iiiiiii,
+  /** @export */
+  invoke_iiiiiiif,
+  /** @export */
+  invoke_iiiiiiifi,
+  /** @export */
+  invoke_iiiiiiii,
+  /** @export */
+  invoke_iiiiiiiiiiii,
+  /** @export */
+  invoke_iiiiij,
+  /** @export */
+  invoke_iiiij,
+  /** @export */
+  invoke_iiij,
+  /** @export */
+  invoke_iij,
+  /** @export */
+  invoke_v,
+  /** @export */
+  invoke_vi,
+  /** @export */
+  invoke_vif,
+  /** @export */
+  invoke_vii,
+  /** @export */
+  invoke_viiff,
+  /** @export */
+  invoke_viii,
+  /** @export */
+  invoke_viiiff,
+  /** @export */
+  invoke_viiii,
+  /** @export */
+  invoke_viiiii,
+  /** @export */
+  invoke_viiiiiii,
+  /** @export */
+  invoke_viiiiiiii,
+  /** @export */
+  invoke_viiiiiiiiii,
+  /** @export */
+  invoke_viiiiiiiiiiiiiii,
+  /** @export */
+  llvm_eh_typeid_for: _llvm_eh_typeid_for,
+  /** @export */
+  proc_exit: _proc_exit,
+  /** @export */
+  webDownloadExportFile,
+  /** @export */
+  webDownloadSupportReport
 };
+
+function invoke_iii(index,a1,a2) {
+  var sp = stackSave();
+  try {
+    return dynCall_iii(index,a1,a2);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_vii(index,a1,a2) {
+  var sp = stackSave();
+  try {
+    dynCall_vii(index,a1,a2);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_v(index) {
+  var sp = stackSave();
+  try {
+    dynCall_v(index);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiii(index,a1,a2,a3) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiii(index,a1,a2,a3);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiii(index,a1,a2,a3,a4) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiii(index,a1,a2,a3,a4);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_ii(index,a1) {
+  var sp = stackSave();
+  try {
+    return dynCall_ii(index,a1);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viii(index,a1,a2,a3) {
+  var sp = stackSave();
+  try {
+    dynCall_viii(index,a1,a2,a3);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiii(index,a1,a2,a3,a4,a5) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiii(index,a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiii(index,a1,a2,a3,a4) {
+  var sp = stackSave();
+  try {
+    dynCall_viiii(index,a1,a2,a3,a4);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiii(index,a1,a2,a3,a4,a5) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiii(index,a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_vi(index,a1) {
+  var sp = stackSave();
+  try {
+    dynCall_vi(index,a1);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_vif(index,a1,a2) {
+  var sp = stackSave();
+  try {
+    dynCall_vif(index,a1,a2);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiff(index,a1,a2,a3,a4,a5) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiff(index,a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiff(index,a1,a2,a3,a4) {
+  var sp = stackSave();
+  try {
+    dynCall_viiff(index,a1,a2,a3,a4);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_i(index) {
+  var sp = stackSave();
+  try {
+    return dynCall_i(index);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiifi(index,a1,a2,a3,a4,a5,a6,a7,a8) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiiiifi(index,a1,a2,a3,a4,a5,a6,a7,a8);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiif(index,a1,a2,a3,a4,a5,a6,a7) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiiiif(index,a1,a2,a3,a4,a5,a6,a7);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiij(index,a1,a2,a3) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiij(index,a1,a2,a3);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiij(index,a1,a2,a3,a4) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiij(index,a1,a2,a3,a4);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiij(index,a1,a2,a3,a4,a5) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiij(index,a1,a2,a3,a4,a5);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiii(index,a1,a2,a3,a4,a5,a6) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiiii(index,a1,a2,a3,a4,a5,a6);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iij(index,a1,a2) {
+  var sp = stackSave();
+  try {
+    return dynCall_iij(index,a1,a2);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiii(index,a1,a2,a3,a4,a5,a6,a7) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiiiii(index,a1,a2,a3,a4,a5,a6,a7);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiiiii(index,a1,a2,a3,a4,a5,a6,a7) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiiiii(index,a1,a2,a3,a4,a5,a6,a7);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_iiiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) {
+  var sp = stackSave();
+  try {
+    return dynCall_iiiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
+
+function invoke_viiiiiiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15) {
+  var sp = stackSave();
+  try {
+    dynCall_viiiiiiiiiiiiiii(index,a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12,a13,a14,a15);
+  } catch(e) {
+    stackRestore(sp);
+    if (!(e instanceof EmscriptenEH)) throw e;
+    _setThrew(1, 0);
+  }
+}
 
 
 // include: postamble.js

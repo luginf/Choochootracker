@@ -5,7 +5,8 @@
 #include "../external/ayumi/ayumi.h"
 #include "../external/ayumi/ayumi_filters.h"
 
-static constexpr float ayVolumeScale = 0.6f; // Scale AY volume to avoid clipping when mixing multiple chips
+static constexpr float ayVolumeScale = 0.6f * 1.91419684f;
+static constexpr float ymVolumeScale = 0.6f * 1.91225761f;
 
 static void setPanning(struct ayumi* ay, StereoModeAY stereoMode, uint8_t separation) {
   float sep = (float)separation / 200.0;
@@ -30,6 +31,7 @@ static void setPanning(struct ayumi* ay, StereoModeAY stereoMode, uint8_t separa
 
 SoundChipAY::SoundChipAY(int sampleRate, ChipSetup setup) {
   this->sampleRate = sampleRate;
+  volumeScale = setup.ay.isYM ? ymVolumeScale : ayVolumeScale;
   memset(registers, 0, sizeof(registers));
   registers[7] = 0x3f;
 
@@ -93,6 +95,7 @@ uint8_t SoundChipAY::getRegister(uint16_t reg) {
 
 void SoundChipAY::updateType(uint8_t isYM) {
   ayumi_set_chip_type(ay, isYM);
+  volumeScale = isYM ? ymVolumeScale : ayVolumeScale;
 }
 
 void SoundChipAY::updateStereoMode(StereoModeAY stereoMode, uint8_t separation) {
@@ -107,8 +110,8 @@ void SoundChipAY::render(float* buffer, int samples) {
   for (int c = 0; c < samples; c++) {
     ayumi_process(ay);
     ayumi_remove_dc(ay);
-    *buffer++ = ay->left * ayVolumeScale;
-    *buffer++ = ay->right * ayVolumeScale;
+    *buffer++ = ay->left * volumeScale;
+    *buffer++ = ay->right * volumeScale;
   }
 }
 

@@ -5,6 +5,7 @@
 #include <stdint.h>
 #include "project_instruments.h"
 #include "project_constants.h"
+#include "insert_fx.h"
 
 // Song data structures
 
@@ -186,9 +187,82 @@ enum FX {
   fxSCF3, // Filter cutoff
   fxSRS3, // Filter resonance
 
+  // Global scale automation. Appended to preserve project FX IDs.
+  fxSCL,
+
+  // Per-row chord voicing. Appended to preserve project FX IDs.
+  fxCRD,
+
+  // Alias for PCM sample start. Appended to preserve project FX IDs.
+  fxSTA,
+
+  // MIDI Out: send a CC whose number is set per-instrument (see
+  // InstrumentMidi's ccNumber[]). Appended to preserve project FX IDs.
+  // Values formerly used by PD stay reserved for file compatibility.
+  fxMC1 = fxSTA + 9, fxMC2, fxMC3, fxMC4,
+
+  // aChChid tie. Appended to preserve project FX IDs.
+  fxATY,
+
+  // Track insert addresses: appended; existing and reserved IDs remain stable.
+  fxF11, fxF12, fxF13, fxF14, fxF15, fxF16, fxF17, fxF18, fxF21, fxF22, fxF23, fxF24, fxF25, fxF26, fxF27, fxF28,
+
+  // Native tone controls append IDs to preserve existing projects.
+  fxFBR, fxFFB,
+  fxCMD, fxCNR, fxCND, fxCNS, fxCSP, fxCSS, fxCSD, fxCEI, fxCEP, fxCED,
+  fxFO1, fxFO2, fxFO3, fxFO4, fxFO5, fxFO6,
+  fxSCP, fxSCT, fxSRN, fxSWV, fxSFTY, fxSMR, fxSRG, fxSSY,
+  fxFET, fxFTD, fxFDT, fxFHR, fxFLR, fxFLD,
+  fxSAT, fxSDE, fxSSU, fxSRL, fxSPR,
+  // Absolute native output levels. Earlier personal command IDs are retired.
+  fxOL1, fxOL2, fxOL3, fxOL4, fxOL5, fxOL6,
+  fxFBK,
+  // Direct FM parameter IDs are also used by fixed-operator modulation.
+  // Leave the removed selector ID unassigned; keep saved command IDs stable.
+  fxOAR = fxFBK + 2, fxODR, fxOSR, fxORR, fxOSL, fxODT, fxOMU, fxOFI, fxOFM, fxOE1, fxOE2, fxOE4,
+  fxLFR, fxLAD, fxLPD, fxLAS, fxLPS, fxLEN,
+  // Absolute panorama controls. Appended to preserve project FX IDs.
+  fxPAN, // Instrument pan
+  fxTPN, // Track pan
   // Total count - must be last
   fxTotalCount
 };
+
+static_assert(fxTotalCount < 255, "FX identifiers must not collide with FF");
+static_assert(fxF28 - fxF11 == 15, "Contiguous insert commands");
+
+struct NativeFXInfo {
+  int maximum;
+  int preset;
+  bool relative;
+  int minimum = 0;
+  const char* label = nullptr;
+};
+bool instrumentNativeFXInfo(const Instrument* instrument, int fx, NativeFXInfo* info, int op = 0);
+bool instrumentDirectFMInfo(const Instrument* instrument, int fx, NativeFXInfo* info, int op = 0);
+const char* directFMName(int fx);
+int instrumentFMOperatorCount(const Instrument* instrument);
+
+enum ScalePreset : uint8_t {
+  scaleChromatic,
+  scaleMajor,
+  scaleMinor,
+  scaleDorian,
+  scalePhrygian,
+  scaleLydian,
+  scaleMixolydian,
+  scaleLocrian,
+  scaleMajorPentatonic,
+  scaleMinorPentatonic,
+  scaleBlues,
+  scaleWholeTone,
+  scaleCustom,
+  scalePresetCount
+};
+
+const char* scalePresetName(ScalePreset preset);
+uint16_t scalePresetMask(ScalePreset preset);
+uint8_t scaleQuantizeNote(uint8_t note, uint8_t root, uint16_t mask, uint16_t pitchCount);
 
 struct FXName {
   enum FX fx;
@@ -259,7 +333,8 @@ struct Groove {
 struct PhraseRow {
   uint8_t note;
   uint8_t instrument;
-  uint8_t volume;
+  // Phrase volume is 00-7F; FFFF means an omitted/inherited volume in memory.
+  uint16_t volume;
   uint8_t fx[3][2];
 };
 
@@ -288,6 +363,14 @@ struct PitchTable {
   char noteNames[PROJECT_MAX_PITCHES][4];
 };
 
+struct MidiCCMapping {
+  uint8_t enabled;
+  uint8_t channel;
+  uint8_t cc;
+  uint8_t instrument;
+  uint8_t destination;
+};
+
 struct Project {
   char title[PROJECT_TITLE_LENGTH + 1];
   char author[PROJECT_TITLE_LENGTH + 1];
@@ -300,11 +383,20 @@ struct Project {
   uint8_t signedTrackSpeed;
   uint8_t perceptualEffects;
 
+  // Global 12-TET playback quantizer. Phrase data always stays chromatic.
+  uint8_t scaleApply;
+  uint8_t scaleTracksMask;
+  uint8_t scaleRoot;
+  ScalePreset scalePreset;
+  uint16_t scaleCustomMask;
+
   int tracksCount;
   uint8_t trackVolume[PROJECT_MAX_TRACKS];
+  uint8_t trackPan[PROJECT_MAX_TRACKS];
   uint8_t trackReverbSend[PROJECT_MAX_TRACKS];
   uint8_t trackDelaySend[PROJECT_MAX_TRACKS];
   uint8_t trackTilt[PROJECT_MAX_TRACKS];
+  InsertConfig trackInserts[PROJECT_MAX_TRACKS][2];
   uint16_t tiltPivotHz;
   uint8_t reverbReturn;
   uint8_t reverbTime;
@@ -315,6 +407,7 @@ struct Project {
   uint8_t delayTicks;
   uint8_t delayFeedback;
   uint16_t delayFilterCutoffHz;
+  MidiCCMapping midiCCMappings[PROJECT_MAX_MIDI_CC_MAPPINGS];
 
   PitchTable pitchTable;
 
@@ -348,6 +441,7 @@ int projectSave(Project* p, const char* path);
 int instrumentSave(Project* p, const char* path, int instrumentIdx);
 // Load instrument from a file
 int instrumentLoad(Project* p, const char* path, int instrumentIdx);
+int instrumentLoadMemory(Project* p, const uint8_t* bytes, size_t size, int instrumentIdx);
 
 // Is chain empty?
 int8_t chainIsEmpty(Project* p, int chain);

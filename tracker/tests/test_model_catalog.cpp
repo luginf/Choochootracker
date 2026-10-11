@@ -29,3 +29,48 @@ TEST_CASE("model names come from the catalog") {
   CHECK(strcmp(modelCatalogName(InstrumentType::Sintered, 5), "MELT") == 0);
   CHECK(strcmp(modelCatalogName(InstrumentType::Plaits, 24), "UNKNOWN") == 0);
 }
+
+TEST_CASE("model-specific modulation labels and classic modulation defaults") {
+  Instrument instrument = {};
+  getInstrumentFunctions(InstrumentType::Sintered).init(&instrument);
+  instrument.chip.sintered.model = SinteredModel::melt;
+  CHECK(strcmp(instrumentModDestinationNameForInstrument(&instrument, 5), "Ratio") == 0);
+  CHECK(strcmp(instrumentModDestinationNameForInstrument(&instrument, 6), "Chaos") == 0);
+  CHECK(strcmp(instrumentModDestinationNameForInstrument(&instrument, 8), "Drive") == 0);
+  const ModulationType defaultTypes[] = {
+    ModulationType::ADSR, ModulationType::AHD,
+    ModulationType::LFO, ModulationType::LFO
+  };
+  for (int slot = 0; slot < 4; ++slot) {
+    CHECK(instrument.modulation[slot].type == defaultTypes[slot]);
+    CHECK(instrument.modulation[slot].destination == 0);
+    CHECK(instrument.modulation[slot].amount == 0);
+  }
+
+  getInstrumentFunctions(InstrumentType::MME).init(&instrument);
+  instrument.chip.mme.model = MMEModel::sync;
+  CHECK(instrument.chip.mme.waves == 80);
+  CHECK(instrument.chip.mme.amount == 255);
+  CHECK(strcmp(instrumentModDestinationNameForInstrument(&instrument, 5), "SyncAmt") == 0);
+  instrument.chip.mme.model = MMEModel::ring;
+  CHECK(strcmp(instrumentModDestinationNameForInstrument(&instrument, 6), "RingType") == 0);
+  for (int slot = 0; slot < 4; ++slot) {
+    CHECK(instrument.modulation[slot].type == defaultTypes[slot]);
+    CHECK(instrument.modulation[slot].destination == 0);
+    CHECK(instrument.modulation[slot].amount == 0);
+  }
+
+  getInstrumentFunctions(InstrumentType::Sample).init(&instrument);
+  for (int slot = 0; slot < 4; ++slot) {
+    CHECK(instrument.modulation[slot].type == defaultTypes[slot]);
+    CHECK(instrument.modulation[slot].destination == 0);
+    CHECK(instrument.modulation[slot].amount == 0);
+  }
+
+  getInstrumentFunctions(InstrumentType::AChChid).init(&instrument);
+  for (int slot = 0; slot < 4; ++slot) {
+    CHECK(instrument.modulation[slot].type == defaultTypes[slot]);
+    CHECK(instrument.modulation[slot].destination == 0);
+    CHECK(instrument.modulation[slot].amount == 0);
+  }
+}

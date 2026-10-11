@@ -24,8 +24,8 @@ static void setup(int input) {
   poolState = POOL_NORMAL;
   if (input != -1) {
     cursorRow = input;
-    if (cursorRow >= topRow + 16) {
-      topRow = cursorRow - 15;
+    if (cursorRow >= topRow + screenVisibleRows()) {
+      topRow = cursorRow - (screenVisibleRows() - 1);
     } else if (cursorRow < topRow) {
       topRow = cursorRow;
     }
@@ -42,7 +42,7 @@ static void fullRedraw(void) {
   gfxPrint(0, 2, "    Name            Type");
 
   // Draw instruments
-  int maxRow = topRow + 16;
+  int maxRow = topRow + screenVisibleRows();
   if (maxRow > PROJECT_MAX_INSTRUMENTS) maxRow = PROJECT_MAX_INSTRUMENTS;
 
   for (int i = topRow; i < maxRow; i++) {
@@ -80,14 +80,14 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   // Clear playback markers
-  gfxClearRect(3, 3, 1, 16);
+  gfxClearRect(3, 3, 1, screenVisibleRows());
 
   // Draw playback markers for currently playing instruments
   for (int track = 0; track < chipnomadState->project.tracksCount; track++) {
     const PlaybackTrackState* trackState = &chipnomadGetPlaybackStatus(chipnomadState)->tracks[track];
     if (trackState->mode != PlaybackMode::stopped && trackState->note.instrument < PROJECT_MAX_INSTRUMENTS) {
       int instrument = trackState->note.instrument;
-      if (instrument >= topRow && instrument < topRow + 16) {
+      if (instrument >= topRow && instrument < topRow + screenVisibleRows()) {
         int y = 3 + (instrument - topRow);
         gfxSetFgColor(appSettings.colorScheme.playMarkers);
         gfxPrint(3, y, "*");
@@ -147,26 +147,26 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   } else if (keys == keyDown) {
     if (cursorRow < PROJECT_MAX_INSTRUMENTS - 1) {
       cursorRow++;
-      if (cursorRow >= topRow + 16) {
+      if (cursorRow >= topRow + screenVisibleRows()) {
         topRow++;
         fullRedraw();
         return 1;
       }
     }
   } else if (keys == keyLeft) {
-    // Page up (16 lines)
-    cursorRow -= 16;
+    // Page up by the visible list height
+    cursorRow -= screenVisibleRows();
     if (cursorRow < 0) cursorRow = 0;
-    topRow -= 16;
+    topRow -= screenVisibleRows();
     if (topRow < 0) topRow = 0;
     fullRedraw();
     return 1;
   } else if (keys == keyRight) {
-    // Page down (16 lines)
-    cursorRow += 16;
+    // Page down by the visible list height
+    cursorRow += screenVisibleRows();
     if (cursorRow >= PROJECT_MAX_INSTRUMENTS) cursorRow = PROJECT_MAX_INSTRUMENTS - 1;
-    topRow += 16;
-    if (topRow + 16 >= PROJECT_MAX_INSTRUMENTS) topRow = PROJECT_MAX_INSTRUMENTS - 16;
+    topRow += screenVisibleRows();
+    if (topRow + screenVisibleRows() >= PROJECT_MAX_INSTRUMENTS) topRow = PROJECT_MAX_INSTRUMENTS - screenVisibleRows();
     if (topRow < 0) topRow = 0;
     fullRedraw();
     return 1;
@@ -192,7 +192,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
       instrumentSwap(&chipnomadState->project, cursorRow, cursorRow + 1);
       projectModified = 1;
       cursorRow++;
-      if (cursorRow >= topRow + 16) {
+      if (cursorRow >= topRow + screenVisibleRows()) {
         topRow++;
       }
       fullRedraw();
@@ -228,7 +228,7 @@ static int onInput(int isKeyDown, int keys, int tapCount) {
   if (oldCursorRow != cursorRow) {
     // Clear old cursor line
     int oldY = 3 + (oldCursorRow - oldTopRow);
-    if (oldCursorRow >= oldTopRow && oldCursorRow < oldTopRow + 16) {
+    if (oldCursorRow >= oldTopRow && oldCursorRow < oldTopRow + screenVisibleRows()) {
       if (instrumentIsEmpty(&chipnomadState->project, oldCursorRow)) {
         gfxSetFgColor(appSettings.colorScheme.textEmpty);
       } else {

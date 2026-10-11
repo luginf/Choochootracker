@@ -1,7 +1,9 @@
+#include "selection_popup.h"
 #include <stdarg.h>
 #include <string.h>
 #include "screens.h"
 #include "screen_settings.h"
+#include "screen_export.h"
 #include "chipnomad_lib.h"
 #include "corelib_gfx.h"
 #include "corelib_file.h"
@@ -19,12 +21,15 @@ static AppScreen const* pendingScreen;
 static int pendingScreenInput;
 
 void drawScreenMap() {
+  ScreenOverlayCoordinates overlay;
+  // Native preset lists use the popup area through the footer.
+  if (currentScreen == &screenSelectionPopup) return;
   const static int smY = 15;
 
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetBgColor(cs.background);
   gfxSetFgColor(cs.textInfo);
-  gfxClearRect(34, smY, 6, 5);
+  gfxClearRect(34, smY - 1, 6, 6);
 
   // Core screens
   gfxPrint(34, smY + 1, "MSCPIT");
@@ -37,10 +42,11 @@ void drawScreenMap() {
     gfxPrint(35, smY, "P");
   } else if (currentScreen == &screenPhrase || currentScreen == &screenGroove) {
     gfxPrint(37, smY, "G");
-  } else if (currentScreen == &screenInstrument || currentScreen == &screenInstrumentPool) {
-    gfxPrint(38, smY + 2, "P");
+  } else if (currentScreen == &screenInstrument || currentScreen == &screenSampleSettings ||
+             currentScreen == &screenInstrumentPool || currentScreen == &screenModulation ||
+             currentScreen == &screenInsertFX) {
+    gfxPrint(38, smY - 1, "F");
     gfxPrint(38, smY, "M");
-  } else if (currentScreen == &screenModulation) {
     gfxPrint(38, smY + 2, "P");
   } else if (currentScreen == &screenTable || currentScreen == &screenAYWavetable) {
     gfxPrint(39, smY + 2, "W");
@@ -68,6 +74,8 @@ void drawScreenMap() {
     gfxPrint(38, smY + 2, "P");
   } else if (currentScreen == &screenModulation) {
     gfxPrint(38, smY, "M");
+  } else if (currentScreen == &screenInsertFX) {
+    gfxPrint(38, smY - 1, "F");
   } else if (currentScreen == &screenTable) {
     gfxPrint(39, smY + 1, "T");
   } else if (currentScreen == &screenAYWavetable) {
@@ -90,6 +98,7 @@ void screenSetup(const AppScreen* screen, int input) {
 void screenDraw() {
   if (pendingScreen != NULL) {
     currentScreen = pendingScreen;
+    gfxSetContentRowOffset(screenScopeRows(currentScreen));
     currentScreen->setup(pendingScreenInput);
     gfxSetBgColor(appSettings.colorScheme.background);
     gfxSetCursorColor(appSettings.colorScheme.cursor);
@@ -105,6 +114,7 @@ void screenDraw() {
   if (currentScreen != &screenTitle)
     drawScreenMap();
 
+  ScreenOverlayCoordinates overlay;
   // Draw cached message
   if (strlen(messageBuffer) > 0
       && currentScreen != &screenTitle
@@ -125,6 +135,7 @@ void screenDraw() {
 
 
 void screenMessage(int time, const char* format, ...) {
+  ScreenOverlayCoordinates overlay;
   // Don't clear timed messages
   if (messageTimer > 0 && strlen(format) == 0) {
     return;
@@ -141,6 +152,10 @@ void screenMessage(int time, const char* format, ...) {
   if (strlen(messageBuffer) == 0) {
     gfxClearRect(0, 19, 40, 1);
   }
+}
+
+const char* screenGetActiveMessage(void) {
+  return messageBuffer;
 }
 
 void screensInitAll(void) {
@@ -162,6 +177,9 @@ void screensInitAll(void) {
 //
 
 static void screenDrawSelection(ScreenData* screen, int drawOrErase, int col1, int row1, int col2, int row2) {
+  if (row1 < screen->topRow) row1 = screen->topRow;
+  if (row2 >= screen->topRow + screenVisibleRows()) row2 = screen->topRow + screenVisibleRows() - 1;
+  if (row1 > row2) return;
   if (drawOrErase) {
     gfxSetFgColor(appSettings.colorScheme.selection);
   } else {
@@ -196,8 +214,8 @@ void screenFullRedraw(ScreenData* screen) {
 
   if (screen->cursorRow < screen->topRow) {
     screen->topRow = screen->cursorRow;
-  } else if (screen->cursorRow >= screen->topRow + 16) {
-    screen->topRow = screen->cursorRow - 15;
+  } else if (screen->cursorRow >= screen->topRow + screenVisibleRows()) {
+    screen->topRow = screen->cursorRow - (screenVisibleRows() - 1);
   }
 
   gfxSetBgColor(appSettings.colorScheme.background);
@@ -213,7 +231,7 @@ void screenFullRedraw(ScreenData* screen) {
     getSelectionBounds(screen, &selCol1, &selRow1, &selCol2, &selRow2);
   }
 
-  int maxRow = screen->topRow + 16;
+  int maxRow = screen->topRow + screenVisibleRows();
   if (maxRow > screen->rows) maxRow = screen->rows;
 
   for (int row = screen->topRow; row < maxRow; row++) {
@@ -235,7 +253,7 @@ void screenFullRedraw(ScreenData* screen) {
   }
 
   // Column headers make sense only for spreadsheet-like screens, so we get the number of columns of the first row
-  for (int col = 0; col < screen->getColumnCount(0); col++) {
+  for (int col = 0; col < screen->getColumnCount(currentScreen == &screenTable ? 1 : 0); col++) {
     screen->drawColHeader(col, (screen->cursorCol == col) ? CellState::focus : CellState::normal);
   }
 
@@ -255,7 +273,7 @@ static int screenTouchEnvelopeAt(int col, int row, int* targetCol) {
 
   // These bounds come directly from instrumentCommonDrawVoicePostStatic():
   // A/D/S/R begin at 6/11/16/21, their values at 7/12/17/22, and Shape
-  // begins at 27 with its value at 35.  Each gets a full finger-sized span.
+  // begins at 25 with its value at 31.  Each gets a full finger-sized span.
   if ((instrument->type == InstrumentType::Plaits || instrument->type == InstrumentType::PlaitsAlt) &&
       instrument->chip.plaits.envelopeMode == 0) {
     if (targetCol) *targetCol = col <= 10 ? 0 : 1; // LPG D and C
@@ -269,6 +287,82 @@ static int screenTouchEnvelopeAt(int col, int row, int* targetCol) {
 
 static int screenTouchCellAt(int col, int row, int* targetCol, int* targetRow) {
   if (!touchScreenData || touchScreenData->selectMode == 1) return 0;
+  if (currentScreen == &screenTrackVisuals) {
+    int field = row >= 3 && row < 3 + PROJECT_MAX_TRACKS ? row - 3 : row == 12 ? PROJECT_MAX_TRACKS : row == 14 ? PROJECT_MAX_TRACKS + 1 : -1;
+    int column = -1;
+    if (field < 0) return 0;
+    if (field < PROJECT_MAX_TRACKS) {
+      if (col >= 4 && col < 18) column = 0;
+    } else if (field == PROJECT_MAX_TRACKS) {
+      if (col >= 0 && col < 12) column = 0;
+      else if (col >= 15 && col < 24) column = 1;
+    } else if (col >= 0 && col < 4) column = 0;
+    if (column < 0) return 0;
+    if (targetCol) *targetCol = column;
+    if (targetRow) *targetRow = field;
+    return 1;
+  }
+  if (currentScreen == &screenGraphicsSettings) {
+    const int fieldY[] = {2, 3, 4, 5};
+    const int widths[] = {16, 9, 26, 13};
+    int field = -1;
+    for (int i = 0; i < 4; ++i) if (row == fieldY[i]) field = i;
+    if (field < 0 || col < 0 || col >= widths[field]) return 0;
+    if (targetCol) *targetCol = 0;
+    if (targetRow) *targetRow = field;
+    return 1;
+  }
+  if (currentScreen == &screenProject) {
+    const int fieldY[] = {3, 5, 6, 7, 9, 10, 11, 12, 13, 14, 16};
+    int field = -1, column = 0;
+    for (int i = 0; i < touchScreenData->rows && i < 11; ++i)
+      if (row == fieldY[i]) field = i;
+    if (field < 0) return 0;
+    if (field == 0) {
+      const int x[] = {7, 12, 17, 21, 28}, width[] = {4, 4, 3, 6, 6};
+      column = -1;
+      for (int i = 0; i < 5; ++i) if (col >= x[i] && col < x[i] + width[i]) column = i;
+      if (column < 0) return 0;
+    } else if (field <= 3) {
+      column = col - 7;
+      if (column < 0 || column >= touchScreenData->getColumnCount(field)) return 0;
+    } else if (field == 10) {
+      if (col < 0 || col >= 5) return 0;
+    } else {
+      if (col < 13 || col >= 34) return 0;
+      if (field == 5) column = col >= 17 ? 1 : 0;
+    }
+    if (targetCol) *targetCol = column;
+    if (targetRow) *targetRow = field;
+    return 1;
+  }
+  if (currentScreen == &screenModulation) {
+    int field = screenModulationRowAt(row);
+    if (field < 0 || col < 0 || col >= 33) return 0;
+    int column = col < 17 ? 0 : 1;
+    if (touchScreenData->isCellValid && !touchScreenData->isCellValid(column, field)) return 0;
+    if (targetCol) *targetCol = column;
+    if (targetRow) *targetRow = field;
+    return 1;
+  }
+  if (currentScreen == &screenSettings) {
+    int field = row >= 2 && row <= 15 ? row - 2 : row == 18 ? 14 : -1;
+    if (field < 0) return 0;
+    const int widths[] = {11, 9, 16};
+    if (field < 10 || field == 13) { if (col < 23 || col >= 33) return 0; }
+    else if (col < 0 || col >= (field == 14 ? 19 : widths[field - 10])) return 0;
+    if (targetCol) *targetCol = 0;
+    if (targetRow) *targetRow = field;
+    return 1;
+  }
+  if (currentScreen == &screenTable) {
+    if (row == 1 && col >= 8 && col < 14) {
+      if (targetCol) *targetCol = 0;
+      if (targetRow) *targetRow = 0;
+      return 1;
+    }
+    if (row < 3) return 0;
+  }
   int envelopeCol;
   if (screenTouchEnvelopeAt(col, row, &envelopeCol)) {
     if (targetCol) *targetCol = envelopeCol;
@@ -290,6 +384,8 @@ static int screenTouchCellAt(int col, int row, int* targetCol, int* targetRow) {
     } else {
       row = touchScreenData->topRow + row - 3;
     }
+  } else if (currentScreen == &screenTable) {
+    row = (touchScreenData->topRow > 0 ? touchScreenData->topRow - 1 : 0) + row - 2;
   } else {
     row = touchScreenData->topRow + row - 3;
   }
@@ -319,6 +415,7 @@ static int screenTouchCellAt(int col, int row, int* targetCol, int* targetRow) {
 }
 
 int screenTouchTap(int col, int row) {
+  row -= screenScopeRows(currentScreen);
   int targetCol, targetRow;
   if (!screenTouchCellAt(col, row, &targetCol, &targetRow)) return 0;
   touchScreenData->cursorCol = targetCol;
@@ -328,6 +425,7 @@ int screenTouchTap(int col, int row) {
 }
 
 TouchAdjustResult screenTouchAdjust(int col, int row) {
+  row -= screenScopeRows(currentScreen);
   int envelopeCol;
   if (screenTouchEnvelopeAt(col, row, &envelopeCol))
     return touchScreenData->cursorRow == 9 && touchScreenData->cursorCol == envelopeCol ? touchAdjustCoarse : touchAdjustNone;
@@ -409,8 +507,8 @@ static void inputCursorCommon(ScreenData* screen, int keys, int* handled, int* r
     if (!isCellValid(screen, screen->cursorCol, screen->cursorRow)) {
       screen->cursorRow = origRow; // Can't move, stay put
     }
-    if (screen->cursorRow >= screen->topRow + 16) {
-      screen->topRow = screen->cursorRow - 15;
+    if (screen->cursorRow >= screen->topRow + screenVisibleRows()) {
+      screen->topRow = screen->cursorRow - (screenVisibleRows() - 1);
       screenFullRedraw(screen);
       *redrawn = 1;
     }
@@ -439,10 +537,10 @@ static int inputNormalMode(ScreenData* screen, int keys, int tapCount) {
       redrawn = 1;
     } else if (keys == (keyDown | keyOpt)) {
       // Page down
-      if (screen->cursorRow + 16 < screen->rows) {
-        screen->cursorRow += 16;
-        screen->topRow += 16;
-        if (screen->topRow + 16 >= screen->rows) screen->topRow = screen->rows - 16;
+      if (screen->cursorRow + screenVisibleRows() < screen->rows) {
+        screen->cursorRow += screenVisibleRows();
+        screen->topRow += screenVisibleRows();
+        if (screen->topRow + screenVisibleRows() >= screen->rows) screen->topRow = screen->rows - screenVisibleRows();
         screenFullRedraw(screen);
         int columns = screen->getColumnCount(screen->cursorRow);
         if (screen->cursorCol >= columns) screen->cursorCol = columns - 1;
@@ -451,9 +549,9 @@ static int inputNormalMode(ScreenData* screen, int keys, int tapCount) {
       }
     } else if (keys == (keyUp | keyOpt)) {
       // Page up
-      if (screen->cursorRow - 16 >= 0) {
-        screen->cursorRow -= 16;
-        screen->topRow -= 16;
+      if (screen->cursorRow - screenVisibleRows() >= 0) {
+        screen->cursorRow -= screenVisibleRows();
+        screen->topRow -= screenVisibleRows();
         if (screen->topRow < 0) screen->topRow = 0;
         screenFullRedraw(screen);
         int columns = screen->getColumnCount(screen->cursorRow);
@@ -533,7 +631,7 @@ static void moveCursorBelowSelection(ScreenData* screen) {
 static void redrawSelection(ScreenData* screen) {
   int startCol, startRow, endCol, endRow;
   getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
-  for (int r = startRow; r <= endRow; r++) {
+  for (int r = max(startRow, screen->topRow); r <= min(endRow, screen->topRow + screenVisibleRows() - 1); r++) {
     for (int c = startCol; c <= endCol; c++) {
       screen->drawField(c, r, CellState::selected);
     }
@@ -612,6 +710,36 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       shallowClonePressed = 0;
       screenFullRedraw(screen);
       redrawn = 1;
+    } else if (keys == keyEdit && tapCount == 2 && screen->getLoopRange != NULL) {
+      // Double-tap A: bounce the selection to audio
+      LoopRange range = screen->getLoopRange();
+      if (range.enabled) {
+        ExportSelection selection = {};
+        selection.level = range.level;
+        selection.startSongRow = range.startSongRow;
+        selection.endSongRow = range.endSongRow;
+        selection.startChainRow = range.startChainRow;
+        selection.endChainRow = range.endChainRow;
+        selection.startPhraseRow = range.startPhraseRow;
+        selection.endPhraseRow = range.endPhraseRow;
+
+        if (range.level == 0) {
+          // Song selection columns are tracks
+          int startCol, startRow, endCol, endRow;
+          getSelectionBounds(screen, &startCol, &startRow, &endCol, &endRow);
+          selection.trackMask = 0;
+          for (int t = startCol; t <= endCol; t++) {
+            selection.trackMask |= (uint8_t)(1u << t);
+          }
+        } else {
+          // Chain/phrase bounce the currently viewed track
+          selection.trackMask = (uint8_t)(1u << *pSongTrack);
+        }
+
+        exportBounceBegin(selection);
+        return 1;
+      }
+      handled = 1;
     } else if (keys & keyOpt) {
       optPressed = 1;
     }
@@ -633,7 +761,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       screenDrawSelection(screen, 0, oldSelCol1, oldSelRow1, oldSelCol2, oldSelRow2);
 
       // Re-render cells that are no longer selected
-      for (int row = oldSelRow1; row <= oldSelRow2; row++) {
+      for (int row = max(oldSelRow1, screen->topRow); row <= min(oldSelRow2, screen->topRow + screenVisibleRows() - 1); row++) {
         for (int col = oldSelCol1; col <= oldSelCol2; col++) {
           if (!(col >= newSelCol1 && col <= newSelCol2 && row >= newSelRow1 && row <= newSelRow2)) {
             CellState state = (col == screen->cursorCol && row == screen->cursorRow) ? CellState::focus : CellState::normal;
@@ -643,7 +771,7 @@ static int inputSelectMode(ScreenData* screen, int keys, int tapCount) {
       }
 
       // Render cells that are now selected
-      for (int row = newSelRow1; row <= newSelRow2; row++) {
+      for (int row = max(newSelRow1, screen->topRow); row <= min(newSelRow2, screen->topRow + screenVisibleRows() - 1); row++) {
         for (int col = newSelCol1; col <= newSelCol2; col++) {
           if (!(col >= oldSelCol1 && col <= oldSelCol2 && row >= oldSelRow1 && row <= oldSelRow2)) {
             screen->drawField(col, row, CellState::selected);

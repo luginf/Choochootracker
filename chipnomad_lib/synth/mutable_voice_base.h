@@ -39,7 +39,8 @@ class MutableVoiceBase {
 
   void configure(uint8_t engine, uint16_t harmonics, uint16_t timbre,
                  uint16_t morph, uint8_t auxMix, uint8_t envelopeMode,
-                 uint8_t decay, uint8_t sustain, float note, float gain) {
+                 uint8_t decay, uint8_t sustain, float note, float gain,
+                 float calibration = 1.0f) {
     patch_.engine = engine > 23 ? 23 : engine;
     patch_.harmonics = harmonics / 32767.0f;
     patch_.timbre = timbre / 32767.0f;
@@ -51,6 +52,7 @@ class MutableVoiceBase {
     patch_.note = note;
     auxMix_ = auxMix;
     post_.setGain(gain);
+    calibration_ = calibration;
   }
   void setFilter(bool enabled, uint8_t character, uint8_t mode, bool slope24dB,
                  float cutoffHz, float resonance) {
@@ -90,7 +92,7 @@ class MutableVoiceBase {
         currentSource_ = nextSourceSample();
       }
       float sample = previousSource_ + (currentSource_ - previousSource_) * sourcePhase_;
-      output[i] = post_.process(sample);
+      output[i] = post_.process(sample * calibration_);
       if (envelopeMode_ == 2 && !post_.envelopeActive()) {
         active_ = false;
         memset(output + i + 1, 0, (samples - i - 1) * sizeof(float));
@@ -145,6 +147,7 @@ class MutableVoiceBase {
   size_t blockPosition_;
   float outputSampleRate_;
   float sourcePhase_, previousSource_, currentSource_;
+  float calibration_ = 1.0f;
   uint8_t auxMix_;
   bool active_, gate_, triggerPending_, retriggerPending_;
   uint8_t envelopeMode_;

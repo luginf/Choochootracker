@@ -10,10 +10,10 @@
 #include <string.h>
 
 // Preview configuration
-#define PREVIEW_ROW 16
+#define PREVIEW_ROW (appSettings.persistentWaveform ? 15 : 16)
 #define PREVIEW_COL 0
 #define PREVIEW_WIDTH_CHARS 32
-#define PREVIEW_HEIGHT_CHARS 3
+#define PREVIEW_HEIGHT_CHARS (appSettings.persistentWaveform ? 2 : 3)
 
 // Screen layout:
 // y 0: INSTRUMENT 00
@@ -69,6 +69,10 @@ static int rowToY(int row) {
 void updateSamplePreview(void) {
   InstrumentAYSample* smp = &chipnomadState->project.instruments[cInstrument].chip.aySample;
 
+  if (samplePreviewBitmap && (samplePreviewBitmap->widthPixels != PREVIEW_WIDTH_CHARS * gfxGetCharWidth() ||
+      samplePreviewBitmap->heightPixels != PREVIEW_HEIGHT_CHARS * gfxGetCharHeight())) {
+    gfxBitmapFree(samplePreviewBitmap); samplePreviewBitmap = nullptr;
+  }
   if (!samplePreviewBitmap) {
     samplePreviewBitmap = gfxBitmapCreate(PREVIEW_WIDTH_CHARS, PREVIEW_HEIGHT_CHARS);
   }

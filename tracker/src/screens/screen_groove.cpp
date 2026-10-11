@@ -70,15 +70,17 @@ static void drawStatic(void) {
 }
 
 static void drawField(int col, int row, CellState state) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   uint8_t value = chipnomadState->project.grooves[groove].speed[row];
   setCellColor(state, value == EMPTY_VALUE_8, value != 0);
-  gfxPrint(3, 3 + row, byteToHexOrEmpty(value));
+  gfxPrint(3, 3 + row - screen.topRow, byteToHexOrEmpty(value));
 }
 
 static void drawRowHeader(int row, CellState state) {
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
   const ColorScheme cs = appSettings.colorScheme;
   gfxSetFgColor((state == CellState::focus) ? cs.textDefault : cs.textInfo);
-  gfxPrintf(1, 3 + row, "%X", row);
+  gfxPrintf(1, 3 + row - screen.topRow, "%X", row);
 }
 
 static void drawColHeader(int col, CellState state) {
@@ -88,11 +90,12 @@ static void drawColHeader(int col, CellState state) {
 }
 
 static void drawCursor(int col, int row) {
-  gfxCursor(3, 3 + row, 2);
+  if (row < screen.topRow || row >= screen.topRow + screenVisibleRows()) return;
+  gfxCursor(3, 3 + row - screen.topRow, 2);
 }
 
 static void drawSelection(int col1, int row1, int col2, int row2) {
-  gfxRect(3, 3 + row1, 2, row2 - row1 + 1);
+  gfxRect(3, 3 + row1 - screen.topRow, 2, row2 - row1 + 1);
 }
 
 static void fullRedraw(void) {
@@ -101,14 +104,14 @@ static void fullRedraw(void) {
 
 static void draw(void) {
   // Clear the marker column
-  gfxClearRect(2, 3, 1, 16);
+  gfxClearRect(2, 3, 1, screenVisibleRows());
 
   // Show play position if this groove is currently playing
   if (chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].grooveIdx == groove) {
     int row = chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].grooveRow;
-    if (row >= 0 && row < 16) {
+    if (row >= screen.topRow && row < screen.topRow + screenVisibleRows()) {
       gfxSetFgColor(appSettings.colorScheme.playMarkers);
-      gfxPrint(2, 3 + row, ">");
+      gfxPrint(2, 3 + row - screen.topRow, ">");
     }
   }
 }

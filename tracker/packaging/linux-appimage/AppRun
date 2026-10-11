@@ -1,0 +1,33 @@
+#!/bin/bash
+# Bundled SDL2/libsamplerate live in usr/lib since they aren't guaranteed
+# present on the host (see Makefile.linux's `appimage` target) - everything
+# else (X11, ALSA, glibc...) resolves from the host system, same assumption
+# the plain tar.gz release already makes.
+HERE="$(dirname "$(readlink -f "${0}")")"
+export LD_LIBRARY_PATH="${HERE}/usr/lib:${LD_LIBRARY_PATH}"
+
+# The AppImage itself mounts read-only, so the bonus content (themes,
+# instruments, sample projects...) bundled under usr/share/choochootracker
+# can be read from there but never saved into. Seed a writable copy into
+# the same per-user directory corelib_file.cpp's APPIMAGE handling already
+# uses for settings/autosave. Each top-level bonus directory is seeded
+# independently and only if missing, rather than gating the whole copy on
+# one directory's presence: that way an interrupted first run, or a user
+# who already created e.g. their own "projects" folder before the rest was
+# seeded, still gets the remaining bonus content on the next launch instead
+# of never seeing it.
+DATA_DIR="${XDG_DATA_HOME:-${HOME}/.local/share}/ChooChooTracker"
+SOURCE_DIR="${HERE}/usr/share/choochootracker/common"
+mkdir -p "${DATA_DIR}"
+for item in "${SOURCE_DIR}"/*; do
+  name="$(basename "${item}")"
+  if [ ! -e "${DATA_DIR}/${name}" ]; then
+    cp -r "${item}" "${DATA_DIR}/" 2>/dev/null || true
+  fi
+done
+
+# The desktop title screen loads its artwork from relative `title/` paths.
+# Launch from the seeded workspace so those assets (and all other bundled
+# relative-path content) resolve outside the read-only AppImage mount.
+cd "${DATA_DIR}"
+exec "${HERE}/usr/bin/choochootracker" "$@"

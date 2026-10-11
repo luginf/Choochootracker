@@ -7,7 +7,7 @@ include Makefile.common
 
 # Android-specific settings - use common libs + sdl2 platform with mobile features
 LIBS = $(COMMON_LIBS) platforms/sdl2
-ANDROID_SOURCES = platforms/android/corelib_assets.cpp
+ANDROID_SOURCES = platforms/android/corelib_assets.cpp platforms/android/midi_backend_android.cpp
 OUTPUT_EXT =
 
 # NDK settings

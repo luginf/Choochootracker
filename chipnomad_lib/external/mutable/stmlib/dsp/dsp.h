@@ -112,7 +112,11 @@ inline float SoftClip(float x) {
   }
 }
 
-#ifdef TEST
+// ChipNomad patch (was plain `#ifdef TEST` upstream): the #else branch
+// contains ARM-only ssat/usat inline asm. Gate it on the target
+// architecture as well, so x86/other builds always get the C fallbacks
+// even when TEST is not defined. See docs/fork-maintenance.md.
+#if defined(TEST) || !(defined(__arm__) || defined(__aarch64__))
   inline int32_t Clip16(int32_t x) {
     if (x < -32768) {
       return -32768;
@@ -144,7 +148,12 @@ inline float SoftClip(float x) {
   }
 #endif
   
-#ifdef TEST
+// ChipNomad patch (was plain `#ifdef TEST` upstream): the #else branch
+// contains the ARM-only VSQRT instruction as inline asm, which is a hard
+// error ("impossible constraint in 'asm'") on any non-ARM target. Gate it
+// on the target architecture as well, so x86/other builds always get
+// sqrtf() even when TEST is not defined. See docs/fork-maintenance.md.
+#if defined(TEST) || !(defined(__arm__) || defined(__aarch64__))
   inline float Sqrt(float x) {
     return sqrtf(x);
   }

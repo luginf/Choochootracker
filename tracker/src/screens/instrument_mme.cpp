@@ -3,11 +3,13 @@
 #include "utils.h"
 #include "model_catalog.h"
 #include "waveform_display.h"
+#include <string.h>
 
 static int modelButtonDown;
 static Bitmap* previewBitmap;
 
 static void drawPreview(const InstrumentMME* mme) {
+  if (appSettings.persistentWaveform) return;
   if (!previewBitmap) previewBitmap = gfxBitmapCreate(32, 3);
   renderMMEPreview(previewBitmap, mme);
   gfxSetFgColor(appSettings.colorScheme.textInfo);
@@ -53,10 +55,11 @@ static void drawStatic(void) {
   drawPreview(m);
 }
 static void drawCursor(int col, int row) {
+  InstrumentMME* m = &chipnomadState->project.instruments[cInstrument].chip.mme;
   if (row < 3) { instrumentCommonDrawCursor(col, row); return; }
   if (row == 10) { instrumentCommonDrawVoicePostCursor(col, 9); return; }
   if (col && row >= 4 && row <= 8) { instrumentCommonDrawVoicePostCursor(col, row); return; }
-  gfxCursor(11, row == 3 ? 6 : row + 4, row == 3 ? 28 : 7);
+  gfxCursor(11, row == 3 ? 6 : row + 4, row == 3 ? 3 + strlen(modelName(m->model)) : 2);
 }
 static void drawField(int col, int row, CellState state) {
   if (row < 3) { instrumentCommonDrawField(col, row, state); return; }

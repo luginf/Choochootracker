@@ -39,6 +39,8 @@ void SinteredVoice::render(float* output, size_t frames) {
   if (!active_) { memset(output, 0, frames * sizeof(float)); return; }
   const float baseMod = parameters_.mod / 255.0f, baseA = parameters_.a / 255.0f;
   const float baseB = parameters_.b / 255.0f, baseC = parameters_.c / 255.0f;
+  static constexpr float modelGain[] = {1.822647f, 1.995262f, 1.995262f, 1.995262f, 1.995262f, 1.995262f};
+  const float calibration = modelGain[(int)parameters_.model];
   const float motion = (parameters_.motion - 128) / 127.0f;
   const float motionTime = .008f + (1.0f - fabsf(motion)) * .35f;
   for (size_t i = 0; i < frames; ++i) {
@@ -104,7 +106,7 @@ void SinteredVoice::render(float* output, size_t frames) {
     float target = (raw - dc_) * (.12f + baseMod * .82f);
     feedback_ += (target - feedback_) * (.025f + .10f * (1.0f - c));
     amplitude_ = expf(-5.5f * age_ / duration_);
-    output[i] = tanhf(post_.process(tanhf(sample) * amplitude_));
+    output[i] = tanhf(post_.process(tanhf(sample) * amplitude_ * calibration));
     age_ += 1.0f / sampleRate_;
   }
 }

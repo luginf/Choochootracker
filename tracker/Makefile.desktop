@@ -6,19 +6,19 @@ PLATFORM = desktop
 include Makefile.common
 
 # Desktop-specific settings
-LIBS = $(COMMON_LIBS) platforms/sdl2
+LIBS = $(COMMON_LIBS) platforms/sdl2 ../chipnomad_lib/external/rtmidi
 OUTPUT_EXT =
 
 # Platform-specific flags
 ifeq ($(shell uname),Darwin)
 # macOS
-XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib -DDESKTOP_BUILD -DMACOS_BUILD -DGAMEPAD_SUPPORT
+XTRA_CFLAGS = -I/opt/homebrew/include -L/opt/homebrew/lib -DDESKTOP_BUILD -DMACOS_BUILD -DGAMEPAD_SUPPORT -D__MACOSX_CORE__
+XTRA_LIBS = -lSDL2 -lm -framework CoreMIDI -framework CoreAudio -framework CoreFoundation
 else
 # Linux
-XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD -DGAMEPAD_SUPPORT
+XTRA_CFLAGS = -I/usr/include -L/usr/lib -DDESKTOP_BUILD -DGAMEPAD_SUPPORT -D__LINUX_ALSA__ -D__LINUX_ALSASEQ__
+XTRA_LIBS = -lSDL2 -lm -lasound
 endif
-
-XTRA_LIBS = -lSDL2 -lm
 CFLAGS = $(COMMON_CFLAGS) $(INCLUDES) $(SOURCES) $(XTRA_CFLAGS)
 OUTPUT = -o $(BUILD)/chipnomad$(OUTPUT_EXT)
 

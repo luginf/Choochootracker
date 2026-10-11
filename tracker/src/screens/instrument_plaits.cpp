@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "model_catalog.h"
 #include "waveform_display.h"
+#include <string.h>
 
 static int engineButtonDown;
 static Bitmap* previewBitmap;
@@ -21,6 +22,7 @@ static int usesChordNames(const InstrumentPlaits* p) {
 }
 
 static void drawPreview(const InstrumentPlaits* plaits) {
+  if (appSettings.persistentWaveform) return;
   if (!previewBitmap) previewBitmap = gfxBitmapCreate(32, 3);
   renderPlaitsPreview(previewBitmap, plaits, isAlt());
   gfxSetFgColor(appSettings.colorScheme.textInfo);
@@ -45,7 +47,7 @@ static void cancelEngineSelection() { screenSetup(&screenInstrument, cInstrument
 
 static void openEngineSelection() {
   InstrumentPlaits* p = &chipnomadState->project.instruments[cInstrument].chip.plaits;
-  selectionPopupSetup(isAlt() ? "PLAITS-ALT ENGINE" : "PLAITS ENGINE",
+  selectionPopupSetup(isAlt() ? "PLAITS-ALT MODEL" : "PLAITS MODEL",
     isAlt() ? plaitsAltCategories : plaitsCategories,
     isAlt() ? plaitsAltCategoryCount : plaitsCategoryCount,
     p->engine, selectEngine, cancelEngineSelection);
@@ -65,7 +67,7 @@ static int getColumnCount(int row) {
 static void drawStatic(void) {
   instrumentCommonDrawStatic();
   gfxSetFgColor(appSettings.colorScheme.textTitles);
-  gfxPrint(0, 6, "Engine");
+  gfxPrint(0, 6, "Model");
   gfxPrint(0, 7, "SOURCE");
   gfxSetFgColor(appSettings.colorScheme.textDefault);
   gfxPrint(0, 8, "Harmonic");
@@ -94,8 +96,8 @@ static void drawCursor(int col, int row) {
     gfxCursor(7 + col * 5, 14, 2);
     return;
   }
-  else if (row == 3) gfxCursor(11, 6, 28);
-  else gfxCursor(col ? 26 : 11, row + 4, col ? 8 : 7);
+  else if (row == 3) gfxCursor(12, 6, 3 + strlen(modelCatalogName(isAlt() ? InstrumentType::PlaitsAlt : InstrumentType::Plaits, p->engine)));
+  else if (!col) gfxCursor(11, row + 4, row == 4 && usesChordNames(p) ? strlen(plaitsChordName(p->harmonics)) : row == 8 ? (p->envelopeMode == 0 ? 4 : 3) : 2);
 }
 
 static void drawField(int col, int row, CellState state) {

@@ -4,8 +4,8 @@
 #include <math.h>
 #include <string.h>
 
-static const float kMinCutoff = 20.0f;
-static const float kMaxCutoff = 20000.0f;
+static const float kMinCutoff = FILTER_CUTOFF_MIN_HZ;
+static const float kMaxCutoff = FILTER_CUTOFF_MAX_HZ;
 
 void MultimodeFilter::init(float sampleRate) {
   sampleRate_ = sampleRate > 0.0f ? sampleRate : 96000.0f;

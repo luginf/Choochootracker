@@ -3,6 +3,9 @@
 
 #include <stdint.h>
 
+constexpr int FILTER_CUTOFF_MIN_HZ = 20;
+constexpr int FILTER_CUTOFF_MAX_HZ = 20000;
+
 class MultimodeFilter {
  public:
   void init(float sampleRate);
