@@ -20,6 +20,7 @@ const AppScreen screenTitle = {nullptr, nullptr, noOp, noOp, ignoreInput};
 const AppScreen screenPhrase = {nullptr, nullptr, noOp, noOp, ignoreInput};
 const AppScreen screenInstrument = {nullptr, nullptr, noOp, noOp, ignoreInput};
 int cInstrument = 0;
+int phraseEnterPlayedNote(uint8_t, int*) { return 0; }
 // Instrument screen boundaries for exercising the real native preview helper.
 int mockEnvelopePreviewCount;
 void instrumentCommonDrawEnvelopePreview(uint8_t, uint8_t, uint8_t, uint8_t, uint8_t) {

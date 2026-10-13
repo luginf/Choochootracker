@@ -202,6 +202,8 @@ class AudioCommandQueue {
           break;
         case kStopPreview: playbackStopPreview(playback, command.a); break;
         case kReleasePreview: playbackReleasePreview(playback, command.a); break;
+        case kPreviewVoice: playbackPreviewVoice(playback, command.a, command.b, (uint8_t)command.c, (uint8_t)command.d); break;
+        case kReleaseVoice: playbackReleaseVoice(playback, command.a, command.b); break;
         case kClearTrackFX: memset(playback->tracks[command.a].note.fx, 0, sizeof(playback->tracks[command.a].note.fx)); break;
         case kSetScale:
           if (command.a >= 0 && command.a < 12 && command.b >= 0 && command.b < scalePresetCount) {
@@ -247,7 +249,7 @@ class AudioCommandQueue {
   struct AudioCommand { uint8_t type; int a, b, c, d; PhraseRow row; InstrumentOPLL patch; InstrumentOPL opl; InstrumentSimpleChip simple; InstrumentDX7 dx7; InstrumentFourOp fourOp; InstrumentSID sid; };
   // kStartPhraseRowFull is appended after upstream's preview commands so the
   // raw command IDs 14/15/16 used by applyCommands keep their meaning.
-  enum CommandType { kStartSong, kStartChain, kStartPhrase, kStartPhraseRow, kQueuePhrase, kPreviewNote, kStopPreview, kClearTrackFX, kStartLiveChain, kQueueLiveChain, kSetScale, kChipPreview, kOPLPreview, kSimplePreview, kStartPhraseRowFull = 17, kReleasePreview = 18 };
+  enum CommandType { kStartSong, kStartChain, kStartPhrase, kStartPhraseRow, kQueuePhrase, kPreviewNote, kStopPreview, kClearTrackFX, kStartLiveChain, kQueueLiveChain, kSetScale, kChipPreview, kOPLPreview, kSimplePreview, kStartPhraseRowFull = 17, kReleasePreview = 18, kPreviewVoice = 19, kReleaseVoice = 20 };
   static constexpr unsigned int kSlotCount = 3;
   static constexpr unsigned int kCommandCapacity = 64;
 
@@ -960,6 +962,25 @@ int chipnomadQueuePlaybackStopPreview(ChipNomadState* state, int trackIdx) {
 int chipnomadQueuePlaybackReleasePreview(ChipNomadState* state, int trackIdx) {
   return state && state->audioCommands ? state->audioCommands->pushCommand(18, trackIdx) : 0;
 }
+int chipnomadQueuePlaybackPreviewVoice(ChipNomadState* state, int trackIdx, int slot, uint8_t note, uint8_t instrument) {
+  return state && state->audioCommands ? state->audioCommands->pushCommand(19, trackIdx, slot, note, instrument) : 0;
+}
+int chipnomadQueuePlaybackReleaseVoice(ChipNomadState* state, int trackIdx, int slot) {
+  return state && state->audioCommands ? state->audioCommands->pushCommand(20, trackIdx, slot) : 0;
+}
+int chipnomadInstrumentHasIndependentVoices(const Project* project, int instrument) {
+  if (!project || instrument < 0 || instrument >= PROJECT_MAX_INSTRUMENTS) return 0;
+  switch (project->instruments[instrument].type) {
+    case InstrumentType::Sample: case InstrumentType::SCWF: case InstrumentType::BYOWTBL:
+    case InstrumentType::Braids: case InstrumentType::Plaits: case InstrumentType::PlaitsAlt:
+    case InstrumentType::SID: case InstrumentType::SegaPSG: case InstrumentType::GBPulse:
+    case InstrumentType::GBNoise: case InstrumentType::GenesisFM: case InstrumentType::ArcadeFM:
+    case InstrumentType::OPL2: case InstrumentType::OPL3: case InstrumentType::DX7:
+    case InstrumentType::OPLL: case InstrumentType::VRC7: case InstrumentType::MME:
+      return 1;
+    default: return 0;
+  }
+}
 int chipnomadQueuePlaybackClearTrackFX(ChipNomadState* state, int trackIdx) {
   return state && state->audioCommands ? state->audioCommands->pushCommand(7, trackIdx) : 0;
 }
@@ -999,6 +1020,10 @@ static void applyVoicePostModulations(const PlaybackTrackState* track, Instrumen
     *values[index] = modulationIsAdditive(mod->modulation->type) ? *values[index] + value : value;
   }
   for (int i = 0; i < 7; ++i) *values[i] = clampInt(*values[i], 0, 255);
+  // A previewed note (keyboard, MIDI in, instrument audition) that is let go with
+  // a release of 0 would drop to silence in one sample: an audible click. Fade
+  // over ~10 ms at least (envelopeTime(12) is 11 ms). Song playback is untouched.
+  if (track->mode == PlaybackMode::phraseRow && *release < 12) *release = 12;
 }
 
 static void updateAudioRateModulations(ChipNomadState* state) {
@@ -1339,12 +1364,16 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
 
     if (!track->note.noteTriggered && !track->note.noteReleased && !track->note.noteKilled) continue;
     if (track->note.instrument == EMPTY_VALUE_8) continue;
+    // slotTriggerMask / slotReleaseMask narrow a note on / off to some chord slots
+    // (independent preview voices); 0 is the normal "every slot".
     auto applyEvent = [&](auto* voices) {
       for (int slot = 0; slot < CHORD_MAX_VOICES; ++slot) {
+        bool triggerHere = !track->slotTriggerMask || (track->slotTriggerMask >> slot & 1);
+        bool releaseHere = !track->slotReleaseMask || (track->slotReleaseMask >> slot & 1);
         if (track->note.noteKilled || (track->note.noteTriggered && slot >= track->chordVoiceCount))
           voices[slot]->kill();
-        else if (track->note.noteTriggered) voices[slot]->noteOn();
-        else voices[slot]->noteOff();
+        else if (track->note.noteTriggered) { if (triggerHere) voices[slot]->noteOn(); }
+        else if (releaseHere) voices[slot]->noteOff();
       }
     };
     switch (project->instruments[track->note.instrument].type) {
@@ -1436,6 +1465,7 @@ static void applyVoiceEvents(ChipNomadState* state, uint64_t dueMicros) {
       default: break;
     }
     track->note.noteTriggered = track->note.noteReleased = track->note.noteKilled = 0;
+    track->slotTriggerMask = track->slotReleaseMask = 0;
   }
   limitDX7Voices(state->dx7Parts, project->tracksCount);
 }

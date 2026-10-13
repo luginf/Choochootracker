@@ -112,6 +112,7 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   track->note.volume2 = 0;
   track->note.volume3 = 0;
   track->chordVoiceCount = 1;
+  track->slotTriggerMask = track->slotReleaseMask = track->pendingVoiceMask = 0;
   memset(track->chordPitchBase, EMPTY_VALUE_8, sizeof(track->chordPitchBase));
   memset(track->chordPitchFinal, EMPTY_VALUE_8, sizeof(track->chordPitchFinal));
 
@@ -1458,10 +1459,54 @@ void playbackStopPreview(PlaybackState* state, int trackIdx) {
   }
 }
 
+// Puts a note on a chord slot of a track that is sounding a preview. The slot's
+// pitch is relative to the first note's (chordPitchFinal = pitchFinal + base
+// difference), so set it right away: waiting for the next frame would start
+// the voice at a stale pitch.
+static void addPreviewVoiceNow(PlaybackState* state, PlaybackTrackState* track, int slot, uint8_t note) {
+  track->chordPitchBase[slot] = note;
+  if (track->chordVoiceCount < slot + 1) track->chordVoiceCount = (uint8_t)(slot + 1);
+  int offset = track->note.pitchFinal != EMPTY_VALUE_8 ? (int)track->note.pitchFinal - (int)track->chordPitchBase[0] : 0;
+  int pitch = (int)note + offset;
+  int maxPitch = state->p->pitchTable.length - 1;
+  track->chordPitchFinal[slot] = (uint8_t)(pitch < 0 ? 0 : pitch > maxPitch ? maxPitch : pitch);
+}
+
+void playbackPreviewVoice(PlaybackState* state, int trackIdx, int slot, uint8_t note, uint8_t instrument) {
+  if (trackIdx < 0 || trackIdx >= state->p->tracksCount) return;
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  if (slot < 1 || slot >= CHORD_MAX_VOICES) { playbackPreviewNote(state, trackIdx, note, instrument); return; }
+  if (track->queue.mode == PlaybackMode::phraseRow && track->currentPhraseRow.instrument == instrument) {
+    // The first note's start has not been consumed yet (a chord pressed within
+    // one tick): attach this voice to it, it starts with it.
+    track->pendingVoiceMask |= (uint8_t)(1 << slot);
+    track->pendingVoiceNote[slot] = note;
+    return;
+  }
+  if (track->mode != PlaybackMode::phraseRow || track->note.instrument != instrument) {
+    playbackPreviewNote(state, trackIdx, note, instrument);
+    return;
+  }
+  addPreviewVoiceNow(state, track, slot, note);
+  if (track->note.noteTriggered && track->slotTriggerMask == 0) return; // everything triggers together anyway
+  track->note.noteTriggered = 1;
+  track->slotTriggerMask |= (uint8_t)(1 << slot);
+}
+
+void playbackReleaseVoice(PlaybackState* state, int trackIdx, int slot) {
+  if (trackIdx < 0 || trackIdx >= state->p->tracksCount || slot < 0 || slot >= CHORD_MAX_VOICES) return;
+  PlaybackTrackState* track = &state->tracks[trackIdx];
+  if (track->pendingVoiceMask & (1 << slot)) { track->pendingVoiceMask &= (uint8_t)~(1 << slot); return; }
+  if (track->mode != PlaybackMode::phraseRow || track->note.noteTriggered) return;
+  track->note.noteReleased = 1;
+  track->slotReleaseMask |= (uint8_t)(1 << slot);
+}
+
 void playbackReleasePreview(PlaybackState* state, int trackIdx) {
   if (trackIdx < 0 || trackIdx >= state->p->tracksCount) return;
   if (state->tracks[trackIdx].mode == PlaybackMode::phraseRow) {
     handleNoteOff(state, trackIdx);
+    state->tracks[trackIdx].slotReleaseMask = 0; // every slot, not just one released a moment ago
   }
 }
 
@@ -1503,6 +1548,11 @@ int playbackNextFrame(ChipNomadState* chipNomadState) {
                             track->mode == PlaybackMode::song || track->mode == PlaybackMode::chain);
       skipZeroGrooveRows(state, trackIdx);
       readPhraseRow(state, trackIdx, 0);
+      if (track->mode == PlaybackMode::phraseRow && track->pendingVoiceMask) {
+        for (int slot = 1; slot < CHORD_MAX_VOICES; ++slot)
+          if (track->pendingVoiceMask & (1 << slot)) addPreviewVoiceNow(state, track, slot, track->pendingVoiceNote[slot]);
+        track->pendingVoiceMask = 0;
+      }
     }
     // Advance further in the track
     else {

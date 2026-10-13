@@ -1,4 +1,5 @@
 #include "screens.h"
+#include "app.h"
 #include "common.h"
 #include "corelib_gfx.h"
 #include "utils.h"
@@ -1183,14 +1184,32 @@ static ScreenPlaybackLevel getPlaybackLevel(void) {
 // on this screen), so Esc again is needed to get those back.
 //
 
-// MIDI keyboard note entry (any platform): the played note is written at the
-// cursor like key jazz does, with the last used instrument and volume when the
-// row has none, previewed, and the cursor moves down a row. There is no record
-// mode: on this screen every MIDI note is entered. Returns 0 when nothing was
-// written (FX popup open), so the caller can just preview it instead.
-int phraseMidiEnterNote(uint8_t note) {
+// The row of the phrase on screen that the song is playing on this track right
+// now (the play marker), or -1 when it is not playing there.
+static int playheadRow(void) {
+  const PlaybackStatus* status = chipnomadGetPlaybackStatus(chipnomadState);
+  const PlaybackTrackState* track = &status->tracks[*pSongTrack];
+  if (!status->isPlaying || track->mode == PlaybackMode::stopped || track->mode == PlaybackMode::phraseRow ||
+      track->songRow == EMPTY_VALUE_16) return -1;
+  uint16_t chain = chipnomadState->project.song[track->songRow][*pSongTrack];
+  if (chain == EMPTY_VALUE_16) return -1;
+  if (chipnomadState->project.chains[chain].rows[track->chainRow].phrase != phraseIdx) return -1;
+  return track->phraseRow;
+}
+
+// A note played live (MIDI keyboard, or key jazz) is written into the phrase:
+// at the cursor, which then moves down a row; or, while the song plays this
+// phrase on the current track, at the play marker so that one can jam over the
+// loop (the cursor stays where it is). It takes the last used instrument and
+// volume when the row has none. When the track is busy with the song the row
+// cannot be previewed on it: *monitorInstrument is then the instrument to
+// audition on an idle track (the caller's job), else -1. Returns 0 when nothing
+// was written (FX popup open).
+int phraseEnterPlayedNote(uint8_t note, int* monitorInstrument) {
+  if (monitorInstrument) *monitorInstrument = -1;
   if (isFxEdit || !phraseRows) return 0;
-  int row = screen.cursorRow;
+  int marker = playheadRow();
+  int row = marker >= 0 ? marker : screen.cursorRow;
   int maxNote = chipnomadState->project.pitchTable.length - 1;
   if (note > maxNote) note = (uint8_t)maxNote;
   phraseRows[row].note = noteLockSnap(note, 0);
@@ -1198,11 +1217,16 @@ int phraseMidiEnterNote(uint8_t note) {
   if (phraseRows[row].volume == EMPTY_VALUE_16) phraseRows[row].volume = lastVolume;
   lastNote = phraseRows[row].note;
   projectModified = 1;
-  triggerRowPreview(row);
+  const PlaybackStatus* status = chipnomadGetPlaybackStatus(chipnomadState);
+  if (status->isPlaying && status->tracks[*pSongTrack].mode != PlaybackMode::phraseRow) {
+    if (monitorInstrument) *monitorInstrument = phraseRows[row].instrument;
+  } else {
+    triggerRowPreview(row);
+  }
   drawField(0, row, CellState::normal);
   drawField(1, row, CellState::normal);
   drawField(2, row, CellState::normal);
-  if (row < 15) {
+  if (marker < 0 && row < 15) {
     screen.cursorRow = row + 1;
     fullRedraw();
   }
@@ -1213,6 +1237,9 @@ int phraseMidiEnterNote(uint8_t note) {
 
 static int keyJazzEnabled = 0;
 static uint8_t keyJazzBaseNote = 48;
+// Keys held (by note offset): so a repeat does not enter twice, and a note that is
+// auditioned on an idle track while the song plays can be released with its key.
+static uint8_t keyJazzDown[64], keyJazzDownNote[64], keyJazzMonitored[64];
 
 static uint8_t keyJazzClampNote(int note) {
   int maxNote = chipnomadState->project.pitchTable.length - 1;
@@ -1428,19 +1455,18 @@ int phraseKeyJazzHandleRawKey(InputCode input, int isDown) {
   if (offset < 0) return 0; // Not a note key: let normal input handle it (arrows, Shift, Play...)
 
   if (isDown) {
-    int row = screen.cursorRow;
-    phraseRows[row].note = noteLockSnap(keyJazzClampNote(keyJazzBaseNote + offset), 0);
-    if (phraseRows[row].instrument == EMPTY_VALUE_8) phraseRows[row].instrument = lastInstrument;
-    if (phraseRows[row].volume == EMPTY_VALUE_16) phraseRows[row].volume = lastVolume;
-    lastNote = phraseRows[row].note;
-    triggerRowPreview(row);
-    drawField(0, row, CellState::normal);
-    drawField(1, row, CellState::normal);
-    drawField(2, row, CellState::normal);
-    if (row < 15) {
-      screen.cursorRow = row + 1;
-      fullRedraw();
+    if (keyJazzDown[offset & 63]) return 1; // key repeat
+    uint8_t note = keyJazzClampNote(keyJazzBaseNote + offset);
+    int monitor;
+    if (phraseEnterPlayedNote(note, &monitor)) {
+      keyJazzDown[offset & 63] = 1;
+      keyJazzDownNote[offset & 63] = noteLockSnap(note, 0);
+      keyJazzMonitored[offset & 63] = monitor >= 0;
+      if (monitor >= 0) appMonitorNoteOn(keyJazzDownNote[offset & 63], monitor);
     }
+  } else {
+    if (keyJazzMonitored[offset & 63]) appMonitorNoteOff(keyJazzDownNote[offset & 63]);
+    keyJazzDown[offset & 63] = keyJazzMonitored[offset & 63] = 0;
   }
   return 1;
 }

@@ -183,6 +183,14 @@ int chipnomadQueueOPLLPreview(ChipNomadState* state, int track, const Instrument
 int chipnomadQueuePlaybackStopPreview(ChipNomadState* state, int trackIdx);
 // Note off for a preview: goes through the instrument's release instead of cutting the voice.
 int chipnomadQueuePlaybackReleasePreview(ChipNomadState* state, int trackIdx);
+// Independent preview voices: chipnomadQueuePlaybackPreviewNote starts the first note of a
+// track (slot 0); more notes on the same track and instrument go on slots 1 to 3 with
+// chipnomadQueuePlaybackPreviewVoice and are released one by one with ...ReleaseVoice,
+// so a chord shares the track's mixer and effects and does not retrigger its notes.
+// Only instruments for which chipnomadInstrumentHasIndependentVoices is true support it.
+int chipnomadQueuePlaybackPreviewVoice(ChipNomadState* state, int trackIdx, int slot, uint8_t note, uint8_t instrument);
+int chipnomadQueuePlaybackReleaseVoice(ChipNomadState* state, int trackIdx, int slot);
+int chipnomadInstrumentHasIndependentVoices(const Project* project, int instrument);
 int chipnomadQueuePlaybackClearTrackFX(ChipNomadState* state, int trackIdx);
 void chipnomadQueueLoopRange(ChipNomadState* state, LoopRange range);
 void chipnomadQueueClearLoopRange(ChipNomadState* state);

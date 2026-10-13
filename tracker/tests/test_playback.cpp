@@ -546,6 +546,77 @@ TEST_CASE_FIXTURE(PlaybackFixture, "releasing a preview goes through the release
   playbackReleasePreview(&state->playbackState, -1);
 }
 
+// Energy of a signal at one frequency (Goertzel), left channel of an interleaved stereo buffer
+static double toneEnergy(const std::vector<float>& stereo, double hz, size_t from, size_t to) {
+  double w = 2.0 * 3.14159265358979 * hz / 44100.0, coeff = 2.0 * std::cos(w), s0 = 0, s1 = 0, s2 = 0;
+  for (size_t i = from; i < to; i++) { s0 = stereo[2 * i] + coeff * s1 - s2; s2 = s1; s1 = s0; }
+  return (s1 * s1 + s2 * s2 - coeff * s1 * s2) / (double)(to - from);
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "preview voices: a chord on one track, notes released one by one") {
+  getInstrumentFunctions(InstrumentType::Braids).init(&state->project.instruments[0]);
+  InstrumentBraids* b = &state->project.instruments[0].chip.braids;
+  b->model = 3; // sine-ish: one clear partial per note
+  b->attack = 0; b->decay = 0; b->sustain = 255; b->release = 40;
+  REQUIRE(chipnomadInstrumentHasIndependentVoices(&state->project, 0));
+  REQUIRE(chipnomadQueueProjectRefresh(state));
+
+  std::vector<float> out;
+  float buf[2048];
+  auto render = [&](int blocks) { for (int i = 0; i < blocks; i++) { int n = chipnomadRender(state, buf, 512); out.insert(out.end(), buf, buf + n * 2); } };
+
+  // Notes 48 and 55 (a fifth apart) pressed within the same tick, 48 first
+  chipnomadQueuePlaybackPreviewNote(state, 0, 48, 0);
+  chipnomadQueuePlaybackPreviewVoice(state, 0, 1, 55, 0);
+  render(20);
+  PlaybackTrackState* track = &state->playbackState.tracks[0];
+  CHECK(track->chordVoiceCount == 2);
+  CHECK(track->chordPitchBase[1] == 55);
+  double f48 = 440.0 * std::pow(2.0, (48 + 12 - 69) / 12.0), f55 = 440.0 * std::pow(2.0, (55 + 12 - 69) / 12.0);
+  size_t n1 = out.size() / 2;
+  double e48 = toneEnergy(out, f48, 2000, n1), e55 = toneEnergy(out, f55, 2000, n1);
+  CHECK(e48 > 1e-6);
+  CHECK(e55 > 1e-6);   // both notes sound together
+
+  // A third note added later does not restart the first two
+  chipnomadQueuePlaybackPreviewVoice(state, 0, 2, 59, 0);
+  render(10);
+  CHECK(track->chordVoiceCount == 3);
+  CHECK(track->mode == PlaybackMode::phraseRow);
+
+  // Let go of the second note only: it fades out, the first one keeps sounding
+  chipnomadQueuePlaybackReleaseVoice(state, 0, 1);
+  render(40);
+  size_t from = out.size() / 2 - 4096, to = out.size() / 2;
+  double late48 = toneEnergy(out, f48, from, to), late55 = toneEnergy(out, f55, from, to);
+  CHECK(late48 > 1e-6);
+  CHECK(late55 < late48 * 0.05);
+}
+
+TEST_CASE_FIXTURE(PlaybackFixture, "a previewed note with release 0 still fades out instead of clicking") {
+  getInstrumentFunctions(InstrumentType::Braids).init(&state->project.instruments[0]);
+  InstrumentBraids* b = &state->project.instruments[0].chip.braids;
+  b->attack = 0; b->decay = 0; b->sustain = 255; b->release = 0;
+  REQUIRE(chipnomadQueueProjectRefresh(state));
+  std::vector<float> out;
+  float buf[2048];
+  auto render = [&](int blocks) { for (int i = 0; i < blocks; i++) { int n = chipnomadRender(state, buf, 512); out.insert(out.end(), buf, buf + n * 2); } };
+  chipnomadQueuePlaybackPreviewNote(state, 0, 48, 0);
+  render(40);
+  size_t releaseAt = out.size() / 2;
+  double level = 0;
+  for (size_t i = 1000; i < releaseAt; i++) level = std::fmax(level, std::fabs(out[2 * i]));
+  chipnomadQueuePlaybackReleasePreview(state, 0);
+  render(10);
+  // The last audible samples are near zero: an instant cut would leave a big step
+  size_t last = releaseAt;
+  for (size_t i = releaseAt; i < out.size() / 2; i++) if (std::fabs(out[2 * i]) > 1e-4) last = i;
+  double tail = 0;
+  for (size_t i = last > 32 ? last - 32 : 0; i <= last; i++) tail = std::fmax(tail, std::fabs(out[2 * i]));
+  CHECK(level > 0.05);
+  CHECK(tail < level * 0.1);
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "Braids instrument renders through a tracker track") {
   getInstrumentFunctions(InstrumentType::Braids).init(&state->project.instruments[0]);
   REQUIRE(chipnomadQueueProjectRefresh(state));

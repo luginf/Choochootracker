@@ -115,6 +115,13 @@ struct PlaybackTrackState {
   uint8_t chordVoiceCount;
   uint8_t chordPitchBase[CHORD_MAX_VOICES];
   uint8_t chordPitchFinal[CHORD_MAX_VOICES];
+  // Independent preview voices (MIDI in chords, see playbackPreviewVoice): which
+  // chord slots the pending note on / note off applies to (0 = all of them, the
+  // normal case), and slots added while the first note's start was still queued.
+  uint8_t slotTriggerMask;
+  uint8_t slotReleaseMask;
+  uint8_t pendingVoiceMask;
+  uint8_t pendingVoiceNote[CHORD_MAX_VOICES];
   // Cached phrase row data
   PhraseRow currentPhraseRow;
   // FX auxillary state data for the phrase (used by HOP)
@@ -329,6 +336,20 @@ void playbackStopPreview(PlaybackState* state, int trackIdx);
  * @param trackIdx Index of the track holding the preview
  */
 void playbackReleasePreview(PlaybackState* state, int trackIdx);
+
+/**
+ * Adds a note to a track that is already previewing the same instrument, as
+ * an independent voice on its own chord slot (1 to CHORD_MAX_VOICES - 1; slot
+ * 0 is the note started with playbackPreviewNote): the other notes keep
+ * sounding, untouched. Falls back to a plain playbackPreviewNote when the
+ * track is not previewing that instrument.
+ */
+void playbackPreviewVoice(PlaybackState* state, int trackIdx, int slot, uint8_t note, uint8_t instrument);
+
+/**
+ * Releases one slot's voice (note off) and leaves the others sounding.
+ */
+void playbackReleaseVoice(PlaybackState* state, int trackIdx, int slot);
 
 /**
  * Sets a loop range for playback

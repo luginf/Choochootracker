@@ -202,8 +202,8 @@ int editFXValue(CellEditAction action, uint8_t* fx, uint8_t* lastFX, int isTable
 int fxEditInput(int keys, int tapCount, uint8_t* fx, uint8_t* lastFX);
 void fxEditFullDraw(uint8_t currentFX, uint8_t instrumentIdx, int isTable);
 
-// MIDI keyboard note entry on the Phrase screen (see screen_phrase.cpp).
-int phraseMidiEnterNote(uint8_t note);
+// Writes a note played live (MIDI keyboard, key jazz) into the Phrase screen (see screen_phrase.cpp).
+int phraseEnterPlayedNote(uint8_t note, int* monitorInstrument);
 
 // Key jazz (desktop): lets screen_phrase.cpp own its toggle/note-entry state
 // while app.cpp only needs to route raw keyboard events to it. Returns 1 if

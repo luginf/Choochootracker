@@ -5,6 +5,7 @@
 extern "C" {
 #endif
 
+#include <stdint.h>
 #include "common.h"
 #include "corelib/corelib_mainloop.h"
 #include "corelib/corelib_input.h"
@@ -19,6 +20,11 @@ void appOnEvent(MainLoopEventData eventData);
 void appResetInputState(void);
 // The physical input currently being dispatched to the active screen.
 InputCode appCurrentInput(void);
+
+// Audition a note live on an idle track while the song is playing the current
+// one (key jazz recording over the playing loop). Off releases it.
+void appMonitorNoteOn(uint8_t note, int instrument);
+void appMonitorNoteOff(uint8_t note);
 
 // Raw input callback for key mapping screen
 extern void (*inputRawCallback)(InputCode input, int isDown);
