@@ -113,6 +113,7 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   track->note.volume3 = 0;
   track->chordVoiceCount = 1;
   track->slotTriggerMask = track->slotReleaseMask = track->pendingVoiceMask = 0;
+  track->independentVoices = 0;
   memset(track->chordPitchBase, EMPTY_VALUE_8, sizeof(track->chordPitchBase));
   memset(track->chordPitchFinal, EMPTY_VALUE_8, sizeof(track->chordPitchFinal));
 
@@ -1466,6 +1467,7 @@ void playbackStopPreview(PlaybackState* state, int trackIdx) {
 static void addPreviewVoiceNow(PlaybackState* state, PlaybackTrackState* track, int slot, uint8_t note) {
   track->chordPitchBase[slot] = note;
   if (track->chordVoiceCount < slot + 1) track->chordVoiceCount = (uint8_t)(slot + 1);
+  track->independentVoices = 1;
   int offset = track->note.pitchFinal != EMPTY_VALUE_8 ? (int)track->note.pitchFinal - (int)track->chordPitchBase[0] : 0;
   int pitch = (int)note + offset;
   int maxPitch = state->p->pitchTable.length - 1;

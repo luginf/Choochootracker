@@ -1333,6 +1333,13 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
   return samples - samplesLeft;
 }
 
+// A chord's voices share the note's level (each is 1/N of it). Independent preview
+// voices (MIDI keys held together) do not: every note keeps the level of a single
+// note, so adding a note neither makes the held ones quieter nor steps their gain.
+static float chordGainDivisor(const PlaybackTrackState* track) {
+  return track->independentVoices ? 1.0f : (float)track->chordVoiceCount;
+}
+
 static float envelopeTime(uint8_t value) {
   float normalized = value / 255.0f;
   return normalized * normalized * 5.0f;
@@ -1619,7 +1626,7 @@ static void updateSampleVoices(ChipNomadState* state) {
         // A sliced sample keeps its root slice; CRD still supplies voice intervals.
         voicePitchCents += noteCents - rootCents;
       }
-      voices[slot]->configure(sample, (float)voicePitchCents, gain / track->chordVoiceCount, (float)speedPercent, start, end, (uint8_t)loopMode,
+      voices[slot]->configure(sample, (float)voicePitchCents, gain / chordGainDivisor(track), (float)speedPercent, start, end, (uint8_t)loopMode,
                               (uint16_t)cutoff, (uint8_t)resonance, attack, decay, sustain, release, shape,
                               sliceCount, voiceSliceIndex, sample->stretchMode, project->tickRate,
                               sample->speedAlgorithm, forceReverse);
@@ -1703,7 +1710,7 @@ static void updateSCWFVoices(ChipNomadState* state) {
       int cents = pitch == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[pitch] : (pitch + 12) * 100) +
         track->note.fineOffset + pitchModulation;
-      voices[slot]->configure(scwf, (float)cents, gain / track->chordVoiceCount, scwfDetuneCents((uint8_t)detune), (uint8_t)mix,
+      voices[slot]->configure(scwf, (float)cents, gain / chordGainDivisor(track), scwfDetuneCents((uint8_t)detune), (uint8_t)mix,
                               (uint16_t)cutoff, (uint8_t)resonance,
                               instrument->type == InstrumentType::BYOWTBL ? byowtbl->frameSize : NULL,
                               instrument->type == InstrumentType::BYOWTBL ? frameIndex : NULL,
@@ -1755,7 +1762,7 @@ static void updateAChChidVoices(ChipNomadState* state) {
       voices[slot]->configure((uint8_t)a->wave, a->fineTune, a->model, (uint16_t)clampInt(timbre, 0, 32767), (uint16_t)clampInt(color, 0, 32767), a->saturation,
         (uint16_t)clampInt(cutoff, 200, FILTER_CUTOFF_MAX_HZ), (uint8_t)clampInt(resonance, 0, 100),
         (uint8_t)clampInt(envMod, 0, 100), (uint16_t)clampInt(decay, 200, 2000),
-        (uint8_t)clampInt(accent, 0, 100), (gain < 0.0f ? 0.0f : gain) / track->chordVoiceCount);
+        (uint8_t)clampInt(accent, 0, 100), (gain < 0.0f ? 0.0f : gain) / chordGainDivisor(track));
   }
 }
 
@@ -1804,7 +1811,7 @@ static void updateDrumSynthVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[slot];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitchModulation;
-      voices[slot]->configure(&configured, (float)cents, (gain < 0.0f ? 0.0f : gain) / track->chordVoiceCount,
+      voices[slot]->configure(&configured, (float)cents, (gain < 0.0f ? 0.0f : gain) / chordGainDivisor(track),
         (uint16_t)clampInt(cutoff, FILTER_CUTOFF_MIN_HZ, FILTER_CUTOFF_MAX_HZ), (uint8_t)clampInt(resonance, 0, 255));
     }
   }
@@ -1863,7 +1870,7 @@ static void updateMMEVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[slot];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[slot]->configure(&configured, (float)cents, (gain < 0.0f ? 0.0f : gain) / track->chordVoiceCount,
+      voices[slot]->configure(&configured, (float)cents, (gain < 0.0f ? 0.0f : gain) / chordGainDivisor(track),
         (uint16_t)clampInt(cutoff, FILTER_CUTOFF_MIN_HZ, FILTER_CUTOFF_MAX_HZ), (uint8_t)clampInt(resonance, 0, 255));
     }
   }
@@ -1910,7 +1917,7 @@ static void updateSinteredVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[slot];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[slot]->configure(&configured, (float)cents, (gain < 0.0f ? 0.0f : gain) / track->chordVoiceCount,
+      voices[slot]->configure(&configured, (float)cents, (gain < 0.0f ? 0.0f : gain) / chordGainDivisor(track),
         (uint16_t)clampInt(cutoff, FILTER_CUTOFF_MIN_HZ, FILTER_CUTOFF_MAX_HZ), (uint8_t)clampInt(resonance, 0, 255));
     }
   }
@@ -1985,7 +1992,7 @@ static void updateBraidsVoices(ChipNomadState* state) {
       BraidsVoice* voice = voices[slot];
       voice->setModel(model);
       voice->setParameters(timbre, color);
-      voice->setGain(gain / track->chordVoiceCount);
+      voice->setGain(gain / chordGainDivisor(track));
       voice->setFilter(
         instrument->filterEnabled != 0,
         instrument->filterCharacter,
@@ -2082,7 +2089,7 @@ static void updatePlaitsVoices(ChipNomadState* state) {
       PlaitsVoice* voice = voices[slot];
       voice->configure((uint8_t)engine, (uint16_t)harmonics, (uint16_t)timbre,
                        (uint16_t)morph, (uint8_t)auxMix, p->envelopeMode,
-                       triggerDecay, triggerColor, cents / 100.0f, gain / track->chordVoiceCount);
+                       triggerDecay, triggerColor, cents / 100.0f, gain / chordGainDivisor(track));
       voice->setFilter(p->filterEnabled != 0, p->filterCharacter, p->filterMode, p->filterSlope24dB != 0,
                        cutoff, resonance / 255.0f);
       voice->setEnvelope(envelopeTime(attack), envelopeTime(decay),
@@ -2156,7 +2163,7 @@ static void updatePlaitsAltVoices(ChipNomadState* state) {
       PlaitsAltVoice* voice = voices[slot];
       voice->configure((uint8_t)engine, (uint16_t)harmonics, (uint16_t)timbre,
         (uint16_t)morph, (uint8_t)auxMix, p->envelopeMode, triggerDecay, triggerColor,
-        cents / 100.0f, gain / track->chordVoiceCount);
+        cents / 100.0f, gain / chordGainDivisor(track));
       voice->setFilter(p->filterEnabled != 0, p->filterCharacter, p->filterMode, p->filterSlope24dB != 0,
         cutoff, resonance / 255.0f);
       voice->setEnvelope(envelopeTime(attack), envelopeTime(decay),
@@ -2281,7 +2288,7 @@ static void updateOPLLVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[v];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[v]->configure(&configured, cents, gain / track->chordVoiceCount);
+      voices[v]->configure(&configured, cents, gain / chordGainDivisor(track));
     }
   }
 }
@@ -2316,7 +2323,7 @@ static void updateOPLVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[v];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[v]->configure(instrument->type, &configured, cents, gain / track->chordVoiceCount);
+      voices[v]->configure(instrument->type, &configured, cents, gain / chordGainDivisor(track));
     }
   }
 }
@@ -2351,7 +2358,7 @@ static void updateFourOpVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[v];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[v]->configure(instrument->type, &configured, cents, gain / track->chordVoiceCount);
+      voices[v]->configure(instrument->type, &configured, cents, gain / chordGainDivisor(track));
     }
   }
 }
@@ -2397,7 +2404,7 @@ static void updateSimpleChipVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[v];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[v]->configure(instrument->type, &configured, cents, gain / track->chordVoiceCount);
+      voices[v]->configure(instrument->type, &configured, cents, gain / chordGainDivisor(track));
     }
   }
 }
@@ -2433,7 +2440,7 @@ static void updateDX7Voices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[v];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[v]->configure(&configured, cents, gain / track->chordVoiceCount);
+      voices[v]->configure(&configured, cents, gain / chordGainDivisor(track));
     }
   }
 }
@@ -2486,7 +2493,7 @@ static void updateSIDVoices(ChipNomadState* state) {
       uint8_t note = track->chordPitchFinal[v];
       int cents = note == EMPTY_VALUE_8 ? 6000 :
         (project->linearPitch ? project->pitchTable.values[note] : (note + 12) * 100) + track->note.fineOffset + pitch;
-      voices[v]->configure(&configured, cents, gain / track->chordVoiceCount);
+      voices[v]->configure(&configured, cents, gain / chordGainDivisor(track));
     }
   }
 }

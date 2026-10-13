@@ -121,6 +121,7 @@ struct PlaybackTrackState {
   uint8_t slotTriggerMask;
   uint8_t slotReleaseMask;
   uint8_t pendingVoiceMask;
+  uint8_t independentVoices; // set once playbackPreviewVoice added a voice: no 1/N chord gain
   uint8_t pendingVoiceNote[CHORD_MAX_VOICES];
   // Cached phrase row data
   PhraseRow currentPhraseRow;

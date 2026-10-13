@@ -565,14 +565,22 @@ TEST_CASE_FIXTURE(PlaybackFixture, "preview voices: a chord on one track, notes 
   float buf[2048];
   auto render = [&](int blocks) { for (int i = 0; i < blocks; i++) { int n = chipnomadRender(state, buf, 512); out.insert(out.end(), buf, buf + n * 2); } };
 
-  // Notes 48 and 55 (a fifth apart) pressed within the same tick, 48 first
+  // One note alone first, then a second one a fifth above while the first is held
   chipnomadQueuePlaybackPreviewNote(state, 0, 48, 0);
+  render(20);
+  double f48 = 440.0 * std::pow(2.0, (48 + 12 - 69) / 12.0), f55 = 440.0 * std::pow(2.0, (55 + 12 - 69) / 12.0);
+  double alone48 = toneEnergy(out, f48, out.size() / 2 - 4096, out.size() / 2);
   chipnomadQueuePlaybackPreviewVoice(state, 0, 1, 55, 0);
   render(20);
   PlaybackTrackState* track = &state->playbackState.tracks[0];
+  // The held note keeps its level: adding a note is not a 1/N drop, and no gain step
+  double with48 = toneEnergy(out, f48, out.size() / 2 - 4096, out.size() / 2);
+  CHECK(with48 > alone48 * 0.8);
+  CHECK(with48 < alone48 * 1.25);
+  out.clear();
+  render(10);
   CHECK(track->chordVoiceCount == 2);
   CHECK(track->chordPitchBase[1] == 55);
-  double f48 = 440.0 * std::pow(2.0, (48 + 12 - 69) / 12.0), f55 = 440.0 * std::pow(2.0, (55 + 12 - 69) / 12.0);
   size_t n1 = out.size() / 2;
   double e48 = toneEnergy(out, f48, 2000, n1), e55 = toneEnergy(out, f55, 2000, n1);
   CHECK(e48 > 1e-6);
