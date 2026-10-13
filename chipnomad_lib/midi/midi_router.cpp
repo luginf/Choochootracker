@@ -239,6 +239,35 @@ int midiRouterTick(MidiRouterState* router, int fallbackInstrument, MidiPreviewI
   return count;
 }
 
+int midiRouterTickEvents(MidiRouterState* router, int fallbackInstrument, MidiNoteEvent* outEvents, int maxEvents) {
+  if (!router || !g_backend || !g_backend->pollInput || !outEvents || maxEvents <= 0) return 0;
+  int count = 0;
+  MidiEvent event;
+  while (g_backend->pollInput(g_backend->userdata, &event)) {
+    uint8_t messageType = event.type & 0xf0;
+    uint8_t channel = event.channel & 0x0f;
+    if (messageType == 0xb0) {
+      router->ccValues[channel][event.data1 & 0x7f] = event.data2 & 0x7f;
+      router->ccSerials[channel][event.data1 & 0x7f] = router->ccSerial + 1;
+      router->lastCC = {channel, (uint8_t)(event.data1 & 0x7f), (uint8_t)(event.data2 & 0x7f)};
+      router->ccSerial++;
+      continue;
+    }
+    bool on = messageType == 0x90 && event.data2 > 0;
+    bool off = messageType == 0x80 || (messageType == 0x90 && event.data2 == 0);
+    if (!on && !off) continue;
+    int note = (int)event.data1 - 12;
+    if (note < 0 || note >= 128) continue;
+    int8_t mapped = router->channelInstrument[channel];
+    int outIndex = count < maxEvents ? count++ : maxEvents - 1;
+    outEvents[outIndex].note = (uint8_t)note;
+    outEvents[outIndex].channel = channel;
+    outEvents[outIndex].velocity = on ? event.data2 : 0;
+    outEvents[outIndex].instrument = mapped >= 0 ? mapped : fallbackInstrument;
+  }
+  return count;
+}
+
 int midiRouterGetCCValue(const MidiRouterState* router, uint8_t channel, uint8_t cc,
                          uint8_t* value, uint32_t* serial) {
   if (!router) return 0;

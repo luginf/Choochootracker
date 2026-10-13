@@ -517,6 +517,35 @@ TEST_CASE_FIXTURE(PlaybackFixture, "ADSR volume envelope ranges") {
   CHECK(volEnd == 0);
 }
 
+TEST_CASE_FIXTURE(PlaybackFixture, "releasing a preview goes through the release stage, stopping it cuts") {
+  // A=0, D=0, S=15, R=10: sustains at full volume, then a 10 frame release
+  setInstrument(0, 0, 0, 15, 10);
+  playbackPreviewNote(&state->playbackState, 0, 48, 0);
+  advanceFrames(4);
+  SoundChipAY* ayChip = static_cast<SoundChipAY*>(state->chips[0]);
+  CHECK((ayChip->getRegister(8) & 0x0f) == 15);
+
+  playbackReleasePreview(&state->playbackState, 0);
+  CHECK(state->playbackState.tracks[0].note.noteReleased == 1);
+  CHECK(state->playbackState.tracks[0].mode == PlaybackMode::phraseRow);
+  advanceFrames(2);
+  uint8_t volRelease = ayChip->getRegister(8) & 0x0f;
+  CHECK(volRelease > 0);     // still ringing: no click from a hard cut
+  CHECK(volRelease < 15);
+  advanceFrames(12);
+  CHECK((ayChip->getRegister(8) & 0x0f) == 0);
+
+  // The hard stop is still available and resets the track
+  playbackPreviewNote(&state->playbackState, 0, 48, 0);
+  advanceFrames(4);
+  playbackStopPreview(&state->playbackState, 0);
+  CHECK(state->playbackState.tracks[0].note.instrument == EMPTY_VALUE_8);
+
+  // Releasing a track that is not previewing does nothing
+  playbackReleasePreview(&state->playbackState, 3);
+  playbackReleasePreview(&state->playbackState, -1);
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "Braids instrument renders through a tracker track") {
   getInstrumentFunctions(InstrumentType::Braids).init(&state->project.instruments[0]);
   REQUIRE(chipnomadQueueProjectRefresh(state));

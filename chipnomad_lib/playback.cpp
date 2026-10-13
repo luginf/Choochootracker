@@ -1458,6 +1458,13 @@ void playbackStopPreview(PlaybackState* state, int trackIdx) {
   }
 }
 
+void playbackReleasePreview(PlaybackState* state, int trackIdx) {
+  if (trackIdx < 0 || trackIdx >= state->p->tracksCount) return;
+  if (state->tracks[trackIdx].mode == PlaybackMode::phraseRow) {
+    handleNoteOff(state, trackIdx);
+  }
+}
+
 int playbackNextFrame(ChipNomadState* chipNomadState) {
   PlaybackState *state = &chipNomadState->playbackState;
   Project* p = &chipNomadState->project;

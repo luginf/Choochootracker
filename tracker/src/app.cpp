@@ -317,6 +317,121 @@ static bool inputBranchNavigation(int keys) {
   return true;
 }
 
+
+// MIDI-in preview voices. An external keyboard auditions the current
+// instrument: polyphonically, every held note on its own track (the current
+// track first, then the least recently used idle ones), so a chord sounds
+// without retriggering its notes; on the Phrase screen, where notes are
+// entered, it stays monophonic with last-note priority. Note offs go through
+// the instrument's release instead of cutting the voice.
+struct MidiPreviewVoice { uint8_t active, note, channel; int track; uint32_t serial; };
+static MidiPreviewVoice midiVoices[PROJECT_MAX_TRACKS];
+static uint32_t midiTrackLastUse[PROJECT_MAX_TRACKS];
+static uint32_t midiVoiceSerial = 0;
+static int midiPreviewWasPoly = -1;
+
+static int midiTrackIsIdle(int track) {
+  PlaybackMode mode = chipnomadGetPlaybackStatus(chipnomadState)->tracks[track].mode;
+  return mode == PlaybackMode::stopped || mode == PlaybackMode::phraseRow;
+}
+
+static int midiTrackHasVoice(int track) {
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) if (midiVoices[i].active && midiVoices[i].track == track) return 1;
+  return 0;
+}
+
+static void midiReleaseVoice(MidiPreviewVoice* voice) {
+  if (!voice->active) return;
+  chipnomadQueuePlaybackReleasePreview(chipnomadState, voice->track);
+  midiTrackLastUse[voice->track] = ++midiVoiceSerial;
+  voice->active = 0;
+}
+
+static void midiReleaseAllVoices(void) {
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++) midiReleaseVoice(&midiVoices[i]);
+}
+
+// A track for a new note, or -1 when every track is busy with the song
+static int midiPickTrack(void) {
+  int tracks = chipnomadState->project.tracksCount;
+  int current = *pSongTrack;
+  if (current < tracks && midiTrackIsIdle(current) && !midiTrackHasVoice(current)) return current;
+  int best = -1;
+  for (int t = 0; t < tracks; t++) {
+    if (t == current || !midiTrackIsIdle(t) || midiTrackHasVoice(t)) continue;
+    if (best < 0 || midiTrackLastUse[t] < midiTrackLastUse[best]) best = t;
+  }
+  if (best >= 0) return best;
+  // Out of tracks: take over the oldest held note
+  MidiPreviewVoice* oldest = NULL;
+  for (int i = 0; i < PROJECT_MAX_TRACKS; i++)
+    if (midiVoices[i].active && (!oldest || midiVoices[i].serial < oldest->serial)) oldest = &midiVoices[i];
+  if (!oldest) return -1;
+  int track = oldest->track;
+  oldest->active = 0;
+  return track;
+}
+
+static void midiPreviewTick(void) {
+  // Input closed or switched off while keys were held: no Note Off will ever come
+  if (appSettings.midiInputDevice < 0) midiReleaseAllVoices();
+  int poly = currentScreen != &screenPhrase;
+  if (poly != midiPreviewWasPoly) {
+    // Switching mode: let go of what the other mode holds, so no note sticks
+    if (midiPreviewWasPoly == 0) chipnomadQueuePlaybackReleasePreview(chipnomadState, *pSongTrack);
+    midiReleaseAllVoices();
+    midiRouterResetHeldNotes(chipnomadState->midiRouter);
+    midiPreviewWasPoly = poly;
+  }
+
+  if (!poly) {
+    // Monophonic, last-note priority, on the current track
+    int previewSafe = midiTrackIsIdle(*pSongTrack);
+    MidiPreviewIntent intents[16];
+    int intentCount = midiRouterTick(chipnomadState->midiRouter, cInstrument, intents, 16);
+    if (!previewSafe) return;
+    for (int i = 0; i < intentCount; i++) {
+      if (intents[i].stop) {
+        chipnomadQueuePlaybackReleasePreview(chipnomadState, *pSongTrack);
+      } else if (!instrumentIsEmpty(&chipnomadState->project, intents[i].instrument)) {
+        chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, intents[i].note, intents[i].instrument);
+      }
+    }
+    return;
+  }
+
+  MidiNoteEvent events[32];
+  int count = midiRouterTickEvents(chipnomadState->midiRouter, cInstrument, events, 32);
+  for (int i = 0; i < count; i++) {
+    const MidiNoteEvent& e = events[i];
+    if (e.velocity == 0) {
+      for (int v = PROJECT_MAX_TRACKS - 1; v >= 0; v--) {
+        if (midiVoices[v].active && midiVoices[v].note == e.note && midiVoices[v].channel == e.channel) {
+          midiReleaseVoice(&midiVoices[v]);
+          break;
+        }
+      }
+      continue;
+    }
+    if (instrumentIsEmpty(&chipnomadState->project, e.instrument)) continue;
+    MidiPreviewVoice* voice = NULL;
+    for (int v = 0; v < PROJECT_MAX_TRACKS; v++)
+      if (midiVoices[v].active && midiVoices[v].note == e.note && midiVoices[v].channel == e.channel) voice = &midiVoices[v];
+    int track;
+    if (voice) {
+      track = voice->track; // the same note again: restart it where it is
+    } else {
+      track = midiPickTrack();
+      if (track < 0) continue;
+      for (int v = 0; v < PROJECT_MAX_TRACKS && !voice; v++) if (!midiVoices[v].active) voice = &midiVoices[v];
+      if (!voice) continue;
+    }
+    chipnomadQueuePlaybackPreviewNote(chipnomadState, track, e.note, (uint8_t)e.instrument);
+    voice->active = 1; voice->note = e.note; voice->channel = e.channel;
+    voice->track = track; voice->serial = ++midiVoiceSerial;
+  }
+}
+
 static void appInput(int isKeyDown, int keys, int tapCount) {
   // Stop phrase row and preview. While the sample settings screen is doing
   // a LAZY full-sample playback (tap PLAY toggles it), the PLAY release
@@ -768,19 +883,7 @@ void appOnEvent(MainLoopEventData eventData) {
     // the first, since the first note's own preview never fully lets go of
     // the track between key presses.
     {
-      PlaybackMode trackMode = chipnomadGetPlaybackStatus(chipnomadState)->tracks[*pSongTrack].mode;
-      int previewSafe = trackMode == PlaybackMode::stopped || trackMode == PlaybackMode::phraseRow;
-      MidiPreviewIntent intents[16];
-      int intentCount = midiRouterTick(chipnomadState->midiRouter, cInstrument, intents, 16);
-      if (previewSafe) {
-        for (int i = 0; i < intentCount; i++) {
-          if (intents[i].stop) {
-            chipnomadQueuePlaybackStopPreview(chipnomadState, *pSongTrack);
-          } else if (!instrumentIsEmpty(&chipnomadState->project, intents[i].instrument)) {
-            chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, intents[i].note, intents[i].instrument);
-          }
-        }
-      }
+      midiPreviewTick();
       for (int i = 0; i < PROJECT_MAX_MIDI_CC_MAPPINGS; ++i) {
         MidiCCMapping& mapping = chipnomadState->project.midiCCMappings[i];
         int globalTrack = mapping.destination >= midiCCDestinationTrackMute &&

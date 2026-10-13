@@ -147,6 +147,16 @@ struct MidiCCIntent {
   uint8_t value;
 };
 
+// Polyphonic input: raw note events, no legato bookkeeping. The caller owns
+// voice allocation (which track plays which note) and matches each Note Off
+// to its Note On by (note, channel).
+struct MidiNoteEvent {
+  uint8_t note;       // tracker pitch index (MIDI note - 12)
+  uint8_t channel;
+  uint8_t velocity;   // 1-127 for a Note On, 0 for a Note Off
+  int instrument;     // channel-mapped instrument, or the fallback
+};
+
 // Sets the per-channel instrument mapping Auto mode input uses (-1 =
 // channel not assigned, falls back to midiRouterTick's fallbackInstrument).
 // Call once at startup and whenever it changes.
@@ -167,6 +177,13 @@ void midiRouterResetHeldNotes(MidiRouterState* router);
 // mode only needs to also decide a track index, not reach into engine
 // internals to do it.
 int midiRouterTick(MidiRouterState* router, int fallbackInstrument, MidiPreviewIntent* outIntents, int maxIntents);
+
+// Same polling as midiRouterTick (CCs are handled identically) but returns
+// every Note On / Note Off as is, for polyphonic previewing. Use one or the
+// other for a given tick, and call midiRouterResetHeldNotes when switching
+// from the legato mode to this one so no phantom held note stays behind.
+// When the buffer fills, the last event is overwritten, as midiRouterTick does.
+int midiRouterTickEvents(MidiRouterState* router, int fallbackInstrument, MidiNoteEvent* outEvents, int maxEvents);
 // Returns whether this exact CC has been received, and optionally its value
 // and the serial of that receipt.  A zero value is meaningful, so callers
 // must not confuse an unseen CC with a CC explicitly sent at zero.

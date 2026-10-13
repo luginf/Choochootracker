@@ -321,6 +321,16 @@ void playbackPreviewNote(PlaybackState* state, int trackIdx, uint8_t note, uint8
 void playbackStopPreview(PlaybackState* state, int trackIdx);
 
 /**
+ * Releases a previewed note (note off): the voice goes through its release
+ * stage instead of being cut, which is what a keyboard key release should
+ * do. Does nothing if the track is not playing a preview note.
+ *
+ * @param state Pointer to the playback state
+ * @param trackIdx Index of the track holding the preview
+ */
+void playbackReleasePreview(PlaybackState* state, int trackIdx);
+
+/**
  * Sets a loop range for playback
  *
  * @param state Pointer to the playback state

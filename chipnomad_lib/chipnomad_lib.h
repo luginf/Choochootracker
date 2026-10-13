@@ -181,6 +181,8 @@ int chipnomadQueueDX7Preview(ChipNomadState* state,int track,const InstrumentDX7
 int chipnomadQueueSIDPreview(ChipNomadState* state,int track,const InstrumentSID* patch);
 int chipnomadQueueOPLLPreview(ChipNomadState* state, int track, const InstrumentOPLL* patch);
 int chipnomadQueuePlaybackStopPreview(ChipNomadState* state, int trackIdx);
+// Note off for a preview: goes through the instrument's release instead of cutting the voice.
+int chipnomadQueuePlaybackReleasePreview(ChipNomadState* state, int trackIdx);
 int chipnomadQueuePlaybackClearTrackFX(ChipNomadState* state, int trackIdx);
 void chipnomadQueueLoopRange(ChipNomadState* state, LoopRange range);
 void chipnomadQueueClearLoopRange(ChipNomadState* state);

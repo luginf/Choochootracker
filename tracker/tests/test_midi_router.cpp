@@ -254,6 +254,43 @@ TEST_CASE("Panic sends Note Off for active notes and resets the Program/Bank cac
   midiRouterDestroy(router);
 }
 
+TEST_CASE("Event mode returns every note on and off, so chords can be polyphonic") {
+  resetFake();
+  midiRouterSetBackend(&kFakeBackend);
+  MidiRouterState* router = midiRouterCreate();
+  const int8_t map[16] = {-1, 7, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1};
+  midiRouterSetChannelInstrumentMap(router, map);
+  MidiNoteEvent events[16];
+
+  pushIncoming(0x90, 0, 60, 100); // C, E, G pressed together
+  pushIncoming(0x90, 0, 64, 90);
+  pushIncoming(0x90, 1, 67, 80);  // channel 1 is mapped to instrument 7
+  pushIncoming(0xB0, 0, 74, 33);  // a CC in between is kept, not an event
+  REQUIRE(midiRouterTickEvents(router, 5, events, 16) == 3);
+  CHECK(events[0].note == 48); CHECK(events[0].channel == 0); CHECK(events[0].velocity == 100); CHECK(events[0].instrument == 5);
+  CHECK(events[1].note == 52); CHECK(events[1].velocity == 90);
+  CHECK(events[2].note == 55); CHECK(events[2].channel == 1); CHECK(events[2].instrument == 7);
+  uint8_t value = 0; uint32_t serial = 0;
+  CHECK(midiRouterGetCCValue(router, 0, 74, &value, &serial));
+  CHECK(value == 33);
+
+  g_incoming.clear(); g_incomingIndex = 0;
+  pushIncoming(0x80, 0, 60, 0);   // Note Off
+  pushIncoming(0x90, 0, 64, 0);   // Note On with velocity 0 is a Note Off too
+  pushIncoming(0x90, 0, 5, 100);  // below the tracker's range: ignored
+  REQUIRE(midiRouterTickEvents(router, 5, events, 16) == 2);
+  CHECK(events[0].note == 48); CHECK(events[0].velocity == 0);
+  CHECK(events[1].note == 52); CHECK(events[1].velocity == 0);
+
+  // Nothing is kept in the legato stack by this mode
+  g_incoming.clear(); g_incomingIndex = 0;
+  pushIncoming(0x80, 0, 55, 0);
+  MidiPreviewIntent intents[4];
+  CHECK(midiRouterTick(router, 5, intents, 4) == 0);
+
+  midiRouterDestroy(router);
+}
+
 TEST_CASE("Two independent router instances don't share active-note state") {
   resetFake();
   midiRouterSetBackend(&kFakeBackend);
