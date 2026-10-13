@@ -321,14 +321,15 @@ static bool inputBranchNavigation(int keys) {
 // MIDI-in preview voices. An external keyboard auditions the current
 // instrument: polyphonically, every held note on its own track (the current
 // track first, then the least recently used idle ones), so a chord sounds
-// without retriggering its notes; on the Phrase screen, where notes are
-// entered, it stays monophonic with last-note priority. Note offs go through
-// the instrument's release instead of cutting the voice.
+// without retriggering its notes; on the Phrase screen it stays monophonic
+// and enters the notes at the cursor. Note offs go through the instrument's
+// release instead of cutting the voice.
 struct MidiPreviewVoice { uint8_t active, note, channel; int track; uint32_t serial; };
 static MidiPreviewVoice midiVoices[PROJECT_MAX_TRACKS];
 static uint32_t midiTrackLastUse[PROJECT_MAX_TRACKS];
 static uint32_t midiVoiceSerial = 0;
 static int midiPreviewWasPoly = -1;
+static int midiSoundingNote = -1, midiSoundingChannel = -1; // monophonic (Phrase screen) note that is sounding
 
 static int midiTrackIsIdle(int track) {
   PlaybackMode mode = chipnomadGetPlaybackStatus(chipnomadState)->tracks[track].mode;
@@ -381,20 +382,31 @@ static void midiPreviewTick(void) {
     if (midiPreviewWasPoly == 0) chipnomadQueuePlaybackReleasePreview(chipnomadState, *pSongTrack);
     midiReleaseAllVoices();
     midiRouterResetHeldNotes(chipnomadState->midiRouter);
+    midiSoundingNote = midiSoundingChannel = -1;
     midiPreviewWasPoly = poly;
   }
 
   if (!poly) {
-    // Monophonic, last-note priority, on the current track
-    int previewSafe = midiTrackIsIdle(*pSongTrack);
-    MidiPreviewIntent intents[16];
-    int intentCount = midiRouterTick(chipnomadState->midiRouter, cInstrument, intents, 16);
-    if (!previewSafe) return;
-    for (int i = 0; i < intentCount; i++) {
-      if (intents[i].stop) {
-        chipnomadQueuePlaybackReleasePreview(chipnomadState, *pSongTrack);
-      } else if (!instrumentIsEmpty(&chipnomadState->project, intents[i].instrument)) {
-        chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, intents[i].note, intents[i].instrument);
+    // Phrase screen: monophonic on the current track, and every note played
+    // is entered at the cursor (no record mode to switch on). The sound ends
+    // with the key of the note that is sounding.
+    MidiNoteEvent events[32];
+    int count = midiRouterTickEvents(chipnomadState->midiRouter, cInstrument, events, 32);
+    for (int i = 0; i < count; i++) {
+      const MidiNoteEvent& e = events[i];
+      if (e.velocity == 0) {
+        if (midiSoundingNote == e.note && midiSoundingChannel == e.channel) {
+          if (midiTrackIsIdle(*pSongTrack)) chipnomadQueuePlaybackReleasePreview(chipnomadState, *pSongTrack);
+          midiSoundingNote = midiSoundingChannel = -1;
+        }
+        continue;
+      }
+      if (phraseMidiEnterNote(e.note)) {
+        audioProjectDirty = 1;
+        midiSoundingNote = e.note; midiSoundingChannel = e.channel;
+      } else if (midiTrackIsIdle(*pSongTrack) && !instrumentIsEmpty(&chipnomadState->project, e.instrument)) {
+        chipnomadQueuePlaybackPreviewNote(chipnomadState, *pSongTrack, e.note, (uint8_t)e.instrument);
+        midiSoundingNote = e.note; midiSoundingChannel = e.channel;
       }
     }
     return;

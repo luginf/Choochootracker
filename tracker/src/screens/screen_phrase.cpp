@@ -1183,6 +1183,32 @@ static ScreenPlaybackLevel getPlaybackLevel(void) {
 // on this screen), so Esc again is needed to get those back.
 //
 
+// MIDI keyboard note entry (any platform): the played note is written at the
+// cursor like key jazz does, with the last used instrument and volume when the
+// row has none, previewed, and the cursor moves down a row. There is no record
+// mode: on this screen every MIDI note is entered. Returns 0 when nothing was
+// written (FX popup open), so the caller can just preview it instead.
+int phraseMidiEnterNote(uint8_t note) {
+  if (isFxEdit || !phraseRows) return 0;
+  int row = screen.cursorRow;
+  int maxNote = chipnomadState->project.pitchTable.length - 1;
+  if (note > maxNote) note = (uint8_t)maxNote;
+  phraseRows[row].note = noteLockSnap(note, 0);
+  if (phraseRows[row].instrument == EMPTY_VALUE_8) phraseRows[row].instrument = lastInstrument;
+  if (phraseRows[row].volume == EMPTY_VALUE_16) phraseRows[row].volume = lastVolume;
+  lastNote = phraseRows[row].note;
+  projectModified = 1;
+  triggerRowPreview(row);
+  drawField(0, row, CellState::normal);
+  drawField(1, row, CellState::normal);
+  drawField(2, row, CellState::normal);
+  if (row < 15) {
+    screen.cursorRow = row + 1;
+    fullRedraw();
+  }
+  return 1;
+}
+
 #ifdef DESKTOP_BUILD
 
 static int keyJazzEnabled = 0;
