@@ -601,6 +601,36 @@ TEST_CASE_FIXTURE(PlaybackFixture, "preview voices: a chord on one track, notes 
   CHECK(late55 < late48 * 0.05);
 }
 
+TEST_CASE_FIXTURE(PlaybackFixture, "a preview on another track can be mixed like the current track") {
+  state->project.chipsCount = 2;
+  state->project.tracksCount = 2;
+  chipnomadInitChips(state, 44100, mockChipFactory);
+  playbackInit(&state->playbackState, &state->project);
+  getInstrumentFunctions(InstrumentType::Braids).init(&state->project.instruments[0]);
+  InstrumentBraids* b = &state->project.instruments[0].chip.braids;
+  b->model = 3; b->attack = 0; b->decay = 0; b->sustain = 255; b->release = 40;
+  state->project.trackVolume[0] = 50;
+  state->project.trackVolume[1] = 100;
+  REQUIRE(chipnomadQueueProjectRefresh(state));
+  double hz = 440.0 * std::pow(2.0, (48 + 12 - 69) / 12.0);
+
+  auto levelOn = [&](int track, int mixTrack) {
+    chipnomadQueuePlaybackStopPreview(state, 0);
+    chipnomadQueuePlaybackStopPreview(state, 1);
+    std::vector<float> out;
+    float buf[2048];
+    chipnomadQueuePlaybackPreviewNote(state, track, 48, 0);
+    chipnomadQueuePlaybackSetPreviewMix(state, track, mixTrack);
+    for (int i = 0; i < 24; i++) { int n = chipnomadRender(state, buf, 512); out.insert(out.end(), buf, buf + n * 2); }
+    return toneEnergy(out, hz, out.size() / 2 - 4096, out.size() / 2);
+  };
+  double own0 = levelOn(0, -1);
+  double own1 = levelOn(1, -1);
+  double aliased1 = levelOn(1, 0);
+  CHECK(own1 > own0 * 3.0);                  // the idle track really is louder (volume 100 against 50)
+  CHECK(aliased1 == doctest::Approx(own0).epsilon(0.1)); // aliased: like track 0
+}
+
 TEST_CASE_FIXTURE(PlaybackFixture, "a previewed note with release 0 still fades out instead of clicking") {
   getInstrumentFunctions(InstrumentType::Braids).init(&state->project.instruments[0]);
   InstrumentBraids* b = &state->project.instruments[0].chip.braids;

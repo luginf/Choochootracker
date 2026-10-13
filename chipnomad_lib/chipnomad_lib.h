@@ -190,6 +190,8 @@ int chipnomadQueuePlaybackReleasePreview(ChipNomadState* state, int trackIdx);
 // Only instruments for which chipnomadInstrumentHasIndependentVoices is true support it.
 int chipnomadQueuePlaybackPreviewVoice(ChipNomadState* state, int trackIdx, int slot, uint8_t note, uint8_t instrument);
 int chipnomadQueuePlaybackReleaseVoice(ChipNomadState* state, int trackIdx, int slot);
+// A preview on trackIdx is mixed like mixTrack (volume, pan, sends, tilt; no inserts); -1 = its own mixer.
+int chipnomadQueuePlaybackSetPreviewMix(ChipNomadState* state, int trackIdx, int mixTrack);
 int chipnomadInstrumentHasIndependentVoices(const Project* project, int instrument);
 int chipnomadQueuePlaybackClearTrackFX(ChipNomadState* state, int trackIdx);
 void chipnomadQueueLoopRange(ChipNomadState* state, LoopRange range);

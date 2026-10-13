@@ -121,6 +121,10 @@ struct PlaybackTrackState {
   uint8_t slotTriggerMask;
   uint8_t slotReleaseMask;
   uint8_t pendingVoiceMask;
+  // Mixer of another track to use (track + 1, 0 = own): a preview voice put on an idle
+  // track while the current one is busy is heard with the current track's volume,
+  // pan, sends and tilt, and without its inserts, instead of those of the idle track.
+  uint8_t mixAlias;
   uint8_t independentVoices; // set once playbackPreviewVoice added a voice: no 1/N chord gain
   uint8_t pendingVoiceNote[CHORD_MAX_VOICES];
   // Cached phrase row data
@@ -351,6 +355,12 @@ void playbackPreviewVoice(PlaybackState* state, int trackIdx, int slot, uint8_t 
  * Releases one slot's voice (note off) and leaves the others sounding.
  */
 void playbackReleaseVoice(PlaybackState* state, int trackIdx, int slot);
+
+/**
+ * Makes a preview on trackIdx use the mixer settings of mixTrack (-1 for its own).
+ * Reset by the next playbackStartPhraseRow / playbackStop on that track.
+ */
+void playbackSetPreviewMix(PlaybackState* state, int trackIdx, int mixTrack);
 
 /**
  * Sets a loop range for playback

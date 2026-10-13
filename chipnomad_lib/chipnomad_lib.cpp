@@ -204,6 +204,7 @@ class AudioCommandQueue {
         case kReleasePreview: playbackReleasePreview(playback, command.a); break;
         case kPreviewVoice: playbackPreviewVoice(playback, command.a, command.b, (uint8_t)command.c, (uint8_t)command.d); break;
         case kReleaseVoice: playbackReleaseVoice(playback, command.a, command.b); break;
+        case kPreviewMix: playbackSetPreviewMix(playback, command.a, command.b); break;
         case kClearTrackFX: memset(playback->tracks[command.a].note.fx, 0, sizeof(playback->tracks[command.a].note.fx)); break;
         case kSetScale:
           if (command.a >= 0 && command.a < 12 && command.b >= 0 && command.b < scalePresetCount) {
@@ -249,7 +250,7 @@ class AudioCommandQueue {
   struct AudioCommand { uint8_t type; int a, b, c, d; PhraseRow row; InstrumentOPLL patch; InstrumentOPL opl; InstrumentSimpleChip simple; InstrumentDX7 dx7; InstrumentFourOp fourOp; InstrumentSID sid; };
   // kStartPhraseRowFull is appended after upstream's preview commands so the
   // raw command IDs 14/15/16 used by applyCommands keep their meaning.
-  enum CommandType { kStartSong, kStartChain, kStartPhrase, kStartPhraseRow, kQueuePhrase, kPreviewNote, kStopPreview, kClearTrackFX, kStartLiveChain, kQueueLiveChain, kSetScale, kChipPreview, kOPLPreview, kSimplePreview, kStartPhraseRowFull = 17, kReleasePreview = 18, kPreviewVoice = 19, kReleaseVoice = 20 };
+  enum CommandType { kStartSong, kStartChain, kStartPhrase, kStartPhraseRow, kQueuePhrase, kPreviewNote, kStopPreview, kClearTrackFX, kStartLiveChain, kQueueLiveChain, kSetScale, kChipPreview, kOPLPreview, kSimplePreview, kStartPhraseRowFull = 17, kReleasePreview = 18, kPreviewVoice = 19, kReleaseVoice = 20, kPreviewMix = 21 };
   static constexpr unsigned int kSlotCount = 3;
   static constexpr unsigned int kCommandCapacity = 64;
 
@@ -552,11 +553,18 @@ static float phraseGain(const PlaybackState* playback, const PlaybackTrackState*
   return instrument->volume * playbackVolumeGain(playback, track) / 255.0f;
 }
 
+// The track whose volume, pan, sends and tilt a track is mixed with (see mixAlias)
+static int mixSource(const ChipNomadState* state, int trackIdx) {
+  int alias = state->playbackState.tracks[trackIdx].mixAlias;
+  return alias ? alias - 1 : trackIdx;
+}
+
 static float effectiveTrackSend(ChipNomadState* state, int trackIdx,
                                 bool reverb) {
   PlaybackTrackState* track = &state->playbackState.tracks[trackIdx];
-  int value = reverb ? state->audioProject.trackReverbSend[trackIdx]
-                     : state->audioProject.trackDelaySend[trackIdx];
+  int mix = mixSource(state, trackIdx);
+  int value = reverb ? state->audioProject.trackReverbSend[mix]
+                     : state->audioProject.trackDelaySend[mix];
   if (track->note.fx[reverb ? fxRSN : fxDSN].isOn)
     value = track->note.fx[reverb ? fxRSN : fxDSN].fxValue * 100 / 255;
   if (track->note.instrument != EMPTY_VALUE_8) {
@@ -580,7 +588,7 @@ static float effectiveTrackSend(ChipNomadState* state, int trackIdx,
 
 static int effectivePan(ChipNomadState* state, int trackIdx, bool instrumentPan) {
   PlaybackTrackState* track = &state->playbackState.tracks[trackIdx];
-  int value = instrumentPan ? 128 : state->audioProject.trackPan[trackIdx];
+  int value = instrumentPan ? 128 : state->audioProject.trackPan[mixSource(state, trackIdx)];
   InstrumentType type = InstrumentType::none;
   if (track->note.instrument != EMPTY_VALUE_8) {
     const Instrument* instrument = &state->audioProject.instruments[track->note.instrument];
@@ -644,11 +652,11 @@ static inline void mixTrackChannel(ChipNomadState* state, int trackIdx,
                                    float delaySend) {
   int channel = sampleIndex & 1;
   TrackTilt& tilt = state->trackTilt[trackIdx];
-  const uint8_t tiltValue = state->audioProject.trackTilt[trackIdx];
+  const uint8_t tiltValue = state->audioProject.trackTilt[mixSource(state, trackIdx)];
   sample = tilt.isNeutral(tiltValue, state->audioProject.tiltPivotHz)
     ? tilt.passThrough(sample, channel)
     : tilt.process(sample, channel, tiltValue, state->audioProject.tiltPivotHz);
-  if (state->insertActive[trackIdx]) {
+  if (state->insertActive[trackIdx] && !state->playbackState.tracks[trackIdx].mixAlias) {
     state->insertBuffer[(size_t)trackIdx * state->mixBufferSize + sampleIndex] += sample;
     return;
   }
@@ -968,6 +976,9 @@ int chipnomadQueuePlaybackPreviewVoice(ChipNomadState* state, int trackIdx, int 
 int chipnomadQueuePlaybackReleaseVoice(ChipNomadState* state, int trackIdx, int slot) {
   return state && state->audioCommands ? state->audioCommands->pushCommand(20, trackIdx, slot) : 0;
 }
+int chipnomadQueuePlaybackSetPreviewMix(ChipNomadState* state, int trackIdx, int mixTrack) {
+  return state && state->audioCommands ? state->audioCommands->pushCommand(21, trackIdx, mixTrack) : 0;
+}
 int chipnomadInstrumentHasIndependentVoices(const Project* project, int instrument) {
   if (!project || instrument < 0 || instrument >= PROJECT_MAX_INSTRUMENTS) return 0;
   switch (project->instruments[instrument].type) {
@@ -1147,7 +1158,7 @@ static void renderMonoVoiceTracks(ChipNomadState* state, Voice* const voices[][C
       float* rendered = state->mixBuffer;
       voice->render(rendered, frames);
       captureVoiceMonitor(state, trackIdx, rendered, frames, 1, voice->envelopeLevel());
-      float trackGain = state->audioProject.trackVolume[trackIdx] / 100.0f;
+      float trackGain = state->audioProject.trackVolume[mixSource(state, trackIdx)] / 100.0f;
       float reverbSend = effectiveTrackSend(state, trackIdx, true);
       float delaySend = effectiveTrackSend(state, trackIdx, false);
       int instrumentPan = effectivePan(state, trackIdx, true);
@@ -1172,7 +1183,7 @@ static void renderStereoVoiceTracks(ChipNomadState* state, Voice* const voices[]
       float* rendered = state->mixBuffer;
       voice->render(rendered, frames);
       captureVoiceMonitor(state, trackIdx, rendered, frames, 2, voice->envelopeLevel());
-      float gain = state->audioProject.trackVolume[trackIdx] / 100.0f;
+      float gain = state->audioProject.trackVolume[mixSource(state, trackIdx)] / 100.0f;
       float reverbSend = effectiveTrackSend(state, trackIdx, true);
       float delaySend = effectiveTrackSend(state, trackIdx, false);
       int instrumentPan = effectivePan(state, trackIdx, true);
@@ -1284,7 +1295,7 @@ int chipnomadRender(ChipNomadState* state, float* buffer, int samples) {
       part->render(rendered,frames);
       if(!state->playbackState.trackEnabled[t])continue;
       captureVoiceMonitor(state,t,rendered,frames,1,part->envelopeLevel());
-      float gain=state->audioProject.trackVolume[t]/100.f*.25f;
+      float gain=state->audioProject.trackVolume[mixSource(state,t)]/100.f*.25f;
       float reverb=effectiveTrackSend(state,t,true),delay=effectiveTrackSend(state,t,false);
       int instrumentPan = effectivePan(state, t, true);
       int trackPan = effectivePan(state, t, false);

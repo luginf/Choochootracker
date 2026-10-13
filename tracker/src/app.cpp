@@ -443,6 +443,9 @@ static void midiStartVoice(const MidiNoteEvent& e) {
   if (fresh) {
     midiDropTrackVoices(track);
     chipnomadQueuePlaybackPreviewNote(chipnomadState, track, e.note, (uint8_t)e.instrument);
+    // On another track than the current one: sound like the current track
+    // (its volume, pan and sends), not like the idle track's own mixer
+    chipnomadQueuePlaybackSetPreviewMix(chipnomadState, track, track != current ? current : -1);
   } else {
     chipnomadQueuePlaybackPreviewVoice(chipnomadState, track, slot, e.note, (uint8_t)e.instrument);
   }

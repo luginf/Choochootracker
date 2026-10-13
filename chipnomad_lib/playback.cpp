@@ -114,6 +114,7 @@ static void resetTrack(PlaybackState* state, int trackIdx) {
   track->chordVoiceCount = 1;
   track->slotTriggerMask = track->slotReleaseMask = track->pendingVoiceMask = 0;
   track->independentVoices = 0;
+  track->mixAlias = 0;
   memset(track->chordPitchBase, EMPTY_VALUE_8, sizeof(track->chordPitchBase));
   memset(track->chordPitchFinal, EMPTY_VALUE_8, sizeof(track->chordPitchFinal));
 
@@ -1493,6 +1494,12 @@ void playbackPreviewVoice(PlaybackState* state, int trackIdx, int slot, uint8_t 
   if (track->note.noteTriggered && track->slotTriggerMask == 0) return; // everything triggers together anyway
   track->note.noteTriggered = 1;
   track->slotTriggerMask |= (uint8_t)(1 << slot);
+}
+
+void playbackSetPreviewMix(PlaybackState* state, int trackIdx, int mixTrack) {
+  if (trackIdx < 0 || trackIdx >= state->p->tracksCount) return;
+  bool valid = mixTrack >= 0 && mixTrack < state->p->tracksCount && mixTrack != trackIdx;
+  state->tracks[trackIdx].mixAlias = valid ? (uint8_t)(mixTrack + 1) : 0;
 }
 
 void playbackReleaseVoice(PlaybackState* state, int trackIdx, int slot) {
