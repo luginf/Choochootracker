@@ -212,6 +212,11 @@ proc fur2cct::convert {mod opts} {
         if {$c >= [llength $kinds]} { error "channel $c does not exist" }
         if {[lindex $kinds $c 0] eq ""} { warn "channel $c: chip [lindex $kinds $c 1] is not supported (notes kept, default sound)" }
     }
+    if {[llength $chans] == 0} {
+        set ids {}
+        foreach c [dict get $mod chips] { lappend ids [format "0x%02X" [lindex $c 0]] }
+        error "no supported channel: this module uses chip(s) [join $ids {, }]; only YM2612 (Genesis FM) and SN76489 (Sega PSG) are converted so far"
+    }
     if {[llength $chans] > 8} { error "at most 8 channels can be converted" }
 
     # instruments
