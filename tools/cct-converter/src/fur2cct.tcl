@@ -12,6 +12,9 @@ namespace eval fur2cct {
     # register, and the .cct, hold the hardware value.
     variable dtTable {7 6 5 0 1 2 3 4}
     variable emptyPhrase 1023
+    variable sampleWav [dict create]
+    variable sampleLoop [dict create]
+    variable furSamples {}
 }
 
 proc fur2cct::warn {msg} {
@@ -86,6 +89,11 @@ proc fur2cct::parseInstrument {entry} {
             NA { dict set res name [encoding convertfrom utf-8 [lindex [split $body "\x00"] 0]] }
             FM { dict set res fm [parseFM $body $iver] }
             64 { dict set res c64 [parseC64 $body] }
+            SM {
+                binary scan $body susu smp flags
+                dict set res sample $smp
+                dict set res sampleMap [expr {$flags & 1}]
+            }
         }
     }
     return $res
@@ -121,6 +129,11 @@ proc fur2cct::parseOldInstrument {block} {
             toFilter $tof sync $sync ring $ring filter [expr {$lp | ($bp << 1) | ($hp << 2)}] \
             attack $at decay $de sustain $su release $re duty [expr {($d0 | ($d1 << 8)) & 4095}] \
             cutoff [expr {[info exists cut] ? $cut & 2047 : 0}] res $rsn]
+        return $res
+    }
+    if {$itype == 4} {
+        binary scan [string range $block [expr {$e + 1 + 164}] [expr {$e + 166}]] su smp
+        if {[info exists smp]} { dict set res sample $smp }
         return $res
     }
     if {$itype ni {1 33 14}} { return $res }
@@ -313,8 +326,27 @@ proc fur2cct::sidInstrumentLines {name c64} {
 
 # Instrument property lines for a channel kind. Furnace instruments of an
 # unexpected type fall back to a default patch of the right chip.
-proc fur2cct::instrumentFor {kind nm ins fi} {
+proc fur2cct::instrumentFor {kind nm ins fi slot} {
+    variable sampleWav
+    variable sampleLoop
+    variable furSamples
     set t [expr {$ins eq "" ? -1 : [dict get $ins type]}]
+    if {$t == 4 && [dict exists $ins sample]} {
+        set si [dict get $ins sample]
+        set smp [lindex $furSamples $si]
+        set w [expr {$smp eq "" ? "" : [sampleToWav $smp]}]
+        if {$w ne ""} {
+            if {[dict exists $ins sampleMap] && [dict get $ins sampleMap]} { warn "instrument $fi uses a sample map: only its initial sample is converted" }
+            set loop 0
+            if {[dict get $smp loopStart] >= 0} {
+                set loop 1
+                if {[dict get $smp loopStart] > 0} { warn "sample '[dict get $smp name]' loops from frame [dict get $smp loopStart]: the tracker loops the whole sample" }
+            }
+            dict set sampleWav $slot [lindex $w 0]
+            return [sampleInstrumentLines $nm 0 $loop]
+        }
+        warn "instrument $fi: sample depth [expr {$smp eq "" ? "?" : [dict get $smp depth]}] is not supported, default patch used"
+    }
     switch $kind {
         fm {
             if {$t == 1 && [dict exists $ins fm]} { return [genesisInstrumentLines $nm [dict get $ins fm]] }
@@ -342,6 +374,51 @@ proc fur2cct::instrumentFor {kind nm ins fi} {
     }
 }
 
+# Decode a Furnace sample to a mono 16-bit WAV. Returns {wav rate loopFlag}
+# or "" when the sample depth is not supported.
+proc fur2cct::sampleToWav {smp} {
+    set data [dict get $smp data]
+    set depth [dict get $smp depth]
+    set len [dict get $smp length]
+    switch $depth {
+        8 {
+            if {[string length $data] >= 2 * $len && $len > 0 && [string length $data] % 2 == 0 && [string length $data] != $len} {
+                binary scan $data s* v          ;# old modules stored 16-bit
+            } else {
+                binary scan $data c* b
+                set v {}
+                foreach x $b { lappend v [expr {$x * 256}] }
+            }
+        }
+        16 { binary scan $data s* v }
+        11 {
+            binary scan $data cu* b
+            set v {}
+            foreach x $b {
+                set x [expr {(~$x) & 255}]
+                set t [expr {(($x & 15) << 3) + 132}]
+                set t [expr {$t << (($x & 0x70) >> 4)}]
+                lappend v [expr {($x & 0x80) ? 132 - $t : $t - 132}]
+            }
+        }
+        default { return "" }
+    }
+    if {[llength $v] == 0} { return "" }
+    set rate [dict get $smp c4]
+    set pcm [binary format s* $v]
+    set n [string length $pcm]
+    set wav [binary format a4ia4a4issiissa4i RIFF [expr {36 + $n}] WAVE "fmt " 16 1 1 $rate [expr {$rate * 2}] 2 16 data $n]
+    append wav $pcm
+    return [list $wav $rate]
+}
+
+proc fur2cct::sampleInstrumentLines {name idx loop} {
+    set lines [insHead $name 5]
+    lappend lines "- Sample path: samples/[format %03d $idx].wav" "- Sample pitch: 0" \
+        "- Sample speed: 100" "- Sample start: 0" "- Sample end: 255" "- Sample loop: $loop"
+    return $lines
+}
+
 proc fur2cct::fenceBlock {rows} {
     return [concat [list "" "```"] $rows [list "```" ""]]
 }
@@ -367,6 +444,10 @@ proc fur2cct::import {path {opts {}}} {
 proc fur2cct::convert {mod opts} {
     variable warnings
     variable emptyPhrase
+    variable sampleWav
+    variable furSamples
+    set sampleWav [dict create]
+    set furSamples [expr {[dict exists $mod samples] ? [dict get $mod samples] : {}}]
     set tmpl [cct::parse [template]]
     set names [noteNames $tmpl]
     set kinds [channelKinds $mod]
@@ -419,7 +500,7 @@ proc fur2cct::convert {mod opts} {
         set nm ""
         if {$ins ne ""} { set nm [dict get $ins name] }
         if {$nm eq ""} { set nm [format "Ins %02X" [expr {$fi < 0 ? 0 : $fi}]] }
-        set lines [instrumentFor $kind $nm $ins $fi]
+        set lines [instrumentFor $kind $nm $ins $fi $slot]
         dict set insSlot $key $slot
         dict set insLines $slot $lines
         return $slot
@@ -621,8 +702,14 @@ proc fur2cct::convert {mod opts} {
             }
             Instruments {
                 set subs {}
+                set sampleSlots [lsort -integer [dict keys $sampleWav]]
                 foreach slot [lsort -integer [dict keys $insLines]] {
-                    lappend subs [list [format "Instrument %X" $slot] [concat {""} [dict get $insLines $slot] {""}]]
+                    set ilines [dict get $insLines $slot]
+                    set rank [lsearch -exact $sampleSlots $slot]
+                    if {$rank >= 0} {
+                        set ilines [lmap l $ilines { expr {[string match "- Sample path:*" $l] ? [format "- Sample path: samples/%03d.wav" $rank] : $l} }]
+                    }
+                    lappend subs [list [format "Instrument %X" $slot] [concat {""} $ilines {""}]]
                 }
                 set s [list Instruments {""} $subs]
             }
@@ -630,6 +717,14 @@ proc fur2cct::convert {mod opts} {
         lappend secs $s
     }
     dict set doc sections $secs
+    # samples are numbered by rank among sample instruments, slot order
+    set rank 0
+    set entries {}
+    foreach slot [lsort -integer [dict keys $sampleWav]] {
+        lappend entries [list [format "samples/%03d.wav" $rank] [dict get $sampleWav $slot]]
+        incr rank
+    }
+    if {[llength $entries]} { dict set doc samples $entries }
     return $doc
 }
 

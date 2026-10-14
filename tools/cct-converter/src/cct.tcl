@@ -76,9 +76,16 @@ proc cct::serialize {doc} {
     return [join $out "\n"]
 }
 
+# A document with a "samples" entry ({name data} pairs) is written as a zip
+# holding project.cct and the sample WAVs, like the tracker does.
 proc cct::save {doc path} {
+    set text [encoding convertto utf-8 [serialize $doc]]
+    if {[dict exists $doc samples]} {
+        zipio::write $path [concat [list [list project.cct $text]] [dict get $doc samples]]
+        return
+    }
     set fd [open $path wb]
-    puts -nonewline $fd [encoding convertto utf-8 [serialize $doc]]
+    puts -nonewline $fd $text
     close $fd
 }
 

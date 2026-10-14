@@ -173,7 +173,7 @@ proc fur::loadInfo {resVar} {
     skip 20                         ;# compat flags (limit slides .. reset note base)
     set insPtrs {}; for {set i 0} {$i < $insN} {incr i} { lappend insPtrs [u32] }
     skip [expr {$waveN * 4}]
-    skip [expr {$smpN * 4}]
+    set smpPtrs {}; for {set i 0} {$i < $smpN} {incr i} { lappend smpPtrs [u32] }
     set patPtrs {}; for {set i 0} {$i < $patN} {incr i} { lappend patPtrs [u32] }
     set chips [expandChips $ids]
     set nchan 0
@@ -227,7 +227,7 @@ proc fur::loadInfo {resVar} {
         }
         dict lappend res songs $sg
     }
-    set all [lsort -integer [concat $insPtrs $patPtrs $extra]]
+    set all [lsort -integer [concat $insPtrs $patPtrs $extra $smpPtrs]]
     foreach ptr $insPtrs {
         set p $ptr
         set bid [bytes 4]
@@ -241,6 +241,7 @@ proc fur::loadInfo {resVar} {
         dict lappend res insBlocks [list $bid [bytes $sz]]
     }
     foreach ptr $patPtrs { readPatn res $ptr }
+    foreach ptr $smpPtrs { readSample res $ptr }
 }
 
 proc fur::loadInf2 {resVar} {
@@ -266,7 +267,7 @@ proc fur::loadInf2 {resVar} {
     dict set res channels $nchan
     set nconn [u32]; skip [expr {$nconn * 4}]
     skip 1
-    set songPtrs {}; set insPtrs {}; set patPtrs {}
+    set songPtrs {}; set insPtrs {}; set patPtrs {}; set smpPtrs {}
     while 1 {
         set t [u8]
         if {$t == 0} break
@@ -276,6 +277,7 @@ proc fur::loadInf2 {resVar} {
         switch $t {
             1 { set songPtrs $ptrs }
             4 { set insPtrs $ptrs }
+            6 { set smpPtrs $ptrs }
             7 { set patPtrs $ptrs }
         }
     }
@@ -302,6 +304,7 @@ proc fur::loadInf2 {resVar} {
         dict lappend res insBlocks [list $bid [bytes $sz]]
     }
     foreach ptr $patPtrs { readPatn res $ptr }
+    foreach ptr $smpPtrs { readSample res $ptr }
 }
 
 # SNG2 body: same tables as SONG but colors follow the short names.
@@ -397,3 +400,50 @@ proc fur::readPatr {resVar ptr} {
     dict set res patterns "$sub,$chan,$idx" $rows
 }
 proc fur::s16 {} { variable d; variable p; binary scan $d @${p}s v; incr p 2; return $v }
+
+# Sample blocks: SMP2 (>=102) and old SMPL. Appended to "samples" in file
+# order, so the instrument's sample index is the list index.
+# Each sample: dict name rate c4 depth loopStart loopEnd data (raw bytes).
+proc fur::readSample {resVar ptr} {
+    variable ver
+    variable p
+    variable d
+    upvar 1 $resVar res
+    set p $ptr
+    set id [bytes 4]
+    set size [u32]
+    set end [expr {$p + $size}]
+    if {$size == 0} { set end [string length $d] }
+    set smp [dict create loopStart -1 loopEnd -1]
+    dict set smp name [str]
+    set len [u32]
+    set rate [u32]
+    if {$id eq "SMP2"} {
+        set c4 [u32]
+        set depth [u8]
+        skip 3                            ;# loop direction, flags, flags 2 (or reserved)
+        set ls [u32]; set le [u32]
+        if {$ls > 0x7fffffff} { set ls -1 }
+        if {$le > 0x7fffffff} { set le -1 }
+        skip 16
+    } else {
+        skip 4                            ;# volume, pitch
+        set depth [u8]
+        skip 1
+        set c4 $rate
+        if {$ver >= 32} { set c4 [u16] } else { skip 2 }
+        set ls -1
+        if {$ver >= 19} { set ls [u32]; if {$ls > 0x7fffffff} { set ls -1 } } else { skip 4 }
+        set le -1
+    }
+    dict set smp length $len
+    dict set smp rate $rate
+    dict set smp c4 [expr {$c4 > 0 ? $c4 : $rate}]
+    dict set smp depth $depth
+    dict set smp loopStart $ls
+    dict set smp loopEnd $le
+    set n [expr {$end - $p}]
+    if {$n < 0} { set n 0 }
+    dict set smp data [bytes $n]
+    dict lappend res samples $smp
+}

@@ -36,3 +36,29 @@ proc zipio::extract {data name} {
     }
     error "$name not found in zip"
 }
+
+# Write a zip archive of stored (uncompressed) entries, the only method the
+# tracker reads. entries: list of {name data}.
+proc zipio::write {path entries} {
+    set out ""
+    set central ""
+    set count 0
+    foreach e $entries {
+        lassign $e name data
+        set crc [zlib crc32 $data]
+        set off [string length $out]
+        set n [string length $name]
+        set sz [string length $data]
+        append out [binary format a4sssssiiiss "PK\x03\x04" 20 0 0 0 0 $crc $sz $sz $n 0]
+        append out $name $data
+        append central [binary format a4ssssssiiisssssii "PK\x01\x02" 20 20 0 0 0 0 $crc $sz $sz $n 0 0 0 0 0 $off]
+        append central $name
+        incr count
+    }
+    set coff [string length $out]
+    append out $central
+    append out [binary format a4ssssiis "PK\x05\x06" 0 0 $count $count [string length $central] $coff 0]
+    set fd [open $path wb]
+    puts -nonewline $fd $out
+    close $fd
+}
