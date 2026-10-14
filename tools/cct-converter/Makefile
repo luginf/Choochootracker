@@ -1,7 +1,7 @@
 # Concatenates src/*.tcl into one runnable file, cct-converter.tcl.
 # During development "wish src/main.tcl" works without building.
 
-SRC = src/zipio.tcl src/cct.tcl src/convert.tcl src/cli.tcl src/gui.tcl
+SRC = src/zipio.tcl src/cct.tcl src/fur.tcl src/convert.tcl src/cli.tcl src/gui.tcl
 
 all: cct-converter.tcl
 
