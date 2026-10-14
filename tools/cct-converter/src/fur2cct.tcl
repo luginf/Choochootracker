@@ -70,6 +70,43 @@ proc fur2cct::chipName {id} {
     return [format "chip 0x%02X" $id]
 }
 
+# Default channel choice: channels that have notes, at most 8. Channels
+# playing sample instruments come first (they are what distinguishes a
+# module), the rest in channel order.
+proc fur2cct::autoChannels {mod songIdx kinds} {
+    set insType {}
+    set idx 0
+    foreach b [dict get $mod insBlocks] {
+        dict set insType $idx [dict get [parseInstrument $b] type]
+        incr idx
+    }
+    set notes [dict create]
+    set sampled [dict create]
+    dict for {k rows} [dict get $mod patterns] {
+        lassign [split $k ,] sub ch pat
+        if {$sub != $songIdx} continue
+        dict for {r cell} $rows {
+            if {[dict get $cell note] ne ""} { dict set notes $ch 1 }
+            set i [dict get $cell ins]
+            if {$i ne "" && [dict exists $insType $i] && [dict get $insType $i] == 4} { dict set sampled $ch 1 }
+        }
+    }
+    set used {}
+    for {set c 0} {$c < [llength $kinds]} {incr c} {
+        if {[dict exists $notes $c]} { lappend used $c }
+    }
+    if {[llength $used] == 0} { set used [lrepeat 0 0]; for {set c 0} {$c < [llength $kinds]} {incr c} { lappend used $c } }
+    if {[llength $used] <= 8} { return $used }
+    set pick {}
+    foreach c $used { if {[dict exists $sampled $c] && [llength $pick] < 2} { lappend pick $c } }
+    foreach c $used { if {$c ni $pick && [llength $pick] < 8} { lappend pick $c } }
+    set pick [lsort -integer $pick]
+    set dropped {}
+    foreach c $used { if {$c ni $pick} { lappend dropped $c } }
+    warn "module has [llength $used] channels with notes, keeping [join $pick ,] and dropping [join $dropped ,] (use -channels to choose)"
+    return $pick
+}
+
 # Decode an instrument block {id body}: INS2 (>=127) or old INST (<127).
 # Returns dict: type name fm
 proc fur2cct::parseInstrument {entry} {
@@ -459,12 +496,7 @@ proc fur2cct::convert {mod opts} {
     if {[dict exists $opts channels] && [dict get $opts channels] ne ""} {
         set chans [split [dict get $opts channels] ,]
     } else {
-        set chans {}
-        for {set i 0} {$i < [llength $kinds]} {incr i} { lappend chans $i }
-        if {[llength $chans] > 8} {
-            warn "module has [llength $chans] channels, keeping the first 8 (use -channels to choose)"
-            set chans [lrange $chans 0 7]
-        }
+        set chans [autoChannels $mod $songIdx $kinds]
     }
     if {[llength $chans] == 0} { error "module has no channels" }
     if {[llength $chans] > 8} { error "at most 8 channels can be converted" }
