@@ -51,8 +51,11 @@ proc fur2cct::channelKinds {mod} {
     return $out
 }
 
-# Decode an INS2 block (>=127). Returns dict: type name fm
-proc fur2cct::parseInstrument {block} {
+# Decode an instrument block {id body}: INS2 (>=127) or old INST (<127).
+# Returns dict: type name fm
+proc fur2cct::parseInstrument {entry} {
+    lassign $entry bid block
+    if {$bid eq "INST"} { return [parseOldInstrument $block] }
     binary scan $block susu iver itype
     set res [dict create type $itype name "" version $iver]
     set pos 4
@@ -68,6 +71,29 @@ proc fur2cct::parseInstrument {block} {
             FM { dict set res fm [parseFM $body $iver] }
         }
     }
+    return $res
+}
+
+proc fur2cct::parseOldInstrument {block} {
+    binary scan $block sucu iver itype
+    set res [dict create type $itype name "" version $iver]
+    set e [string first "\x00" $block 4]
+    dict set res name [encoding convertfrom utf-8 [string range $block 4 [expr {$e - 1}]]]
+    if {$itype != 1} { return $res }
+    set b {}
+    binary scan [string range $block [expr {$e + 1}] [expr {$e + 8 + 4 * 32}]] cu* b
+    set alg [lindex $b 0]; set fb [lindex $b 1]; set fms [lindex $b 2]; set ams [lindex $b 3]
+    set pos 8
+    set ops {}
+    set enabled 0
+    for {set i 0} {$i < 4} {incr i} {
+        lassign [lrange $b $pos [expr {$pos + 21}]] am ar dr mult rr sl tl dt2 rs dt d2r ssg dam dvb egt ksl sus vib ws ksr en kvs
+        incr pos 32
+        lappend ops [dict create mul $mult dt $dt tl $tl ar $ar rs $rs dr $dr am $am d2r $d2r rr $rr sl $sl ssg [expr {$ssg & 15}]]
+        # old files store operator enable in logical-slot order 1,3,2,4 like INS2
+        if {$iver < 114 || $en} { set enabled [expr {$enabled | (1 << $i)}] }
+    }
+    dict set res fm [dict create alg $alg fb $fb fms $fms ams $ams enabled $enabled ops $ops]
     return $res
 }
 
@@ -274,7 +300,13 @@ proc fur2cct::convert {mod opts} {
                         set v [dict get $cell vol]
                         if {$v ne ""} {
                             if {$kind eq "fm"} { set v [expr {min($v, 127)}] } else { set v [expr {int($v * 127.0 / 15 + 0.5)}] }
-                            set vol [format %02X [expr {min($v, 127)}]]
+                            set curVol($c) [expr {min($v, 127)}]
+                        }
+                        # The tracker has no persistent channel volume, so a
+                        # note row without one would be silent: carry the
+                        # last Furnace volume (initially full) on every note.
+                        if {$note ne "---" && $note ne "OFF" || $v ne ""} {
+                            set vol [format %02X [expr {[info exists curVol($c)] ? $curVol($c) : 127}]]
                         }
                         set fxs {}
                         foreach f [dict get $cell fx] {

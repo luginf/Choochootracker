@@ -137,7 +137,6 @@ proc fur::load {path} {
     set ver [u16]
     skip 2
     set infoPtr [u32]
-    if {$ver < 157} { error "Furnace format version $ver is too old (need 157 or newer)" }
     set p $infoPtr
     set id [bytes 4]
     set size [u32]
@@ -155,6 +154,7 @@ proc fur::load {path} {
 proc fur::loadInfo {resVar} {
     variable ver
     variable p
+    variable d
     upvar 1 $resVar res
     skip 1                          ;# time base
     set speed1 [u8]; set speed2 [u8]
@@ -227,11 +227,18 @@ proc fur::loadInfo {resVar} {
         }
         dict lappend res songs $sg
     }
+    set all [lsort -integer [concat $insPtrs $patPtrs $extra]]
     foreach ptr $insPtrs {
         set p $ptr
-        bytes 4
+        set bid [bytes 4]
         set sz [u32]
-        dict lappend res insBlocks [bytes $sz]
+        if {$sz == 0} {
+            # very old modules wrote no block size: run to the next block
+            set next [string length $d]
+            foreach q $all { if {$q > $ptr} { set next $q; break } }
+            set sz [expr {$next - $p}]
+        }
+        dict lappend res insBlocks [list $bid [bytes $sz]]
     }
     foreach ptr $patPtrs { readPatn res $ptr }
 }
@@ -290,9 +297,9 @@ proc fur::loadInf2 {resVar} {
     }
     foreach ptr $insPtrs {
         set p $ptr
-        bytes 4
+        set bid [bytes 4]
         set sz [u32]
-        dict lappend res insBlocks [bytes $sz]
+        dict lappend res insBlocks [list $bid [bytes $sz]]
     }
     foreach ptr $patPtrs { readPatn res $ptr }
 }
@@ -307,8 +314,10 @@ proc fur::readSongBody2 {nchan out} {
 proc fur::readPatn {resVar ptr} {
     variable ver
     variable p
+    variable d
     upvar 1 $resVar res
     set p $ptr
+    if {[string range $d $p [expr {$p + 3}]] eq "PATR"} { return [readPatr res $ptr] }
     bytes 4
     set size [u32]
     set end [expr {$p + $size}]
@@ -349,3 +358,42 @@ proc fur::readPatn {resVar ptr} {
     }
     dict set res patterns "$sub,$chan,$idx" $rows
 }
+
+# Old pattern block (<157): fixed-size 16-bit cells.
+proc fur::readPatr {resVar ptr} {
+    variable ver
+    variable p
+    upvar 1 $resVar res
+    set p [expr {$ptr + 4}]
+    set size [u32]
+    set end [expr {$p + $size}]
+    set chan [u16]
+    set idx [u16]
+    set sub [expr {$ver >= 95 ? [u16] : 0}]
+    if {$ver < 95} { skip 2 }
+    skip 2
+    set song [lindex [dict get $res songs] $sub]
+    set patLen [dict get $song patLen]
+    set fxCols [lindex [dict get $song fxCols] $chan]
+    set rows {}
+    for {set r 0} {$r < $patLen} {incr r} {
+        set note [s16]; set oct [s16]; set ins [s16]; set vol [s16]
+        set fx {}
+        for {set e 0} {$e < $fxCols} {incr e} {
+            set c [s16]; set v [s16]
+            if {$c >= 0 || $v >= 0} { lappend fx [list $e [expr {$c < 0 ? "" : $c}] [expr {$v < 0 ? "" : $v}]] }
+        }
+        set n ""
+        if {$note == 100} { set n 180
+        } elseif {$note == 101} { set n 181
+        } elseif {$note == 102} { set n 182
+        } elseif {$note != 0 || $oct != 0} {
+            if {$oct > 127} { incr oct -256 }
+            set n [expr {60 + $oct * 12 + $note % 12 + ($note == 12 ? 12 : 0)}]
+        }
+        if {$n eq "" && $ins < 0 && $vol < 0 && ![llength $fx]} continue
+        dict set rows $r [dict create note $n ins [expr {$ins < 0 ? "" : $ins}] vol [expr {$vol < 0 ? "" : $vol}] fx $fx]
+    }
+    dict set res patterns "$sub,$chan,$idx" $rows
+}
+proc fur::s16 {} { variable d; variable p; binary scan $d @${p}s v; incr p 2; return $v }
