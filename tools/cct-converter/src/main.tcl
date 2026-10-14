@@ -5,7 +5,7 @@
 
 set ::script_dir [file dirname [file normalize [info script]]]
 if {![info exists ::cct_bundled]} {
-    foreach f {zipio cct fur convert cli gui} { source [file join $::script_dir $f.tcl] }
+    foreach f {zipio cct fur convert fur2cct cli gui} { source [file join $::script_dir $f.tcl] }
 }
 
 proc main {argv} {

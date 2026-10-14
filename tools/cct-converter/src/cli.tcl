@@ -4,7 +4,8 @@ namespace eval cli {}
 
 proc cli::usage {} {
     puts stderr "Usage:
-  cct-converter.tcl convert <input> <output>   convert; one side must be .cct
+  cct-converter.tcl convert <input> <output> [-channels 0,1,..] [-song N]
+                                               convert; one side must be .cct
   cct-converter.tcl info <file.cct>            print a project summary
   cct-converter.tcl formats                    list supported formats
   cct-converter.tcl gui                        open the graphical interface
@@ -16,12 +17,19 @@ proc cli::main {argv} {
     set cmd [lindex $argv 0]
     switch -- $cmd {
         convert {
-            if {[llength $argv] != 3} { usage; return 1 }
+            if {[llength $argv] < 3} { usage; return 1 }
             lassign [lrange $argv 1 2] in out
-            if {[catch {converter::run $in $out} err]} {
+            set opts {}
+            foreach {k v} [lrange $argv 3 end] {
+                if {![string match -* $k] || $v eq ""} { usage; return 1 }
+                dict set opts [string range $k 1 end] $v
+            }
+            set fur2cct::warnings {}
+            if {[catch {converter::run $in $out $opts} err]} {
                 puts stderr "Error: $err"
                 return 1
             }
+            foreach w $fur2cct::warnings { puts stderr "Warning: $w" }
             puts "Converted '$in' -> '$out'"
             return 0
         }
