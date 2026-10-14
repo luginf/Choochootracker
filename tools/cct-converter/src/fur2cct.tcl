@@ -237,7 +237,9 @@ proc fur2cct::convert {mod opts} {
     set phrasesPerPattern [expr {($patLen + 15) / 16}]
     if {$phrasesPerPattern > 16} { error "pattern length $patLen too long" }
     if {$patLen % 16} { warn "pattern length $patLen is not a multiple of 16: rows are padded" }
-    set clamped 0; set fxDropped 0
+    set clamped 0
+    set dropped [dict create]
+    set grooves [dict create]   ;# speed -> groove id (0Fxx), id 0 is the song groove
 
     foreach order $orders {
         set cells {}
@@ -253,7 +255,7 @@ proc fur2cct::convert {mod opts} {
                 set blank 1
                 for {set r 0} {$r < 16} {incr r} {
                     set row [expr {$ph * 16 + $r}]
-                    set note "---"; set ins "--"; set vol "--"
+                    set note "---"; set ins "--"; set vol "--"; set fxText "--- 00 --- 00 --- 00"
                     if {$row < $patLen && [dict exists $rows $row]} {
                         set cell [dict get $rows $row]
                         set n [dict get $cell note]
@@ -274,10 +276,25 @@ proc fur2cct::convert {mod opts} {
                             if {$kind eq "fm"} { set v [expr {min($v, 127)}] } else { set v [expr {int($v * 127.0 / 15 + 0.5)}] }
                             set vol [format %02X [expr {min($v, 127)}]]
                         }
-                        if {[llength [dict get $cell fx]]} { incr fxDropped }
+                        set fxs {}
+                        foreach f [dict get $cell fx] {
+                            lassign $f col cmd val
+                            if {$cmd eq ""} continue
+                            if {$val eq ""} { set val 0 }
+                            set m [mapEffect $cmd $val grooves]
+                            if {$m eq ""} {
+                                dict incr dropped [format %02X $cmd]
+                            } elseif {[llength $fxs] < 3} {
+                                lappend fxs $m
+                            } else {
+                                dict incr dropped extra
+                            }
+                        }
+                        while {[llength $fxs] < 3} { lappend fxs "--- 00" }
+                        set fxText [join $fxs " "]
                         set blank 0
                     }
-                    lappend lines "$note $ins $vol --- 00 --- 00 --- 00"
+                    lappend lines "$note $ins $vol $fxText"
                 }
                 set text [join $lines \n]
                 if {$blank} {
@@ -309,7 +326,11 @@ proc fur2cct::convert {mod opts} {
     }
     if {[llength $songRows] > 256} { error "more than 256 orders" }
     if {$clamped} { warn "$clamped notes were outside the tracker's range and were clamped" }
-    if {$fxDropped} { warn "effects are not converted yet ($fxDropped rows had effects)" }
+    if {[dict size $dropped]} {
+        set l {}
+        dict for {c n} $dropped { lappend l "$c ($n)" }
+        warn "effects not converted (Furnace command, count): [join $l {, }]"
+    }
 
     # groove from the speed pattern
     set speeds [expr {[dict exists $song speedPattern] ? [dict get $song speedPattern] : [list [dict get $song speed] [dict get $song speed2]]}]
@@ -353,7 +374,13 @@ proc fur2cct::convert {mod opts} {
                 set s [list Chains {""} $subs]
             }
             Grooves {
-                set s [list Grooves {""} [list [list "Groove 0" [fenceBlock $grooveRows]]]]
+                set gsubs [list [list "Groove 0" [fenceBlock $grooveRows]]]
+                dict for {spd gid} $grooves {
+                    set rows [list [format %02X $spd]]
+                    while {[llength $rows] < 16} { lappend rows "--" }
+                    lappend gsubs [list [format "Groove %X" $gid] [fenceBlock $rows]]
+                }
+                set s [list Grooves {""} $gsubs]
             }
             Phrases {
                 set subs {}
@@ -374,6 +401,31 @@ proc fur2cct::convert {mod opts} {
     }
     dict set doc sections $secs
     return $doc
+}
+
+# Furnace effect -> "NAM vv" cct FX cell, or "" when there is no equivalent.
+proc fur2cct::mapEffect {cmd val groovesVar} {
+    upvar 1 $groovesVar grooves
+    switch $cmd {
+        0   { if {$val == 0} { return "" }; return [format "ARP %02X" $val] }
+        4   { return [format "PVB %02X" $val] }
+        8   {
+            set l [expr {$val >> 4}]; set r [expr {$val & 15}]
+            if {$l == 0 && $r == 0} { return "" }
+            return [format "PAN %02X" [expr {max(0, min(255, int(128 + ($r - $l) * 128.0 / 15)))}]]
+        }
+        15  {
+            if {$val == 0 || $val > 31} { return "" }
+            if {![dict exists $grooves $val]} {
+                if {[dict size $grooves] >= 31} { return "" }
+                dict set grooves $val [expr {[dict size $grooves] + 1}]
+            }
+            return [format "GGR %02X" [dict get $grooves $val]]
+        }
+        236 { return [format "OFF %02X" $val] }
+        237 { return [format "DEL %02X" $val] }
+    }
+    return ""
 }
 
 proc fur2cct::defaultFM {} {
