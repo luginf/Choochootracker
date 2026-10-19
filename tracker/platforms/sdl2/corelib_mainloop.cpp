@@ -77,6 +77,14 @@ static void openFallbackJoystick(void) {
   for (int i = 0; i < SDL_NumJoysticks(); i++) {
     if (SDL_IsGameController(i)) continue;
     fallbackJoystick = SDL_JoystickOpen(i);
+    // SDL exposes non-pads as joysticks too (the Android accelerometer has
+    // axes but no buttons or hats): they are not a connected gamepad.
+    if (fallbackJoystick && SDL_JoystickNumButtons(fallbackJoystick) == 0 &&
+        SDL_JoystickNumHats(fallbackJoystick) == 0) {
+      SDL_JoystickClose(fallbackJoystick);
+      fallbackJoystick = NULL;
+      continue;
+    }
     if (fallbackJoystick) {
       // The virtual pad stays visible: the raw mapping is a guess, and the
       // touch controls are needed to open the key mapping screen.
